@@ -1,38 +1,61 @@
 \section{Alphabetical List of Functions}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
- bios.z8a:183&bios\_error\_exit&\$0088&called on a fatal error after GPU is ready\\
- bios.z8a:213&bios\_load\_var&\$009b&loads a byte from non-volatile BIOS memory\\
- bios.z8a:266&bios\_reset&\$00d4&ask the PIC to do a full system reset\\
- bios.z8a:194&bios\_save\_var&\$008c&saves a byte of data to non-volatile bios memory\\
- fat.z8a:30&fat\_init&\$1fc3&read a FAT boot sector and setup the FAT driver\\
- fat.z8a:477&fat\_next\_block&\$2249&fetch the next block in the current file/folder.\\
- fat.z8a:532&fat\_next\_cluster&\$228c&fetch the next cluster of the active file\\
- fat.z8a:307&fat\_select\_cluster&\$215a&(re)initialise the FAT firmware pointing at a specific cluster.\\
- gpu.z8a:47&gpu\_cls&\$00fb&Clear the active screen\\
- gpu.z8a:182&gpu\_dec&\$0155&Print a decimal value to the screen, maximum of 32bit input\\
- gpu.z8a:79&gpu\_get\_colour&\$0109&Return the active colour from the GPU\\
- gpu.z8a:212&gpu\_hex&\$016a&Print a hex representation of a number\\
- gpu.z8a:33&gpu\_init&\$00f6&Reset the GPU to its power-on state\\
- gpu.z8a:63&gpu\_set\_colour&\$0100&Select the colour on the active screen\\
- gpu.z8a:161&gpu\_str&\$014b&Print a null terminated string\\
- maths.z8a:255&maths\_add32&\$0493&Add maths\_op\_b to maths\_op\_a and store in maths\_op\_a\\
- maths.z8a:192&maths\_asl32&\$0475&shift maths\_op\_a one bit left and put a zero in the lsb\\
- maths.z8a:215&maths\_asln32&\$047d&shift maths\_op\_a n bits left and zero the new lsbs\\
- maths.z8a:122&maths\_asr32&\$0453&32 bit arithmetic shift right\\
- maths.z8a:148&maths\_asrn32&\$045b&32 bit arithmetic shift right by n bits\\
- maths.z8a:27&maths\_bcd\_to\_bin&\$040f&convert a single byte from BCD to binary (in a)\\
- maths.z8a:627&maths\_bin\_to\_bcd&\$065d&convert a 32\textit{24}16\\
- maths.z8a:388&maths\_div32&\$0535&calculate the div\\
- maths.z8a:48&maths\_mod&\$0421&calculate a/b - returns b unaltered, a = a \% b, c = a//b\\
- maths.z8a:321&maths\_sub32&\$04e6&do a 32 bit subtraction maths\_op\_a - maths\_op\_b\\
- maths.z8a:593&maths\_test\_z32&\$0645&test a 32 bit value for zero\\
- maths.z8a:574&maths\_test\_z64&\$063c&test a 64 bit value for zero\\
- uart.z8a:53&uart\_write&\$01c1&Writes the contents of \textbf{A} to the UART\\
+ bios.z8a:296&bios\_disable\_int&\$8036&disable interrupts flagged in byte in A\\
+ bios.z8a:279&bios\_enable\_int&\$8026&enable the interrupt indicated by register A\\
+ bios.z8a:248&bios\_error\_exit&\$8019&called on a fatal error after GPU is ready\\
+ bios.z8a:334&bios\_load\_var&\$8054&loads a byte from non-volatile BIOS memory\\
+ bios.z8a:387&bios\_reset&\$808d&ask the PIC to do a full system reset\\
+ bios.z8a:315&bios\_save\_var&\$8045&saves a byte of data to non-volatile bios memory\\
+ bios.z8a:264&bios\_set\_interrupts&\$801e&set PIE and the local copy of interrupt flags\\
+ fat.z8a:30&fat\_init&\$8974&read a FAT boot sector and setup the FAT driver\\
+ fat.z8a:476&fat\_next\_block&\$8bf3&fetch the next block in the current file/folder.\\
+ fat.z8a:531&fat\_next\_cluster&\$8c36&fetch the next cluster of the active file\\
+ fat.z8a:308&fat\_select\_cluster&\$8b0a&(re)initialise the FAT firmware pointing at a specific cluster.\\
+ gpu.z8a:47&gpu\_cls&\$8099&Clear the active screen\\
+ gpu.z8a:182&gpu\_dec&\$80f3&Print a decimal value to the screen, maximum of 32bit input\\
+ gpu.z8a:79&gpu\_get\_colour&\$80a7&Return the active colour from the GPU\\
+ gpu.z8a:212&gpu\_hex&\$8108&Print a hex representation of a number\\
+ gpu.z8a:33&gpu\_init&\$8094&Reset the GPU to its power-on state\\
+ gpu.z8a:63&gpu\_set\_colour&\$809e&Select the colour on the active screen\\
+ gpu.z8a:161&gpu\_str&\$80e9&Print a null terminated string\\
+ maths.z8a:255&maths\_add32&\$843b&Add maths\_op\_b to maths\_op\_a and store in maths\_op\_a\\
+ maths.z8a:192&maths\_asl32&\$841d&shift maths\_op\_a one bit left and put a zero in the lsb\\
+ maths.z8a:215&maths\_asln32&\$8425&shift maths\_op\_a n bits left and zero the new lsbs\\
+ maths.z8a:122&maths\_asr32&\$83fb&32 bit arithmetic shift right\\
+ maths.z8a:148&maths\_asrn32&\$8403&32 bit arithmetic shift right by n bits\\
+ maths.z8a:27&maths\_bcd\_to\_bin&\$83b7&convert a single byte from BCD to binary (in a)\\
+ maths.z8a:628&maths\_bin\_to\_bcd&\$8605&convert a 32\textit{24}16\\
+ maths.z8a:389&maths\_div32&\$84de&calculate the div\\
+ maths.z8a:48&maths\_mod&\$83c9&calculate a/b - returns b unaltered, a = a \% b, c = a//b\\
+ maths.z8a:321&maths\_sub32&\$848e&do a 32 bit subtraction maths\_op\_a - maths\_op\_b\\
+ maths.z8a:594&maths\_test\_z32&\$85ed&test a 32 bit value for zero\\
+ maths.z8a:575&maths\_test\_z64&\$85e4&test a 64 bit value for zero\\
+ uart.z8a:53&uart\_write&\$8169&Writes the contents of \textbf{A} to the UART\\
+ usb.z8a:32&usb\_get\_byte&\$8d1c&read a byte from the Vinculum chip.\\
+ usb.z8a:48&usb\_write\_byte&\$8d25&write a byte to the Vinculum chip\\
 \end{tabular}
 
+\subsection{bios\_disable\_int}
+\textit{bios.z8a:296 - \$8036}
+
+\noindent
+\textbf{disable interrupts flagged in byte in A}
+
+\subsubsection{No Documentation}
+
+
+\subsection{bios\_enable\_int}
+\textit{bios.z8a:279 - \$8026}
+
+\noindent
+\textbf{enable the interrupt indicated by register A}
+
+\subsubsection{Description:}
+ Register A contains a bit mask with a 1 in every interrupt to enable.  This is carried out and the updated value recorded in system\_interrupts.  The interrupt enable is set at the end so don't call from interrupts.
+
 \subsection{bios\_error\_exit}
-\textit{bios.z8a:183 - \$0088}
+\textit{bios.z8a:248 - \$8019}
 
 \noindent
 \textbf{called on a fatal error after GPU is ready}
@@ -41,7 +64,7 @@
  This function is called by BIOS functions on errors, but only after the GPU has been started.  When called \textbf{HL} contains a pointer to a string with some information about the error, this is printed then the system is halted.
 
 \subsection{bios\_load\_var}
-\textit{bios.z8a:213 - \$009b}
+\textit{bios.z8a:334 - \$8054}
 
 \noindent
 \textbf{loads a byte from non-volatile BIOS memory}
@@ -50,7 +73,7 @@
  \textbf{A} is loaded with a byte fetched from location \textbf{B} from EEPROM memory.
 
 \subsection{bios\_reset}
-\textit{bios.z8a:266 - \$00d4}
+\textit{bios.z8a:387 - \$808d}
 
 \noindent
 \textbf{ask the PIC to do a full system reset}
@@ -59,7 +82,7 @@
  In some cases it is useful to be able to reboot (after setting BIOS parameters for example.)  In these cases it's important that all the support circuits get reset as well to enable proper boot, issuing a command to the supervisor PIC can tell it to do a full system-reset.
 
 \subsection{bios\_save\_var}
-\textit{bios.z8a:194 - \$008c}
+\textit{bios.z8a:315 - \$8045}
 
 \noindent
 \textbf{saves a byte of data to non-volatile bios memory}
@@ -67,8 +90,17 @@
 \subsubsection{Description:}
  The contents of \textbf{A} are saved to the non-volatile BIOS setting storage in one of 256 locations as indicated by the contents of \textbf{B}.
 
+\subsection{bios\_set\_interrupts}
+\textit{bios.z8a:264 - \$801e}
+
+\noindent
+\textbf{set PIE and the local copy of interrupt flags}
+
+\subsubsection{Description:}
+ Because the Peripheral Interrupt Enable register is write-only, a copy of the current flag settings is stored in memory, by using this function both of the locations are kept up to date.  This is thread-safe as it blocks interrupts to ensure both locations are kept in sync so it is safe to alter the system\_interrupts value in memory from interrupts, don't call directly as it enables interrupts.  The value to set is in \textbf{A}.
+
 \subsection{fat\_init}
-\textit{fat.z8a:30 - \$1fc3}
+\textit{fat.z8a:30 - \$8974}
 
 \noindent
 \textbf{read a FAT boot sector and setup the FAT driver}
@@ -77,7 +109,7 @@
  sd\_block should be set pointing to the start of the FAT partition before  calling this function.  It should be called before any other FAT subroutines.
 
 \subsection{fat\_next\_block}
-\textit{fat.z8a:477 - \$2249}
+\textit{fat.z8a:476 - \$8bf3}
 
 \noindent
 \textbf{fetch the next block in the current file/folder.}
@@ -86,7 +118,7 @@
  Fetches the next block of the current file or folder.  On return Carry is set if the fetch failed.  If the fat\_error register is clear then it just means the end of the file was reached.
 
 \subsection{fat\_next\_cluster}
-\textit{fat.z8a:532 - \$228c}
+\textit{fat.z8a:531 - \$8c36}
 
 \noindent
 \textbf{fetch the next cluster of the active file}
@@ -95,7 +127,7 @@
  This function finds the number of the next cluster in the active file/folder if there is one and calls fat\_select\_cluster to initialise that cluster. Returns directly with carry flag set and FAT\_ERROR\_NONE if there are no more clusters in the current file.  Otherwise the return is from fat\_select\_cluster.
 
 \subsection{fat\_select\_cluster}
-\textit{fat.z8a:307 - \$215a}
+\textit{fat.z8a:308 - \$8b0a}
 
 \noindent
 \textbf{(re)initialise the FAT firmware pointing at a specific cluster.}
@@ -104,7 +136,7 @@
  Called after an update to fat\_cluster.  Points fat\_block to the start of the current cluster and calculates fat\_last\_block for this cluster.  Also performs error checking on the sector number, if the number is 0 it returns with carry set but no error in sd\_error, the same behaviour is used for cluster numbers higher than the highest available.  This works for FAT entry checking.  On FAT16 requesting Sector \#1 will return the first block of the root directory.  On FAT32 this will fail like requesting 0 or high numbers.
 
 \subsection{gpu\_cls}
-\textit{gpu.z8a:47 - \$00fb}
+\textit{gpu.z8a:47 - \$8099}
 
 \noindent
 \textbf{Clear the active screen}
@@ -113,7 +145,7 @@
  This sets all pixels in the active screen to the currently selected background colour.  Reading any cursor location will return \$20 (the ASCII code for SPACE).  Register \textbf{A} is used, but no arguments or return values are associated with this function.
 
 \subsection{gpu\_dec}
-\textit{gpu.z8a:182 - \$0155}
+\textit{gpu.z8a:182 - \$80f3}
 
 \noindent
 \textbf{Print a decimal value to the screen, maximum of 32bit input}
@@ -122,7 +154,7 @@
  This prints a decimal representation (in ASCII characters 0-9) of a numerical value to the screen.  The number should be a normal binary number (to print BCD, call gpu\_hex).  The source is not affected, but the maths registers are used for the conversion to BCD.  HL is a pointer to the source number, \textbf{B} contains the number of ASCII characters (counted from the least significant up) to print to the screen, \textbf{A} contains a number of bytes long the number to convert is (can be 1, 2, 3 or 4).  If \textbf{A} is zero or 5 or more then 32bit is assumed.
 
 \subsection{gpu\_get\_colour}
-\textit{gpu.z8a:79 - \$0109}
+\textit{gpu.z8a:79 - \$80a7}
 
 \noindent
 \textbf{Return the active colour from the GPU}
@@ -131,7 +163,7 @@
  This command queries the GPU to find out what the active colour is.  This colour index is returned in \textbf{A} and must be in the range 0-7.  The actual colour this represents depends on the colour map of the GPU at the time of the request.
 
 \subsection{gpu\_hex}
-\textit{gpu.z8a:212 - \$016a}
+\textit{gpu.z8a:212 - \$8108}
 
 \noindent
 \textbf{Print a hex representation of a number}
@@ -140,7 +172,7 @@
  This function sends ASCII characters representing 4 bit values to the GPU to display binary values from memory.  \textbf{HL} contains a pointer to the location in memory of the bytes to represent, \textbf{A} contains a number of Hex digits to print.  When called the function starts printing nibbles from \textbf{A} above \textbf{HL} and moves down.  \textbf{HL} is not altered by this function, neither is the memory that is printed.  This function can also be used to print BCD values directly.
 
 \subsection{gpu\_init}
-\textit{gpu.z8a:33 - \$00f6}
+\textit{gpu.z8a:33 - \$8094}
 
 \noindent
 \textbf{Reset the GPU to its power-on state}
@@ -149,7 +181,7 @@
  On start up the GPU displays a blank screen on both VGA and TV monitors.  It is in a 16x32 tile-based mode with a default colour table.  Running this command orders the GPU to return to this state.  Register \textbf{A} is used, but no arguments or return values are associated with this function.
 
 \subsection{gpu\_set\_colour}
-\textit{gpu.z8a:63 - \$0100}
+\textit{gpu.z8a:63 - \$809e}
 
 \noindent
 \textbf{Select the colour on the active screen}
@@ -158,7 +190,7 @@
  There are 8 colours available at any time in the GPU.  Each colour is a pair of foreground and background values selected from a possible range of 64 visible colours.  This command selects which of the eight foreground/background colour pairs from the current colour map will be used when printing characters to the active screen.\\\\ The colour to use is passed in \textbf{A} and is masked to a value 0-7.
 
 \subsection{gpu\_str}
-\textit{gpu.z8a:161 - \$014b}
+\textit{gpu.z8a:161 - \$80e9}
 
 \noindent
 \textbf{Print a null terminated string}
@@ -167,7 +199,7 @@
  \textbf{HL} is a pointer to the first byte of a null-terinated string.  The bytes are sent un-altered to the data port of the GPU until a null is found which causes the function to return.  \textbf{A} is altered during this function, \textbf{HL} is incremented to the end of the string, no other registers or memory locations will be written.
 
 \subsection{maths\_add32}
-\textit{maths.z8a:255 - \$0493}
+\textit{maths.z8a:255 - \$843b}
 
 \noindent
 \textbf{Add maths\\\_op\\\_b to maths\\\_op\\\_a and store in maths\\\_op\\\_a}
@@ -176,7 +208,7 @@
  Performs a 32 bit addition of a value in maths\_op\_a and maths\_op\_b.  The result is stored in maths\_op\_a by default, to use maths\_op\_b or maths\_op\_c as the target call maths\_add32\_b or maths\_add32\_c.  No registers are affected by this call. maths\_op\_a + maths\_op\_b =\textgreater  maths\_op\_x (depending on call) Flags:  maths\_flags[C] is set if the addition resulted in overflow, reset otherwise  maths\_flags[Z] is set if the result of the addition was zero, reset                 otherwise
 
 \subsection{maths\_asl32}
-\textit{maths.z8a:192 - \$0475}
+\textit{maths.z8a:192 - \$841d}
 
 \noindent
 \textbf{shift maths\\\_op\\\_a one bit left and put a zero in the lsb}
@@ -185,7 +217,7 @@
  The contents of maths\_op\_a are shifted one bit to the left (upwards) and a zero is placed in the least significant bit. [C] \textless - [31 \textless - 0] \textless - 0 Flags:  maths\_flags[Z] is set if the result is zero, reset otherwise  maths\_flags[C] is set if the most significant bit was 1 before the shift,                 reset otherwise The contents of internal registers are not affected by this function.
 
 \subsection{maths\_asln32}
-\textit{maths.z8a:215 - \$047d}
+\textit{maths.z8a:215 - \$8425}
 
 \noindent
 \textbf{shift maths\\\_op\\\_a n bits left and zero the new lsbs}
@@ -194,7 +226,7 @@
  The contents of maths\_op\_a are shifted n bit to the left (upwards) based on the value of \textbf{A} and zeros are placed in the least significant bits. [C] \textless n- [31 \textless n- 0] \textless n- 0 Flags:  maths\_flags[Z] is set if the result is zero, reset otherwise  maths\_flags[C] is set if the last bit shifted out was 1 reset otherwise The contents of internal registers are not affected by this function, \textbf{A} is not preserved however.
 
 \subsection{maths\_asr32}
-\textit{maths.z8a:122 - \$0453}
+\textit{maths.z8a:122 - \$83fb}
 
 \noindent
 \textbf{32 bit arithmetic shift right}
@@ -203,7 +235,7 @@
  The contents of maths\_op\_a are shifted one bit to the right.  The most  significant bit is left unaltered (so the sign of the number is not changed).  [31] -\textgreater  [31 -\textgreater  0] -\textgreater  [C] Flags:  maths\_flags[Z] is set if the result is zero, reset otherwise  maths\_flags[C] is set if the lsb was 1 before the operation, reset otherwise None of the CPU registers are affected by this function.
 
 \subsection{maths\_asrn32}
-\textit{maths.z8a:148 - \$045b}
+\textit{maths.z8a:148 - \$8403}
 
 \noindent
 \textbf{32 bit arithmetic shift right by n bits}
@@ -212,7 +244,7 @@
  The contents of maths\_op\_a are shifted a number of bits to the right.  The number of bits to shift is specified by the contents of \textbf{A} (the value is masked to 5 bits to provide a maximum of 31 bit shift).  The most significant bit is propagated down each shift (so the sign of the number is not changed).  [31] -n\textgreater  [31 -\textgreater  0] -n\textgreater  [C] Flags:  maths\_flags[Z] is set if the result is zero, reset otherwise  maths\_flags[C] is set if the last bit shifted out of bit 0 was 1, reset  otherwise The contents of the accumulator are not preserved by this operation, other registers are unaffected.
 
 \subsection{maths\_bcd\_to\_bin}
-\textit{maths.z8a:27 - \$040f}
+\textit{maths.z8a:27 - \$83b7}
 
 \noindent
 \textbf{convert a single byte from BCD to binary (in a)}
@@ -221,7 +253,7 @@
 
 
 \subsection{maths\_bin\_to\_bcd}
-\textit{maths.z8a:627 - \$065d}
+\textit{maths.z8a:628 - \$8605}
 
 \noindent
 \textbf{convert a 322416}
@@ -230,7 +262,7 @@
  \textbf{HL} points to a value up to 4 bytes long to be converted, it is not altered so it is safe to point at values in ROM or that will be used later.  \textbf{HL} is the least significant byte, \textbf{A} contains the number of bytes to copy (1, 2 3 or 4) these bytes are copied to maths\_op\_b with higher bytes set to zero. The result of the conversion is stored in maths\_op\_c and may be up to 5 bytes long.
 
 \subsection{maths\_div32}
-\textit{maths.z8a:388 - \$0535}
+\textit{maths.z8a:389 - \$84de}
 
 \noindent
 \textbf{calculate the div}
@@ -239,7 +271,7 @@
  The contents of maths\_op\_a are divided by the contents of maths\_op\_b.  The quotient is placed in the lower 32 bits of maths\_op\_c, the remainder is left in maths\_op\_a.  On return carry is set if it was an illegal (division by zero operation).
 
 \subsection{maths\_mod}
-\textit{maths.z8a:48 - \$0421}
+\textit{maths.z8a:48 - \$83c9}
 
 \noindent
 \textbf{calculate a/b - returns b unaltered, a = a \\\% b, c = a//b}
@@ -248,7 +280,7 @@
 
 
 \subsection{maths\_sub32}
-\textit{maths.z8a:321 - \$04e6}
+\textit{maths.z8a:321 - \$848e}
 
 \noindent
 \textbf{do a 32 bit subtraction maths\\\_op\\\_a - maths\\\_op\\\_b}
@@ -257,7 +289,7 @@
 
 
 \subsection{maths\_test\_z32}
-\textit{maths.z8a:593 - \$0645}
+\textit{maths.z8a:594 - \$85ed}
 
 \noindent
 \textbf{test a 32 bit value for zero}
@@ -266,7 +298,7 @@
  \textbf{HL} points to the least significant byte of a 32 bit value to be tested.  If the value is zero bit 1 (second least significant) of \textbf{A} is set, otherwise this bit is cleared.  This matches the \textbf{Z} bit position in the maths\_flags  register so loading \textbf{A} with the contents of flags before a call and writing it back after will update the flags register.  \textbf{HL} is left pointing 4 bytes above where it started, no other registers are affected.
 
 \subsection{maths\_test\_z64}
-\textit{maths.z8a:574 - \$063c}
+\textit{maths.z8a:575 - \$85e4}
 
 \noindent
 \textbf{test a 64 bit value for zero}
@@ -275,7 +307,7 @@
  Works identically to maths\_test\_z32 but tests a total of 8 bytes starting at location \textbf{HL}.  Used in testing results of 32x32 multiply etc.
 
 \subsection{uart\_write}
-\textit{uart.z8a:53 - \$01c1}
+\textit{uart.z8a:53 - \$8169}
 
 \noindent
 \textbf{Writes the contents of A to the UART}
@@ -283,26 +315,44 @@
 \subsubsection{Description:}
  UART write checks the status of the UART and sends once the buffer is empty. This is an indefinitely blocking call, however the UART clock can't be stopped in this system so it should always complete.
 
+\subsection{usb\_get\_byte}
+\textit{usb.z8a:32 - \$8d1c}
+
+\noindent
+\textbf{read a byte from the Vinculum chip.}
+
+\subsubsection{Description:}
+ This call fetches a single byte from the Vinculum chip.  It obeys the status flag USB\_RXF to avoid reading bytes before they are ready.  Note that it will block indefinitely for bytes to be ready so call with caution.
+
+\subsection{usb\_write\_byte}
+\textit{usb.z8a:48 - \$8d25}
+
+\noindent
+\textbf{write a byte to the Vinculum chip}
+
+\subsubsection{Description:}
+ Writes a single byte (from \textbf{A}) to the USB host chip.  The USB\_TXE flag is checked to make sure that the Vinculum is ready to accept bytes.  If there are bytes to be read these are read and discarded as the output buffer must be empty before you try writing.
+
 \section{Alphabetical List  of Variables}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
- gpu.z8a:274&gpu\_hex\_lut&\$019a&16 byte lookup to convert one 4 bit value to an ASCII character\\
- maths.z8a:803&maths\_flags&\$0701&flag register holds the flags from the last maths routine\\
- maths.z8a:782&maths\_op\_a&\$06f1&32 bit operator for maths routines\\
- maths.z8a:788&maths\_op\_b&\$06f5&32 bit operator for maths routines\\
- maths.z8a:794&maths\_op\_c&\$06f9&64 bit result register for maths\_routines\\
- statics.z8a:114&ram\_top&\$1000&A pointer to the last byte in RAM\\
- statics.z8a:225&stack&\$1fff&The bottom of (highest address used by) the stack\\
- statics.z8a:195&system\_boot\_device&\$1017&Set by the BIOS bootloader to indicate where the boot image in use was found\\
- statics.z8a:210&system\_boot\_file&\$1018&Set by the bootloader to the path to the currently running program file loaded at boot\\
- statics.z8a:166&system\_boot\_order&\$1015&The order in which devices are searched for a boot image\\
- statics.z8a:132&system\_clock&\$1004&The speed of the Z80 clock\\
- statics.z8a:144&system\_clock\_speeds&\$1005&Lookup table to convert clock setting to Hz\\
- statics.z8a:180&system\_filesystem&\$1016&indicates the filesystem type if boot was from SD card\\
+ gpu.z8a:285&gpu\_hex\_lut&\$8142&16 byte lookup to convert one 4 bit value to an ASCII character\\
+ maths.z8a:804&maths\_flags&\$86a9&flag register holds the flags from the last maths routine\\
+ maths.z8a:783&maths\_op\_a&\$8699&32 bit operator for maths routines\\
+ maths.z8a:789&maths\_op\_b&\$869d&32 bit operator for maths routines\\
+ maths.z8a:795&maths\_op\_c&\$86a1&64 bit result register for maths\_routines\\
+ bios.z8a:111&ram\_top&\$8000&A pointer to the last byte in RAM\\
+ bios.z8a:237&stack&\$9fff&The bottom of (highest address used by) the stack\\
+ bios.z8a:197&system\_boot\_device&\$8017&Set by the BIOS bootloader to indicate where the boot image in use was found\\
+ bios.z8a:225&system\_boot\_file&\$8018&Set by the bootloader to the path to the currently running program file loaded at boot\\
+ bios.z8a:163&system\_boot\_order&\$8015&The order in which devices are searched for a boot image\\
+ bios.z8a:129&system\_clock&\$8004&The speed of the Z80 clock\\
+ bios.z8a:141&system\_clock\_speeds&\$8005&Lookup table to convert clock setting to Hz\\
+ bios.z8a:182&system\_filesystem&\$8016&indicates the filesystem type if boot was from SD card\\
 \end{tabular}
 
 \subsection{gpu\_hex\_lut}
-\textit{gpu.z8a:274 - \$019a}
+\textit{gpu.z8a:285 - \$8142}
 
 \noindent
 \textbf{16 byte lookup to convert one 4 bit value to an ASCII character}
@@ -311,7 +361,7 @@
  Since ASCII characters A-F do not follow 0-9 normally this is provided as a lookup to convert a 4 bit value to ASCII.\\\\ Access: Read-only
 
 \subsection{maths\_flags}
-\textit{maths.z8a:803 - \$0701}
+\textit{maths.z8a:804 - \$86a9}
 
 \noindent
 \textbf{flag register holds the flags from the last maths routine}
@@ -320,7 +370,7 @@
  Bit 0: Carry, set when an add/subtract overflows. Bit 1: Zero, set when the result of the operation was zero. See commands for details about what happens to these flags.
 
 \subsection{maths\_op\_a}
-\textit{maths.z8a:782 - \$06f1}
+\textit{maths.z8a:783 - \$8699}
 
 \noindent
 \textbf{32 bit operator for maths routines}
@@ -329,7 +379,7 @@
 
 
 \subsection{maths\_op\_b}
-\textit{maths.z8a:788 - \$06f5}
+\textit{maths.z8a:789 - \$869d}
 
 \noindent
 \textbf{32 bit operator for maths routines}
@@ -338,7 +388,7 @@
 
 
 \subsection{maths\_op\_c}
-\textit{maths.z8a:794 - \$06f9}
+\textit{maths.z8a:795 - \$86a1}
 
 \noindent
 \textbf{64 bit result register for maths\\\_routines}
@@ -347,7 +397,7 @@
 
 
 \subsection{ram\_top}
-\textit{statics.z8a:114 - \$1000}
+\textit{bios.z8a:111 - \$8000}
 
 \noindent
 \textbf{A pointer to the last byte in RAM}
@@ -356,7 +406,7 @@
  On boot the system runs a check through all memory addresses until it finds a location where RAM is present.  This allows the system to be used with a less than full memory address space.\\\\ Access: Read-only
 
 \subsection{stack}
-\textit{statics.z8a:225 - \$1fff}
+\textit{bios.z8a:237 - \$9fff}
 
 \noindent
 \textbf{The bottom of (highest address used by) the stack}
@@ -365,7 +415,7 @@
  The stack pointer is set to this location at boot and it grows downwards.  At boot the bootup routines are stored between \$1000 and \$17FF, so the stack is limited to the 2K region above this.  Once the bootloader has loaded an operating system, execution moves above the stack and it can extend down to the top of the variables area at \$1000 (now giving it a full 4K of room).
 
 \subsection{system\_boot\_device}
-\textit{statics.z8a:195 - \$1017}
+\textit{bios.z8a:197 - \$8017}
 
 \noindent
 \textbf{Set by the BIOS bootloader to indicate where the boot image in use was found}
@@ -374,7 +424,7 @@
  On boot, the bootloader stores a number here depending on the source of the boot image loaded. 0: No boot image found, (usually means the system is still in BIOS mode)\\ 1: SD Card\\ 2: USB device\\\\ Access: Read-only
 
 \subsection{system\_boot\_file}
-\textit{statics.z8a:210 - \$1018}
+\textit{bios.z8a:225 - \$8018}
 
 \noindent
 \textbf{Set by the bootloader to the path to the currently running program file loaded at boot}
@@ -383,7 +433,7 @@
  On boot, the system loads a file from the root directory of the first boot device (or subsequent if that fails based on BIOS settings) with the extension .z8b (Z80 boot image).  The actual file name loaded is listed here as an 8.3 dos-style filename in a null terminated string.  The filename is automatically padded on the right with spaces to fill 8 characters.  The last four characters should always be ".Z8B".\\\\ Access: Read-only
 
 \subsection{system\_boot\_order}
-\textit{statics.z8a:166 - \$1015}
+\textit{bios.z8a:163 - \$8015}
 
 \noindent
 \textbf{The order in which devices are searched for a boot image}
@@ -392,7 +442,7 @@
  On boot this is read from the PIC's internal EEPROM memory and stored here. This setting is used by the bootloader to decide what order to search for a valid operating system boot image to load.  This is a numerical value, the meaning of various values is described below. 0: Boot from SD card only\\ 1: Boot from USB device only\\ 2: Boot from SD as first choice, or USB if that fails\\ 3: Boot from USB as first choice, or SD if that fails\\ Access: Read-only (except in BIOS setup)
 
 \subsection{system\_clock}
-\textit{statics.z8a:132 - \$1004}
+\textit{bios.z8a:129 - \$8004}
 
 \noindent
 \textbf{The speed of the Z80 clock}
@@ -401,7 +451,7 @@
  On boot the clock speed is selected by a BIOS parameter held in the supervisor PIC's EEPROM memory.  During the boot process this setting is  queried and saved to memory.  This can be used in timing critical applications, or to compensate for various clock speeds.  The actual frequency in Hz can be looked up in system\_clock\_speeds.\\\\ 0: 250 kHz\\ 1: 2.5 MHz\\ 2: 3.33 MHz\\ 3: 5.0 MHz\\\\ Access: Read-only
 
 \subsection{system\_clock\_speeds}
-\textit{statics.z8a:144 - \$1005}
+\textit{bios.z8a:141 - \$8005}
 
 \noindent
 \textbf{Lookup table to convert clock setting to Hz}
@@ -410,7 +460,7 @@
  This table contains one entry per possible clock setting (as stored in system\_clock).  The value of the clock speed in Hz for each setting is stored here as a 32bit integer.\\\\ Access: Read-only
 
 \subsection{system\_filesystem}
-\textit{statics.z8a:180 - \$1016}
+\textit{bios.z8a:182 - \$8016}
 
 \noindent
 \textbf{indicates the filesystem type if boot was from SD card}
@@ -419,14 +469,10 @@
  The BIOS supports both FAT16 and FAT32 as boot filesystems, this field records the filesystem type to know which routines to use. \$06: FAT16\\ \$0B: FAT32\\\\ Access: Read-only
 
 \section{Functions and Variables by Source File}
-\subsection{fat.z8a}
+\subsection{kb\_commands.z8a}
 \subsubsection{Functions}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
- 30&fat\_init&\$1fc3&read a FAT boot sector and setup the FAT driver\\
- 477&fat\_next\_block&\$2249&fetch the next block in the current file/folder.\\
- 532&fat\_next\_cluster&\$228c&fetch the next cluster of the active file\\
- 307&fat\_select\_cluster&\$215a&(re)initialise the FAT firmware pointing at a specific cluster.\\
 \end{tabular}
 
 \subsubsection{Variables}
@@ -434,19 +480,44 @@
  \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
 \end{tabular}
 
-\subsection{bios.z8a}
+\subsection{usb.z8a}
 \subsubsection{Functions}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
- 183&bios\_error\_exit&\$0088&called on a fatal error after GPU is ready\\
- 213&bios\_load\_var&\$009b&loads a byte from non-volatile BIOS memory\\
- 266&bios\_reset&\$00d4&ask the PIC to do a full system reset\\
- 194&bios\_save\_var&\$008c&saves a byte of data to non-volatile bios memory\\
+ 32&usb\_get\_byte&\$8d1c&read a byte from the Vinculum chip.\\
+ 48&usb\_write\_byte&\$8d25&write a byte to the Vinculum chip\\
 \end{tabular}
 
 \subsubsection{Variables}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
+\end{tabular}
+
+\subsection{maths.z8a}
+\subsubsection{Functions}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
+ 255&maths\_add32&\$843b&Add maths\_op\_b to maths\_op\_a and store in maths\_op\_a\\
+ 192&maths\_asl32&\$841d&shift maths\_op\_a one bit left and put a zero in the lsb\\
+ 215&maths\_asln32&\$8425&shift maths\_op\_a n bits left and zero the new lsbs\\
+ 122&maths\_asr32&\$83fb&32 bit arithmetic shift right\\
+ 148&maths\_asrn32&\$8403&32 bit arithmetic shift right by n bits\\
+ 27&maths\_bcd\_to\_bin&\$83b7&convert a single byte from BCD to binary (in a)\\
+ 628&maths\_bin\_to\_bcd&\$8605&convert a 32\textit{24}16\\
+ 389&maths\_div32&\$84de&calculate the div\\
+ 48&maths\_mod&\$83c9&calculate a/b - returns b unaltered, a = a \% b, c = a//b\\
+ 321&maths\_sub32&\$848e&do a 32 bit subtraction maths\_op\_a - maths\_op\_b\\
+ 594&maths\_test\_z32&\$85ed&test a 32 bit value for zero\\
+ 575&maths\_test\_z64&\$85e4&test a 64 bit value for zero\\
+\end{tabular}
+
+\subsubsection{Variables}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
+ 804&maths\_flags&\$86a9&flag register holds the flags from the last maths routine\\
+ 783&maths\_op\_a&\$8699&32 bit operator for maths routines\\
+ 789&maths\_op\_b&\$869d&32 bit operator for maths routines\\
+ 795&maths\_op\_c&\$86a1&64 bit result register for maths\_routines\\
 \end{tabular}
 
 \subsection{sd\_commands.z8a}
@@ -460,41 +531,7 @@
  \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
 \end{tabular}
 
-\subsection{boot.z8a}
-\subsubsection{Functions}
-\begin{tabular}{rllp{7cm}}
- \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
-\end{tabular}
-
-\subsubsection{Variables}
-\begin{tabular}{rllp{7cm}}
- \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
-\end{tabular}
-
-\subsection{menu.z8a}
-\subsubsection{Functions}
-\begin{tabular}{rllp{7cm}}
- \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
-\end{tabular}
-
-\subsubsection{Variables}
-\begin{tabular}{rllp{7cm}}
- \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
-\end{tabular}
-
-\subsection{uart.z8a}
-\subsubsection{Functions}
-\begin{tabular}{rllp{7cm}}
- \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
- 53&uart\_write&\$01c1&Writes the contents of \textbf{A} to the UART\\
-\end{tabular}
-
-\subsubsection{Variables}
-\begin{tabular}{rllp{7cm}}
- \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
-\end{tabular}
-
-\subsection{gpu\_commands.z8a}
+\subsection{statics.z8a}
 \subsubsection{Functions}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
@@ -509,41 +546,49 @@
 \subsubsection{Functions}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
- 47&gpu\_cls&\$00fb&Clear the active screen\\
- 182&gpu\_dec&\$0155&Print a decimal value to the screen, maximum of 32bit input\\
- 79&gpu\_get\_colour&\$0109&Return the active colour from the GPU\\
- 212&gpu\_hex&\$016a&Print a hex representation of a number\\
- 33&gpu\_init&\$00f6&Reset the GPU to its power-on state\\
- 63&gpu\_set\_colour&\$0100&Select the colour on the active screen\\
- 161&gpu\_str&\$014b&Print a null terminated string\\
+ 47&gpu\_cls&\$8099&Clear the active screen\\
+ 182&gpu\_dec&\$80f3&Print a decimal value to the screen, maximum of 32bit input\\
+ 79&gpu\_get\_colour&\$80a7&Return the active colour from the GPU\\
+ 212&gpu\_hex&\$8108&Print a hex representation of a number\\
+ 33&gpu\_init&\$8094&Reset the GPU to its power-on state\\
+ 63&gpu\_set\_colour&\$809e&Select the colour on the active screen\\
+ 161&gpu\_str&\$80e9&Print a null terminated string\\
 \end{tabular}
 
 \subsubsection{Variables}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
- 274&gpu\_hex\_lut&\$019a&16 byte lookup to convert one 4 bit value to an ASCII character\\
+ 285&gpu\_hex\_lut&\$8142&16 byte lookup to convert one 4 bit value to an ASCII character\\
 \end{tabular}
 
-\subsection{statics.z8a}
+\subsection{uart.z8a}
 \subsubsection{Functions}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
+ 53&uart\_write&\$8169&Writes the contents of \textbf{A} to the UART\\
 \end{tabular}
 
 \subsubsection{Variables}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
- 114&ram\_top&\$1000&A pointer to the last byte in RAM\\
- 225&stack&\$1fff&The bottom of (highest address used by) the stack\\
- 195&system\_boot\_device&\$1017&Set by the BIOS bootloader to indicate where the boot image in use was found\\
- 210&system\_boot\_file&\$1018&Set by the bootloader to the path to the currently running program file loaded at boot\\
- 166&system\_boot\_order&\$1015&The order in which devices are searched for a boot image\\
- 132&system\_clock&\$1004&The speed of the Z80 clock\\
- 144&system\_clock\_speeds&\$1005&Lookup table to convert clock setting to Hz\\
- 180&system\_filesystem&\$1016&indicates the filesystem type if boot was from SD card\\
 \end{tabular}
 
-\subsection{kb\_commands.z8a}
+\subsection{fat.z8a}
+\subsubsection{Functions}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
+ 30&fat\_init&\$8974&read a FAT boot sector and setup the FAT driver\\
+ 476&fat\_next\_block&\$8bf3&fetch the next block in the current file/folder.\\
+ 531&fat\_next\_cluster&\$8c36&fetch the next cluster of the active file\\
+ 308&fat\_select\_cluster&\$8b0a&(re)initialise the FAT firmware pointing at a specific cluster.\\
+\end{tabular}
+
+\subsubsection{Variables}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
+\end{tabular}
+
+\subsection{sd.z8a}
 \subsubsection{Functions}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
@@ -565,45 +610,66 @@
  \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
 \end{tabular}
 
+\subsection{menu.z8a}
+\subsubsection{Functions}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
+\end{tabular}
+
+\subsubsection{Variables}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
+\end{tabular}
+
+\subsection{gpu\_commands.z8a}
+\subsubsection{Functions}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
+\end{tabular}
+
+\subsubsection{Variables}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
+\end{tabular}
+
+\subsection{boot.z8a}
+\subsubsection{Functions}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
+\end{tabular}
+
+\subsubsection{Variables}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
+\end{tabular}
+
+\subsection{bios.z8a}
+\subsubsection{Functions}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
+ 296&bios\_disable\_int&\$8036&disable interrupts flagged in byte in A\\
+ 279&bios\_enable\_int&\$8026&enable the interrupt indicated by register A\\
+ 248&bios\_error\_exit&\$8019&called on a fatal error after GPU is ready\\
+ 334&bios\_load\_var&\$8054&loads a byte from non-volatile BIOS memory\\
+ 387&bios\_reset&\$808d&ask the PIC to do a full system reset\\
+ 315&bios\_save\_var&\$8045&saves a byte of data to non-volatile bios memory\\
+ 264&bios\_set\_interrupts&\$801e&set PIE and the local copy of interrupt flags\\
+\end{tabular}
+
+\subsubsection{Variables}
+\begin{tabular}{rllp{7cm}}
+ \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
+ 111&ram\_top&\$8000&A pointer to the last byte in RAM\\
+ 237&stack&\$9fff&The bottom of (highest address used by) the stack\\
+ 197&system\_boot\_device&\$8017&Set by the BIOS bootloader to indicate where the boot image in use was found\\
+ 225&system\_boot\_file&\$8018&Set by the bootloader to the path to the currently running program file loaded at boot\\
+ 163&system\_boot\_order&\$8015&The order in which devices are searched for a boot image\\
+ 129&system\_clock&\$8004&The speed of the Z80 clock\\
+ 141&system\_clock\_speeds&\$8005&Lookup table to convert clock setting to Hz\\
+ 182&system\_filesystem&\$8016&indicates the filesystem type if boot was from SD card\\
+\end{tabular}
+
 \subsection{scancodes.z8a}
-\subsubsection{Functions}
-\begin{tabular}{rllp{7cm}}
- \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
-\end{tabular}
-
-\subsubsection{Variables}
-\begin{tabular}{rllp{7cm}}
- \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
-\end{tabular}
-
-\subsection{maths.z8a}
-\subsubsection{Functions}
-\begin{tabular}{rllp{7cm}}
- \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
- 255&maths\_add32&\$0493&Add maths\_op\_b to maths\_op\_a and store in maths\_op\_a\\
- 192&maths\_asl32&\$0475&shift maths\_op\_a one bit left and put a zero in the lsb\\
- 215&maths\_asln32&\$047d&shift maths\_op\_a n bits left and zero the new lsbs\\
- 122&maths\_asr32&\$0453&32 bit arithmetic shift right\\
- 148&maths\_asrn32&\$045b&32 bit arithmetic shift right by n bits\\
- 27&maths\_bcd\_to\_bin&\$040f&convert a single byte from BCD to binary (in a)\\
- 627&maths\_bin\_to\_bcd&\$065d&convert a 32\textit{24}16\\
- 388&maths\_div32&\$0535&calculate the div\\
- 48&maths\_mod&\$0421&calculate a/b - returns b unaltered, a = a \% b, c = a//b\\
- 321&maths\_sub32&\$04e6&do a 32 bit subtraction maths\_op\_a - maths\_op\_b\\
- 593&maths\_test\_z32&\$0645&test a 32 bit value for zero\\
- 574&maths\_test\_z64&\$063c&test a 64 bit value for zero\\
-\end{tabular}
-
-\subsubsection{Variables}
-\begin{tabular}{rllp{7cm}}
- \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
- 803&maths\_flags&\$0701&flag register holds the flags from the last maths routine\\
- 782&maths\_op\_a&\$06f1&32 bit operator for maths routines\\
- 788&maths\_op\_b&\$06f5&32 bit operator for maths routines\\
- 794&maths\_op\_c&\$06f9&64 bit result register for maths\_routines\\
-\end{tabular}
-
-\subsection{sd.z8a}
 \subsubsection{Functions}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
@@ -617,51 +683,56 @@
 \section{Functions by Memory Location}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Function}&\textbf{Address}&\textbf{Description}\\
- bios.z8a:183&bios\_error\_exit&\$0088&called on a fatal error after GPU is ready\\
- bios.z8a:194&bios\_save\_var&\$008c&saves a byte of data to non-volatile bios memory\\
- bios.z8a:213&bios\_load\_var&\$009b&loads a byte from non-volatile BIOS memory\\
- bios.z8a:266&bios\_reset&\$00d4&ask the PIC to do a full system reset\\
- gpu.z8a:33&gpu\_init&\$00f6&Reset the GPU to its power-on state\\
- gpu.z8a:47&gpu\_cls&\$00fb&Clear the active screen\\
- gpu.z8a:63&gpu\_set\_colour&\$0100&Select the colour on the active screen\\
- gpu.z8a:79&gpu\_get\_colour&\$0109&Return the active colour from the GPU\\
- gpu.z8a:161&gpu\_str&\$014b&Print a null terminated string\\
- gpu.z8a:182&gpu\_dec&\$0155&Print a decimal value to the screen, maximum of 32bit input\\
- gpu.z8a:212&gpu\_hex&\$016a&Print a hex representation of a number\\
- uart.z8a:53&uart\_write&\$01c1&Writes the contents of \textbf{A} to the UART\\
- maths.z8a:27&maths\_bcd\_to\_bin&\$040f&convert a single byte from BCD to binary (in a)\\
- maths.z8a:48&maths\_mod&\$0421&calculate a/b - returns b unaltered, a = a \% b, c = a//b\\
- maths.z8a:122&maths\_asr32&\$0453&32 bit arithmetic shift right\\
- maths.z8a:148&maths\_asrn32&\$045b&32 bit arithmetic shift right by n bits\\
- maths.z8a:192&maths\_asl32&\$0475&shift maths\_op\_a one bit left and put a zero in the lsb\\
- maths.z8a:215&maths\_asln32&\$047d&shift maths\_op\_a n bits left and zero the new lsbs\\
- maths.z8a:255&maths\_add32&\$0493&Add maths\_op\_b to maths\_op\_a and store in maths\_op\_a\\
- maths.z8a:321&maths\_sub32&\$04e6&do a 32 bit subtraction maths\_op\_a - maths\_op\_b\\
- maths.z8a:388&maths\_div32&\$0535&calculate the div\\
- maths.z8a:574&maths\_test\_z64&\$063c&test a 64 bit value for zero\\
- maths.z8a:593&maths\_test\_z32&\$0645&test a 32 bit value for zero\\
- maths.z8a:627&maths\_bin\_to\_bcd&\$065d&convert a 32\textit{24}16\\
- fat.z8a:30&fat\_init&\$1fc3&read a FAT boot sector and setup the FAT driver\\
- fat.z8a:307&fat\_select\_cluster&\$215a&(re)initialise the FAT firmware pointing at a specific cluster.\\
- fat.z8a:477&fat\_next\_block&\$2249&fetch the next block in the current file/folder.\\
- fat.z8a:532&fat\_next\_cluster&\$228c&fetch the next cluster of the active file\\
+ bios.z8a:248&bios\_error\_exit&\$8019&called on a fatal error after GPU is ready\\
+ bios.z8a:264&bios\_set\_interrupts&\$801e&set PIE and the local copy of interrupt flags\\
+ bios.z8a:279&bios\_enable\_int&\$8026&enable the interrupt indicated by register A\\
+ bios.z8a:296&bios\_disable\_int&\$8036&disable interrupts flagged in byte in A\\
+ bios.z8a:315&bios\_save\_var&\$8045&saves a byte of data to non-volatile bios memory\\
+ bios.z8a:334&bios\_load\_var&\$8054&loads a byte from non-volatile BIOS memory\\
+ bios.z8a:387&bios\_reset&\$808d&ask the PIC to do a full system reset\\
+ gpu.z8a:33&gpu\_init&\$8094&Reset the GPU to its power-on state\\
+ gpu.z8a:47&gpu\_cls&\$8099&Clear the active screen\\
+ gpu.z8a:63&gpu\_set\_colour&\$809e&Select the colour on the active screen\\
+ gpu.z8a:79&gpu\_get\_colour&\$80a7&Return the active colour from the GPU\\
+ gpu.z8a:161&gpu\_str&\$80e9&Print a null terminated string\\
+ gpu.z8a:182&gpu\_dec&\$80f3&Print a decimal value to the screen, maximum of 32bit input\\
+ gpu.z8a:212&gpu\_hex&\$8108&Print a hex representation of a number\\
+ uart.z8a:53&uart\_write&\$8169&Writes the contents of \textbf{A} to the UART\\
+ maths.z8a:27&maths\_bcd\_to\_bin&\$83b7&convert a single byte from BCD to binary (in a)\\
+ maths.z8a:48&maths\_mod&\$83c9&calculate a/b - returns b unaltered, a = a \% b, c = a//b\\
+ maths.z8a:122&maths\_asr32&\$83fb&32 bit arithmetic shift right\\
+ maths.z8a:148&maths\_asrn32&\$8403&32 bit arithmetic shift right by n bits\\
+ maths.z8a:192&maths\_asl32&\$841d&shift maths\_op\_a one bit left and put a zero in the lsb\\
+ maths.z8a:215&maths\_asln32&\$8425&shift maths\_op\_a n bits left and zero the new lsbs\\
+ maths.z8a:255&maths\_add32&\$843b&Add maths\_op\_b to maths\_op\_a and store in maths\_op\_a\\
+ maths.z8a:321&maths\_sub32&\$848e&do a 32 bit subtraction maths\_op\_a - maths\_op\_b\\
+ maths.z8a:389&maths\_div32&\$84de&calculate the div\\
+ maths.z8a:575&maths\_test\_z64&\$85e4&test a 64 bit value for zero\\
+ maths.z8a:594&maths\_test\_z32&\$85ed&test a 32 bit value for zero\\
+ maths.z8a:628&maths\_bin\_to\_bcd&\$8605&convert a 32\textit{24}16\\
+ fat.z8a:30&fat\_init&\$8974&read a FAT boot sector and setup the FAT driver\\
+ fat.z8a:308&fat\_select\_cluster&\$8b0a&(re)initialise the FAT firmware pointing at a specific cluster.\\
+ fat.z8a:476&fat\_next\_block&\$8bf3&fetch the next block in the current file/folder.\\
+ fat.z8a:531&fat\_next\_cluster&\$8c36&fetch the next cluster of the active file\\
+ usb.z8a:32&usb\_get\_byte&\$8d1c&read a byte from the Vinculum chip.\\
+ usb.z8a:48&usb\_write\_byte&\$8d25&write a byte to the Vinculum chip\\
 \end{tabular}
 
 \section{Variables by Memory Location}
 \begin{tabular}{rllp{7cm}}
  \textbf{Source}&\textbf{Variable}&\textbf{Address}&\textbf{Description}\\
- gpu.z8a:274&gpu\_hex\_lut&\$019a&16 byte lookup to convert one 4 bit value to an ASCII character\\
- maths.z8a:782&maths\_op\_a&\$06f1&32 bit operator for maths routines\\
- maths.z8a:788&maths\_op\_b&\$06f5&32 bit operator for maths routines\\
- maths.z8a:794&maths\_op\_c&\$06f9&64 bit result register for maths\_routines\\
- maths.z8a:803&maths\_flags&\$0701&flag register holds the flags from the last maths routine\\
- statics.z8a:114&ram\_top&\$1000&A pointer to the last byte in RAM\\
- statics.z8a:132&system\_clock&\$1004&The speed of the Z80 clock\\
- statics.z8a:144&system\_clock\_speeds&\$1005&Lookup table to convert clock setting to Hz\\
- statics.z8a:166&system\_boot\_order&\$1015&The order in which devices are searched for a boot image\\
- statics.z8a:180&system\_filesystem&\$1016&indicates the filesystem type if boot was from SD card\\
- statics.z8a:195&system\_boot\_device&\$1017&Set by the BIOS bootloader to indicate where the boot image in use was found\\
- statics.z8a:210&system\_boot\_file&\$1018&Set by the bootloader to the path to the currently running program file loaded at boot\\
- statics.z8a:225&stack&\$1fff&The bottom of (highest address used by) the stack\\
+ bios.z8a:111&ram\_top&\$8000&A pointer to the last byte in RAM\\
+ bios.z8a:129&system\_clock&\$8004&The speed of the Z80 clock\\
+ bios.z8a:141&system\_clock\_speeds&\$8005&Lookup table to convert clock setting to Hz\\
+ bios.z8a:163&system\_boot\_order&\$8015&The order in which devices are searched for a boot image\\
+ bios.z8a:182&system\_filesystem&\$8016&indicates the filesystem type if boot was from SD card\\
+ bios.z8a:197&system\_boot\_device&\$8017&Set by the BIOS bootloader to indicate where the boot image in use was found\\
+ bios.z8a:225&system\_boot\_file&\$8018&Set by the bootloader to the path to the currently running program file loaded at boot\\
+ gpu.z8a:285&gpu\_hex\_lut&\$8142&16 byte lookup to convert one 4 bit value to an ASCII character\\
+ maths.z8a:783&maths\_op\_a&\$8699&32 bit operator for maths routines\\
+ maths.z8a:789&maths\_op\_b&\$869d&32 bit operator for maths routines\\
+ maths.z8a:795&maths\_op\_c&\$86a1&64 bit result register for maths\_routines\\
+ maths.z8a:804&maths\_flags&\$86a9&flag register holds the flags from the last maths routine\\
+ bios.z8a:237&stack&\$9fff&The bottom of (highest address used by) the stack\\
 \end{tabular}
 

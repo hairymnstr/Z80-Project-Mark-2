@@ -16,7 +16,7 @@ pdfsubject = {System Manual}}
 \fancyhead[L]{Z80 Project Documentation}
 \fancyfoot{}
 \fancyfoot[C]{\thepage}
-\fancyfoot[R]{Nathan Dumont}
+\fancyfoot[R]{\circledS Nathan Dumont}
 \renewcommand{\footrulewidth}{0.4pt}
 
 \usepackage{tabularx}
@@ -391,6 +391,9 @@ set.  This bit is cleared again once the GPU has finished switching modes.
 Commands and data sent in this time may not be handled correctly so it is
 recommended not to send any.
 
+\chapter{Keyboard Controller}
+\input{keyboard.tex}
+
 \chapter{PIC Pin Allocations}
 Figure \ref{fig:picpinout} shows the functions of all the pins on the PIC.  The crystal, power, programming and reset wiring have been left out for clarity.  The high address latch is fed from the low address bus, with a straight through mapping (i.e. A0 latches into A8, A2 latches into A9 ... A7 latches into A15).
 
@@ -500,8 +503,6 @@ There are no external functions in this file.
 There are no internal functions in this file.
 
 \subsubsection{Global Variables}
-
-\chapter{Variables and Constants}
 
 
 \chapter{Debug Comms Protocol}
@@ -712,4 +713,7 @@ software (e.g. maths).  The filename and linenumber of the jumplabel are stated
 at the start of each function description.
 
 \input{z80_functions}
+
+\input{file_formats}
+
 \end{document}

@@ -121,14 +121,14 @@ def formatcharsremove(s):
   return out
 
 # run z80asm to generatee the label file
-cmd = "cd /home/nathan/active/proppc/minimal/code/z80; "
+cmd = "cd " + os.path.join(sys.path[0], "../z80") + "; "
 cmd += "z80asm -Lbios.lbl bios.z8a -o bios.bin"
 pr = subprocess.Popen(cmd, shell=True)
 pr.wait()
 
 # now make a nice associative array of the files
 labels = {}
-fr = file("/home/nathan/active/proppc/minimal/code/z80/bios.lbl", "r")
+fr = file(os.path.join(sys.path[0], "../z80/bios.lbl"), "r")
 d = fr.read()
 fr.close()
 d = d.splitlines()

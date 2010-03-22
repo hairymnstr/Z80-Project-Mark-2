@@ -49,149 +49,176 @@
 \contentsline {subsubsection}{External Functions}{28}{section*.57}
 \contentsline {subsubsection}{Internal Functions}{28}{section*.58}
 \contentsline {subsubsection}{Global Variables}{28}{section*.59}
-\contentsline {chapter}{\numberline {7}Variables and Constants}{29}{chapter.60}
-\contentsline {chapter}{\numberline {8}Debug Comms Protocol}{31}{chapter.61}
-\contentsline {section}{\numberline {8.1}Buffer Locations}{31}{section.62}
-\contentsline {section}{\numberline {8.2}Packet Specifications}{31}{section.63}
-\contentsline {subsection}{\numberline {8.2.1}Host to Device Packet Definition}{31}{subsection.64}
-\contentsline {subsection}{\numberline {8.2.2}Device to Host Packet Definition}{32}{subsection.65}
-\contentsline {section}{\numberline {8.3}Response Codes}{32}{section.66}
-\contentsline {section}{\numberline {8.4}Command Codes}{32}{section.67}
-\contentsline {subsection}{\numberline {8.4.1}Summary}{33}{subsection.68}
-\contentsline {subsection}{\numberline {8.4.2}Mem Block Write}{34}{subsection.69}
-\contentsline {subsection}{\numberline {8.4.3}BIOS Update}{34}{subsection.70}
-\contentsline {subsection}{\numberline {8.4.4}Do Command}{34}{subsection.71}
-\contentsline {section}{\numberline {8.5}Error Messages}{34}{section.72}
-\contentsline {section}{\numberline {8.6}seriallib.py}{35}{section.73}
-\contentsline {subsection}{\numberline {8.6.1}Packet}{35}{subsection.74}
-\contentsline {subsubsection}{Assigning Packet Values}{36}{section*.75}
-\contentsline {chapter}{\numberline {9}Z80 BIOS Routines}{37}{chapter.76}
-\contentsline {section}{\numberline {9.1}Alphabetical List of Functions}{38}{section.77}
-\contentsline {subsection}{\numberline {9.1.1}bios\_error\_exit}{38}{subsection.78}
-\contentsline {subsubsection}{Description:}{38}{section*.79}
-\contentsline {subsection}{\numberline {9.1.2}bios\_load\_var}{39}{subsection.80}
-\contentsline {subsubsection}{Description:}{39}{section*.81}
-\contentsline {subsection}{\numberline {9.1.3}bios\_reset}{39}{subsection.82}
-\contentsline {subsubsection}{Description:}{39}{section*.83}
-\contentsline {subsection}{\numberline {9.1.4}bios\_save\_var}{39}{subsection.84}
-\contentsline {subsubsection}{Description:}{39}{section*.85}
-\contentsline {subsection}{\numberline {9.1.5}fat\_init}{39}{subsection.86}
-\contentsline {subsubsection}{Description:}{39}{section*.87}
-\contentsline {subsection}{\numberline {9.1.6}fat\_next\_block}{39}{subsection.88}
+\contentsline {chapter}{\numberline {7}Debug Comms Protocol}{29}{chapter.60}
+\contentsline {section}{\numberline {7.1}Buffer Locations}{29}{section.61}
+\contentsline {section}{\numberline {7.2}Packet Specifications}{29}{section.62}
+\contentsline {subsection}{\numberline {7.2.1}Host to Device Packet Definition}{29}{subsection.63}
+\contentsline {subsection}{\numberline {7.2.2}Device to Host Packet Definition}{30}{subsection.64}
+\contentsline {section}{\numberline {7.3}Response Codes}{30}{section.65}
+\contentsline {section}{\numberline {7.4}Command Codes}{30}{section.66}
+\contentsline {subsection}{\numberline {7.4.1}Summary}{31}{subsection.67}
+\contentsline {subsection}{\numberline {7.4.2}Mem Block Write}{32}{subsection.68}
+\contentsline {subsection}{\numberline {7.4.3}BIOS Update}{32}{subsection.69}
+\contentsline {subsection}{\numberline {7.4.4}Do Command}{32}{subsection.70}
+\contentsline {section}{\numberline {7.5}Error Messages}{32}{section.71}
+\contentsline {section}{\numberline {7.6}seriallib.py}{33}{section.72}
+\contentsline {subsection}{\numberline {7.6.1}Packet}{33}{subsection.73}
+\contentsline {subsubsection}{Assigning Packet Values}{34}{section*.74}
+\contentsline {chapter}{\numberline {8}PIC BIOS Commands}{35}{chapter.75}
+\contentsline {section}{\numberline {8.1}Protocol}{35}{section.76}
+\contentsline {section}{\numberline {8.2}Commands}{35}{section.77}
+\contentsline {subsection}{\numberline {8.2.1}BIOS\_RESET\_CMD \$3F}{35}{subsection.78}
+\contentsline {subsection}{\numberline {8.2.2}BIOS\_READ\_VAR\_CMD \$0A}{35}{subsection.79}
+\contentsline {subsection}{\numberline {8.2.3}BIOS\_WRITE\_VAR\_CMD \$0B}{36}{subsection.80}
+\contentsline {subsection}{\numberline {8.2.4}SD\_CARD\_CID \$20}{36}{subsection.81}
+\contentsline {subsection}{\numberline {8.2.5}SD\_CARD\_CSD \$21}{36}{subsection.82}
+\contentsline {subsection}{\numberline {8.2.6}SD\_CARD\_READ\_BLOCK \$22}{36}{subsection.83}
+\contentsline {chapter}{\numberline {9}Z80 BIOS Routines}{37}{chapter.84}
+\contentsline {section}{\numberline {9.1}Alphabetical List of Functions}{38}{section.85}
+\contentsline {subsection}{\numberline {9.1.1}bios\_disable\_int}{38}{subsection.86}
+\contentsline {subsubsection}{No Documentation}{39}{section*.87}
+\contentsline {subsection}{\numberline {9.1.2}bios\_enable\_int}{39}{subsection.88}
 \contentsline {subsubsection}{Description:}{39}{section*.89}
-\contentsline {subsection}{\numberline {9.1.7}fat\_next\_cluster}{39}{subsection.90}
-\contentsline {subsubsection}{Description:}{40}{section*.91}
-\contentsline {subsection}{\numberline {9.1.8}fat\_select\_cluster}{40}{subsection.92}
-\contentsline {subsubsection}{Description:}{40}{section*.93}
-\contentsline {subsection}{\numberline {9.1.9}gpu\_cls}{40}{subsection.94}
-\contentsline {subsubsection}{Description:}{40}{section*.95}
-\contentsline {subsection}{\numberline {9.1.10}gpu\_dec}{40}{subsection.96}
-\contentsline {subsubsection}{Description:}{40}{section*.97}
-\contentsline {subsection}{\numberline {9.1.11}gpu\_get\_colour}{40}{subsection.98}
-\contentsline {subsubsection}{Description:}{41}{section*.99}
-\contentsline {subsection}{\numberline {9.1.12}gpu\_hex}{41}{subsection.100}
-\contentsline {subsubsection}{Description:}{41}{section*.101}
-\contentsline {subsection}{\numberline {9.1.13}gpu\_init}{41}{subsection.102}
-\contentsline {subsubsection}{Description:}{41}{section*.103}
-\contentsline {subsection}{\numberline {9.1.14}gpu\_set\_colour}{41}{subsection.104}
-\contentsline {subsubsection}{Description:}{41}{section*.105}
-\contentsline {subsection}{\numberline {9.1.15}gpu\_str}{41}{subsection.106}
-\contentsline {subsubsection}{Description:}{42}{section*.107}
-\contentsline {subsection}{\numberline {9.1.16}maths\_add32}{42}{subsection.108}
-\contentsline {subsubsection}{Description:}{42}{section*.109}
-\contentsline {subsection}{\numberline {9.1.17}maths\_asl32}{42}{subsection.110}
-\contentsline {subsubsection}{Description:}{42}{section*.111}
-\contentsline {subsection}{\numberline {9.1.18}maths\_asln32}{42}{subsection.112}
-\contentsline {subsubsection}{Description:}{42}{section*.113}
-\contentsline {subsection}{\numberline {9.1.19}maths\_asr32}{43}{subsection.114}
-\contentsline {subsubsection}{Description:}{43}{section*.115}
-\contentsline {subsection}{\numberline {9.1.20}maths\_asrn32}{43}{subsection.116}
-\contentsline {subsubsection}{Description:}{43}{section*.117}
-\contentsline {subsection}{\numberline {9.1.21}maths\_bcd\_to\_bin}{43}{subsection.118}
-\contentsline {subsubsection}{No Documentation}{43}{section*.119}
-\contentsline {subsection}{\numberline {9.1.22}maths\_bin\_to\_bcd}{43}{subsection.120}
-\contentsline {subsubsection}{Description:}{43}{section*.121}
-\contentsline {subsection}{\numberline {9.1.23}maths\_div32}{43}{subsection.122}
-\contentsline {subsubsection}{Description:}{44}{section*.123}
-\contentsline {subsection}{\numberline {9.1.24}maths\_mod}{44}{subsection.124}
-\contentsline {subsubsection}{No Documentation}{44}{section*.125}
-\contentsline {subsection}{\numberline {9.1.25}maths\_sub32}{44}{subsection.126}
-\contentsline {subsubsection}{No Documentation}{44}{section*.127}
-\contentsline {subsection}{\numberline {9.1.26}maths\_test\_z32}{44}{subsection.128}
-\contentsline {subsubsection}{Description:}{44}{section*.129}
-\contentsline {subsection}{\numberline {9.1.27}maths\_test\_z64}{44}{subsection.130}
+\contentsline {subsection}{\numberline {9.1.3}bios\_error\_exit}{39}{subsection.90}
+\contentsline {subsubsection}{Description:}{39}{section*.91}
+\contentsline {subsection}{\numberline {9.1.4}bios\_load\_var}{39}{subsection.92}
+\contentsline {subsubsection}{Description:}{39}{section*.93}
+\contentsline {subsection}{\numberline {9.1.5}bios\_reset}{39}{subsection.94}
+\contentsline {subsubsection}{Description:}{39}{section*.95}
+\contentsline {subsection}{\numberline {9.1.6}bios\_save\_var}{39}{subsection.96}
+\contentsline {subsubsection}{Description:}{39}{section*.97}
+\contentsline {subsection}{\numberline {9.1.7}bios\_set\_interrupts}{40}{subsection.98}
+\contentsline {subsubsection}{Description:}{40}{section*.99}
+\contentsline {subsection}{\numberline {9.1.8}fat\_init}{40}{subsection.100}
+\contentsline {subsubsection}{Description:}{40}{section*.101}
+\contentsline {subsection}{\numberline {9.1.9}fat\_next\_block}{40}{subsection.102}
+\contentsline {subsubsection}{Description:}{40}{section*.103}
+\contentsline {subsection}{\numberline {9.1.10}fat\_next\_cluster}{40}{subsection.104}
+\contentsline {subsubsection}{Description:}{40}{section*.105}
+\contentsline {subsection}{\numberline {9.1.11}fat\_select\_cluster}{40}{subsection.106}
+\contentsline {subsubsection}{Description:}{41}{section*.107}
+\contentsline {subsection}{\numberline {9.1.12}gpu\_cls}{41}{subsection.108}
+\contentsline {subsubsection}{Description:}{41}{section*.109}
+\contentsline {subsection}{\numberline {9.1.13}gpu\_dec}{41}{subsection.110}
+\contentsline {subsubsection}{Description:}{41}{section*.111}
+\contentsline {subsection}{\numberline {9.1.14}gpu\_get\_colour}{41}{subsection.112}
+\contentsline {subsubsection}{Description:}{41}{section*.113}
+\contentsline {subsection}{\numberline {9.1.15}gpu\_hex}{41}{subsection.114}
+\contentsline {subsubsection}{Description:}{42}{section*.115}
+\contentsline {subsection}{\numberline {9.1.16}gpu\_init}{42}{subsection.116}
+\contentsline {subsubsection}{Description:}{42}{section*.117}
+\contentsline {subsection}{\numberline {9.1.17}gpu\_set\_colour}{42}{subsection.118}
+\contentsline {subsubsection}{Description:}{42}{section*.119}
+\contentsline {subsection}{\numberline {9.1.18}gpu\_str}{42}{subsection.120}
+\contentsline {subsubsection}{Description:}{42}{section*.121}
+\contentsline {subsection}{\numberline {9.1.19}maths\_add32}{42}{subsection.122}
+\contentsline {subsubsection}{Description:}{43}{section*.123}
+\contentsline {subsection}{\numberline {9.1.20}maths\_asl32}{43}{subsection.124}
+\contentsline {subsubsection}{Description:}{43}{section*.125}
+\contentsline {subsection}{\numberline {9.1.21}maths\_asln32}{43}{subsection.126}
+\contentsline {subsubsection}{Description:}{43}{section*.127}
+\contentsline {subsection}{\numberline {9.1.22}maths\_asr32}{43}{subsection.128}
+\contentsline {subsubsection}{Description:}{43}{section*.129}
+\contentsline {subsection}{\numberline {9.1.23}maths\_asrn32}{44}{subsection.130}
 \contentsline {subsubsection}{Description:}{44}{section*.131}
-\contentsline {subsection}{\numberline {9.1.28}uart\_write}{44}{subsection.132}
-\contentsline {subsubsection}{Description:}{45}{section*.133}
-\contentsline {section}{\numberline {9.2}Alphabetical List of Variables}{45}{section.134}
-\contentsline {subsection}{\numberline {9.2.1}gpu\_hex\_lut}{45}{subsection.135}
-\contentsline {subsubsection}{Description:}{45}{section*.136}
-\contentsline {subsection}{\numberline {9.2.2}maths\_flags}{45}{subsection.137}
-\contentsline {subsubsection}{Description:}{45}{section*.138}
-\contentsline {subsection}{\numberline {9.2.3}maths\_op\_a}{46}{subsection.139}
-\contentsline {subsubsection}{No Documentation}{46}{section*.140}
-\contentsline {subsection}{\numberline {9.2.4}maths\_op\_b}{46}{subsection.141}
-\contentsline {subsubsection}{No Documentation}{46}{section*.142}
-\contentsline {subsection}{\numberline {9.2.5}maths\_op\_c}{46}{subsection.143}
-\contentsline {subsubsection}{No Documentation}{46}{section*.144}
-\contentsline {subsection}{\numberline {9.2.6}ram\_top}{46}{subsection.145}
-\contentsline {subsubsection}{Description:}{46}{section*.146}
-\contentsline {subsection}{\numberline {9.2.7}stack}{46}{subsection.147}
-\contentsline {subsubsection}{Description:}{46}{section*.148}
-\contentsline {subsection}{\numberline {9.2.8}system\_boot\_device}{46}{subsection.149}
-\contentsline {subsubsection}{Description:}{47}{section*.150}
-\contentsline {subsection}{\numberline {9.2.9}system\_boot\_file}{47}{subsection.151}
-\contentsline {subsubsection}{Description:}{47}{section*.152}
-\contentsline {subsection}{\numberline {9.2.10}system\_boot\_order}{47}{subsection.153}
-\contentsline {subsubsection}{Description:}{47}{section*.154}
-\contentsline {subsection}{\numberline {9.2.11}system\_clock}{47}{subsection.155}
+\contentsline {subsection}{\numberline {9.1.24}maths\_bcd\_to\_bin}{44}{subsection.132}
+\contentsline {subsubsection}{No Documentation}{44}{section*.133}
+\contentsline {subsection}{\numberline {9.1.25}maths\_bin\_to\_bcd}{44}{subsection.134}
+\contentsline {subsubsection}{Description:}{44}{section*.135}
+\contentsline {subsection}{\numberline {9.1.26}maths\_div32}{44}{subsection.136}
+\contentsline {subsubsection}{Description:}{44}{section*.137}
+\contentsline {subsection}{\numberline {9.1.27}maths\_mod}{44}{subsection.138}
+\contentsline {subsubsection}{No Documentation}{45}{section*.139}
+\contentsline {subsection}{\numberline {9.1.28}maths\_sub32}{45}{subsection.140}
+\contentsline {subsubsection}{No Documentation}{45}{section*.141}
+\contentsline {subsection}{\numberline {9.1.29}maths\_test\_z32}{45}{subsection.142}
+\contentsline {subsubsection}{Description:}{45}{section*.143}
+\contentsline {subsection}{\numberline {9.1.30}maths\_test\_z64}{45}{subsection.144}
+\contentsline {subsubsection}{Description:}{45}{section*.145}
+\contentsline {subsection}{\numberline {9.1.31}uart\_write}{45}{subsection.146}
+\contentsline {subsubsection}{Description:}{45}{section*.147}
+\contentsline {subsection}{\numberline {9.1.32}usb\_get\_byte}{45}{subsection.148}
+\contentsline {subsubsection}{Description:}{46}{section*.149}
+\contentsline {subsection}{\numberline {9.1.33}usb\_write\_byte}{46}{subsection.150}
+\contentsline {subsubsection}{Description:}{46}{section*.151}
+\contentsline {section}{\numberline {9.2}Alphabetical List of Variables}{46}{section.152}
+\contentsline {subsection}{\numberline {9.2.1}gpu\_hex\_lut}{46}{subsection.153}
+\contentsline {subsubsection}{Description:}{46}{section*.154}
+\contentsline {subsection}{\numberline {9.2.2}maths\_flags}{47}{subsection.155}
 \contentsline {subsubsection}{Description:}{47}{section*.156}
-\contentsline {subsection}{\numberline {9.2.12}system\_clock\_speeds}{48}{subsection.157}
-\contentsline {subsubsection}{Description:}{48}{section*.158}
-\contentsline {subsection}{\numberline {9.2.13}system\_filesystem}{48}{subsection.159}
-\contentsline {subsubsection}{Description:}{48}{section*.160}
-\contentsline {section}{\numberline {9.3}Functions and Variables by Source File}{48}{section.161}
-\contentsline {subsection}{\numberline {9.3.1}fat.z8a}{48}{subsection.162}
-\contentsline {subsubsection}{Functions}{48}{section*.163}
-\contentsline {subsubsection}{Variables}{48}{section*.164}
-\contentsline {subsection}{\numberline {9.3.2}bios.z8a}{49}{subsection.165}
-\contentsline {subsubsection}{Functions}{49}{section*.166}
-\contentsline {subsubsection}{Variables}{49}{section*.167}
-\contentsline {subsection}{\numberline {9.3.3}sd\_commands.z8a}{49}{subsection.168}
-\contentsline {subsubsection}{Functions}{49}{section*.169}
-\contentsline {subsubsection}{Variables}{49}{section*.170}
-\contentsline {subsection}{\numberline {9.3.4}boot.z8a}{49}{subsection.171}
-\contentsline {subsubsection}{Functions}{49}{section*.172}
-\contentsline {subsubsection}{Variables}{49}{section*.173}
-\contentsline {subsection}{\numberline {9.3.5}menu.z8a}{49}{subsection.174}
-\contentsline {subsubsection}{Functions}{49}{section*.175}
-\contentsline {subsubsection}{Variables}{49}{section*.176}
-\contentsline {subsection}{\numberline {9.3.6}uart.z8a}{49}{subsection.177}
-\contentsline {subsubsection}{Functions}{49}{section*.178}
-\contentsline {subsubsection}{Variables}{49}{section*.179}
-\contentsline {subsection}{\numberline {9.3.7}gpu\_commands.z8a}{50}{subsection.180}
-\contentsline {subsubsection}{Functions}{50}{section*.181}
-\contentsline {subsubsection}{Variables}{50}{section*.182}
-\contentsline {subsection}{\numberline {9.3.8}gpu.z8a}{50}{subsection.183}
+\contentsline {subsection}{\numberline {9.2.3}maths\_op\_a}{47}{subsection.157}
+\contentsline {subsubsection}{No Documentation}{47}{section*.158}
+\contentsline {subsection}{\numberline {9.2.4}maths\_op\_b}{47}{subsection.159}
+\contentsline {subsubsection}{No Documentation}{47}{section*.160}
+\contentsline {subsection}{\numberline {9.2.5}maths\_op\_c}{47}{subsection.161}
+\contentsline {subsubsection}{No Documentation}{47}{section*.162}
+\contentsline {subsection}{\numberline {9.2.6}ram\_top}{47}{subsection.163}
+\contentsline {subsubsection}{Description:}{47}{section*.164}
+\contentsline {subsection}{\numberline {9.2.7}stack}{47}{subsection.165}
+\contentsline {subsubsection}{Description:}{47}{section*.166}
+\contentsline {subsection}{\numberline {9.2.8}system\_boot\_device}{48}{subsection.167}
+\contentsline {subsubsection}{Description:}{48}{section*.168}
+\contentsline {subsection}{\numberline {9.2.9}system\_boot\_file}{48}{subsection.169}
+\contentsline {subsubsection}{Description:}{48}{section*.170}
+\contentsline {subsection}{\numberline {9.2.10}system\_boot\_order}{48}{subsection.171}
+\contentsline {subsubsection}{Description:}{48}{section*.172}
+\contentsline {subsection}{\numberline {9.2.11}system\_clock}{48}{subsection.173}
+\contentsline {subsubsection}{Description:}{49}{section*.174}
+\contentsline {subsection}{\numberline {9.2.12}system\_clock\_speeds}{49}{subsection.175}
+\contentsline {subsubsection}{Description:}{49}{section*.176}
+\contentsline {subsection}{\numberline {9.2.13}system\_filesystem}{49}{subsection.177}
+\contentsline {subsubsection}{Description:}{49}{section*.178}
+\contentsline {section}{\numberline {9.3}Functions and Variables by Source File}{49}{section.179}
+\contentsline {subsection}{\numberline {9.3.1}kb\_commands.z8a}{49}{subsection.180}
+\contentsline {subsubsection}{Functions}{49}{section*.181}
+\contentsline {subsubsection}{Variables}{49}{section*.182}
+\contentsline {subsection}{\numberline {9.3.2}usb.z8a}{50}{subsection.183}
 \contentsline {subsubsection}{Functions}{50}{section*.184}
 \contentsline {subsubsection}{Variables}{50}{section*.185}
-\contentsline {subsection}{\numberline {9.3.9}statics.z8a}{50}{subsection.186}
+\contentsline {subsection}{\numberline {9.3.3}maths.z8a}{50}{subsection.186}
 \contentsline {subsubsection}{Functions}{50}{section*.187}
 \contentsline {subsubsection}{Variables}{50}{section*.188}
-\contentsline {subsection}{\numberline {9.3.10}kb\_commands.z8a}{51}{subsection.189}
-\contentsline {subsubsection}{Functions}{51}{section*.190}
-\contentsline {subsubsection}{Variables}{51}{section*.191}
-\contentsline {subsection}{\numberline {9.3.11}rtc.z8a}{51}{subsection.192}
+\contentsline {subsection}{\numberline {9.3.4}sd\_commands.z8a}{50}{subsection.189}
+\contentsline {subsubsection}{Functions}{50}{section*.190}
+\contentsline {subsubsection}{Variables}{50}{section*.191}
+\contentsline {subsection}{\numberline {9.3.5}statics.z8a}{51}{subsection.192}
 \contentsline {subsubsection}{Functions}{51}{section*.193}
 \contentsline {subsubsection}{Variables}{51}{section*.194}
-\contentsline {subsection}{\numberline {9.3.12}scancodes.z8a}{51}{subsection.195}
+\contentsline {subsection}{\numberline {9.3.6}gpu.z8a}{51}{subsection.195}
 \contentsline {subsubsection}{Functions}{51}{section*.196}
 \contentsline {subsubsection}{Variables}{51}{section*.197}
-\contentsline {subsection}{\numberline {9.3.13}maths.z8a}{51}{subsection.198}
+\contentsline {subsection}{\numberline {9.3.7}uart.z8a}{51}{subsection.198}
 \contentsline {subsubsection}{Functions}{51}{section*.199}
-\contentsline {subsubsection}{Variables}{52}{section*.200}
-\contentsline {subsection}{\numberline {9.3.14}sd.z8a}{52}{subsection.201}
-\contentsline {subsubsection}{Functions}{52}{section*.202}
-\contentsline {subsubsection}{Variables}{52}{section*.203}
-\contentsline {section}{\numberline {9.4}Functions by Memory Location}{53}{section.204}
-\contentsline {section}{\numberline {9.5}Variables by Memory Location}{54}{section.205}
+\contentsline {subsubsection}{Variables}{51}{section*.200}
+\contentsline {subsection}{\numberline {9.3.8}fat.z8a}{51}{subsection.201}
+\contentsline {subsubsection}{Functions}{51}{section*.202}
+\contentsline {subsubsection}{Variables}{51}{section*.203}
+\contentsline {subsection}{\numberline {9.3.9}sd.z8a}{52}{subsection.204}
+\contentsline {subsubsection}{Functions}{52}{section*.205}
+\contentsline {subsubsection}{Variables}{52}{section*.206}
+\contentsline {subsection}{\numberline {9.3.10}rtc.z8a}{52}{subsection.207}
+\contentsline {subsubsection}{Functions}{52}{section*.208}
+\contentsline {subsubsection}{Variables}{52}{section*.209}
+\contentsline {subsection}{\numberline {9.3.11}menu.z8a}{52}{subsection.210}
+\contentsline {subsubsection}{Functions}{52}{section*.211}
+\contentsline {subsubsection}{Variables}{52}{section*.212}
+\contentsline {subsection}{\numberline {9.3.12}gpu\_commands.z8a}{52}{subsection.213}
+\contentsline {subsubsection}{Functions}{52}{section*.214}
+\contentsline {subsubsection}{Variables}{52}{section*.215}
+\contentsline {subsection}{\numberline {9.3.13}boot.z8a}{52}{subsection.216}
+\contentsline {subsubsection}{Functions}{52}{section*.217}
+\contentsline {subsubsection}{Variables}{52}{section*.218}
+\contentsline {subsection}{\numberline {9.3.14}bios.z8a}{53}{subsection.219}
+\contentsline {subsubsection}{Functions}{53}{section*.220}
+\contentsline {subsubsection}{Variables}{53}{section*.221}
+\contentsline {subsection}{\numberline {9.3.15}scancodes.z8a}{53}{subsection.222}
+\contentsline {subsubsection}{Functions}{53}{section*.223}
+\contentsline {subsubsection}{Variables}{53}{section*.224}
+\contentsline {section}{\numberline {9.4}Functions by Memory Location}{54}{section.225}
+\contentsline {section}{\numberline {9.5}Variables by Memory Location}{55}{section.226}
+\contentsline {chapter}{\numberline {10}File Formats}{57}{chapter.227}
+\contentsline {section}{\numberline {10.1}Assembly files *.z8a}{57}{section.228}
+\contentsline {section}{\numberline {10.2}Bootable files *.z8b}{57}{section.229}
+\contentsline {section}{\numberline {10.3}Program files *.z8p}{57}{section.230}
+\contentsline {section}{\numberline {10.4}Library files *.z8l}{58}{section.231}
+\contentsline {section}{\numberline {10.5}Executable Files}{58}{section.232}

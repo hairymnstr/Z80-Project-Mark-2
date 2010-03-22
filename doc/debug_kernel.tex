@@ -16,7 +16,7 @@ pdfsubject = {System Manual}}
 \fancyhead[L]{Z80 Project Documentation}
 \fancyfoot{}
 \fancyfoot[C]{\thepage}
-\fancyfoot[R]{Nathan Dumont}
+\fancyfoot[R]{\textcopyright\space \number\year\space Nathan Dumont}
 \renewcommand{\footrulewidth}{0.4pt}
 
 \usepackage{tabularx}
@@ -504,8 +504,6 @@ There are no internal functions in this file.
 
 \subsubsection{Global Variables}
 
-\chapter{Variables and Constants}
-
 
 \chapter{Debug Comms Protocol}
 \label{chap:comms}
@@ -703,6 +701,8 @@ The other method of generating a \texttt{Packet} is using the \texttt{set\_strin
     print "  Code %d: %s" % pkt.get_error()
 \end{verbatim}
 
+\input{pic_sd_doc}
+
 \chapter{Z80 BIOS Routines}
 The following routines are built into the Z80 bios.  If they are documented here
 then they should be safe to call from external code.  Where this is not so, the
@@ -715,4 +715,7 @@ software (e.g. maths).  The filename and linenumber of the jumplabel are stated
 at the start of each function description.
 
 \input{z80_functions}
+
+\input{file_formats}
+
 \end{document}

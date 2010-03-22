@@ -1,0 +1,114 @@
+\contentsline {section}{\numberline {0.1}License}{5}{section.2}
+\contentsline {section}{\numberline {0.2}Revisions}{5}{section.3}
+\contentsline {chapter}{\numberline {1}Z80 I/O Ports}{7}{chapter.4}
+\contentsline {section}{\numberline {1.1}RCSTA - 0x01R}{7}{section.6}
+\contentsline {section}{\numberline {1.2}PIF - 0x06R}{7}{section.7}
+\contentsline {section}{\numberline {1.3}PIE - 0x06W}{8}{section.8}
+\contentsline {section}{\numberline {1.4}STATUS - 0x08R}{9}{section.9}
+\contentsline {chapter}{\numberline {2}Hardware Layout}{11}{chapter.10}
+\contentsline {section}{\numberline {2.1}UART}{11}{section.11}
+\contentsline {subsection}{\numberline {2.1.1}Jumpers}{11}{subsection.12}
+\contentsline {subsubsection}{JP\_BR: Baud Rate}{11}{section*.14}
+\contentsline {subsubsection}{JP\_ST: UART settings}{12}{section*.16}
+\contentsline {chapter}{\numberline {3}GPU Commands}{15}{chapter.18}
+\contentsline {section}{\numberline {3.1}GPU Ports}{15}{section.19}
+\contentsline {subsection}{\numberline {3.1.1}GPU\_DATA}{15}{subsection.20}
+\contentsline {subsection}{\numberline {3.1.2}GPU\_COMMAND}{15}{subsection.21}
+\contentsline {section}{\numberline {3.2}GPU Modes}{15}{section.23}
+\contentsline {chapter}{\numberline {4}PIC Pin Allocations}{19}{chapter.24}
+\contentsline {chapter}{\numberline {5}PIC Source Structure}{21}{chapter.26}
+\contentsline {section}{\numberline {5.1}Files}{21}{section.27}
+\contentsline {subsection}{\numberline {5.1.1}Main (main.asm)}{21}{subsection.28}
+\contentsline {subsubsection}{External Functions}{21}{section*.29}
+\contentsline {subsubsection}{Internal Functions}{21}{section*.30}
+\contentsline {subsubsection}{Global Variables}{21}{section*.31}
+\contentsline {subsection}{\numberline {5.1.2}Serial (serial.asm)}{21}{subsection.32}
+\contentsline {subsubsection}{External Functions}{22}{section*.33}
+\contentsline {subsubsection}{Internal Functions}{22}{section*.34}
+\contentsline {subsubsection}{Global Variables}{22}{section*.35}
+\contentsline {subsection}{\numberline {5.1.3}Z80 Bus (host\_bus.asm)}{22}{subsection.36}
+\contentsline {subsubsection}{External Functions}{23}{section*.37}
+\contentsline {subsubsection}{Internal Functions}{23}{section*.38}
+\contentsline {subsubsection}{Global Variables}{23}{section*.39}
+\contentsline {subsection}{\numberline {5.1.4}SD Card Functions (sd\_card.asm)}{23}{subsection.40}
+\contentsline {subsubsection}{External Functions}{24}{section*.41}
+\contentsline {subsubsection}{Internal Functions}{24}{section*.42}
+\contentsline {subsubsection}{Global Variables}{24}{section*.43}
+\contentsline {subsection}{\numberline {5.1.5}Z80 Boot (boot.asm)}{24}{subsection.44}
+\contentsline {subsubsection}{External Functions}{24}{section*.45}
+\contentsline {subsubsection}{Internal Functions}{24}{section*.46}
+\contentsline {subsubsection}{Global Variables}{24}{section*.47}
+\contentsline {subsection}{\numberline {5.1.6}Boot ROM (rom.asm)}{24}{subsection.48}
+\contentsline {subsubsection}{External Functions}{24}{section*.49}
+\contentsline {subsubsection}{Internal Functions}{24}{section*.50}
+\contentsline {subsubsection}{Global Variables}{24}{section*.51}
+\contentsline {chapter}{\numberline {6}Variables and Constants}{25}{chapter.52}
+\contentsline {chapter}{\numberline {7}Debug Comms Protocol}{27}{chapter.53}
+\contentsline {section}{\numberline {7.1}Buffer Locations}{27}{section.54}
+\contentsline {section}{\numberline {7.2}Packet Specifications}{27}{section.55}
+\contentsline {subsection}{\numberline {7.2.1}Host to Device Packet Definition}{27}{subsection.56}
+\contentsline {subsection}{\numberline {7.2.2}Device to Host Packet Definition}{28}{subsection.57}
+\contentsline {section}{\numberline {7.3}Response Codes}{28}{section.58}
+\contentsline {section}{\numberline {7.4}Command Codes}{28}{section.59}
+\contentsline {subsection}{\numberline {7.4.1}Summary}{29}{subsection.60}
+\contentsline {subsection}{\numberline {7.4.2}Mem Block Write}{30}{subsection.61}
+\contentsline {subsection}{\numberline {7.4.3}BIOS Update}{30}{subsection.62}
+\contentsline {subsection}{\numberline {7.4.4}Do Command}{30}{subsection.63}
+\contentsline {section}{\numberline {7.5}Error Messages}{30}{section.64}
+\contentsline {section}{\numberline {7.6}seriallib.py}{31}{section.65}
+\contentsline {subsection}{\numberline {7.6.1}Packet}{31}{subsection.66}
+\contentsline {subsubsection}{Assigning Packet Values}{32}{section*.67}
+\contentsline {chapter}{\numberline {8}Z80 BIOS Routines}{33}{chapter.68}
+\contentsline {section}{\numberline {8.1}Alphabetical List of Functions}{33}{section.69}
+\contentsline {subsection}{\numberline {8.1.1}maths\_asr32}{33}{subsection.70}
+\contentsline {subsubsection}{Description:}{33}{section*.71}
+\contentsline {subsection}{\numberline {8.1.2}maths\_asrn32}{33}{subsection.72}
+\contentsline {subsubsection}{Description:}{34}{section*.73}
+\contentsline {subsection}{\numberline {8.1.3}maths\_bcd\_to\_bin}{34}{subsection.74}
+\contentsline {subsubsection}{No Documentation}{34}{section*.75}
+\contentsline {subsection}{\numberline {8.1.4}maths\_mod}{34}{subsection.76}
+\contentsline {subsubsection}{No Documentation}{35}{section*.77}
+\contentsline {section}{\numberline {8.2}Alphabetical List of Variables}{35}{section.78}
+\contentsline {subsection}{\numberline {8.2.1}* * uart\_write: Writes the contents of register D to the UART, this will * * wait if the transmit buffer is full. * * *}{36}{subsection.79}
+\contentsline {subsubsection}{No Documentation}{36}{section*.80}
+\contentsline {subsection}{\numberline {8.2.2}* * rtc.z8a}{36}{subsection.81}
+\contentsline {subsubsection}{No Documentation}{36}{section*.82}
+\contentsline {subsection}{\numberline {8.2.3}* * uart.z8a}{36}{subsection.83}
+\contentsline {subsubsection}{No Documentation}{36}{section*.84}
+\contentsline {subsection}{\numberline {8.2.4}ram\_top}{36}{subsection.85}
+\contentsline {subsubsection}{Description:}{36}{section*.86}
+\contentsline {subsection}{\numberline {8.2.5}stack}{37}{subsection.87}
+\contentsline {subsubsection}{Description:}{37}{section*.88}
+\contentsline {subsection}{\numberline {8.2.6}system\_clock}{37}{subsection.89}
+\contentsline {subsubsection}{Description:}{37}{section*.90}
+\contentsline {section}{\numberline {8.3}Functions and Variables by Source File}{37}{section.91}
+\contentsline {subsection}{\numberline {8.3.1}donothing.z8a}{37}{subsection.92}
+\contentsline {subsubsection}{Functions}{37}{section*.93}
+\contentsline {subsubsection}{Variables}{37}{section*.94}
+\contentsline {subsection}{\numberline {8.3.2}bios.z8a}{37}{subsection.95}
+\contentsline {subsubsection}{Functions}{37}{section*.96}
+\contentsline {subsubsection}{Variables}{37}{section*.97}
+\contentsline {subsection}{\numberline {8.3.3}boot.z8a}{37}{subsection.98}
+\contentsline {subsubsection}{Functions}{37}{section*.99}
+\contentsline {subsubsection}{Variables}{37}{section*.100}
+\contentsline {subsection}{\numberline {8.3.4}menu.z8a}{38}{subsection.101}
+\contentsline {subsubsection}{Functions}{38}{section*.102}
+\contentsline {subsubsection}{Variables}{38}{section*.103}
+\contentsline {subsection}{\numberline {8.3.5}gpu\_functions.z8a}{38}{subsection.104}
+\contentsline {subsubsection}{Functions}{38}{section*.105}
+\contentsline {subsubsection}{Variables}{38}{section*.106}
+\contentsline {subsection}{\numberline {8.3.6}uart.z8a}{38}{subsection.107}
+\contentsline {subsubsection}{Functions}{38}{section*.108}
+\contentsline {subsubsection}{Variables}{38}{section*.109}
+\contentsline {subsection}{\numberline {8.3.7}gpu\_commands.z8a}{38}{subsection.110}
+\contentsline {subsubsection}{Functions}{38}{section*.111}
+\contentsline {subsubsection}{Variables}{39}{section*.112}
+\contentsline {subsection}{\numberline {8.3.8}statics.z8a}{39}{subsection.113}
+\contentsline {subsubsection}{Functions}{39}{section*.114}
+\contentsline {subsubsection}{Variables}{39}{section*.115}
+\contentsline {subsection}{\numberline {8.3.9}rtc.z8a}{39}{subsection.116}
+\contentsline {subsubsection}{Functions}{39}{section*.117}
+\contentsline {subsubsection}{Variables}{39}{section*.118}
+\contentsline {subsection}{\numberline {8.3.10}maths.z8a}{40}{subsection.119}
+\contentsline {subsubsection}{Functions}{40}{section*.120}
+\contentsline {subsubsection}{Variables}{40}{section*.121}

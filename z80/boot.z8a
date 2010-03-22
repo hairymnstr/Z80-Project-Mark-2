@@ -1,0 +1,783 @@
+;-------------------------------------------------------------------------------
+;|                                                                             |
+;| boot.z8a - boot code for the Mark 2 Z80 project                             |
+;| File Version: 1.0                                                           |
+;| hairymnstr@gmail.com                                                        |
+;|                                                                             |
+;| Copyright (C) 2010  Nathan Dumont                                           |
+;|                                                                             |
+;| This program is free software: you can redistribute it and/or modify        |
+;| it under the terms of the GNU General Public License as published by        |
+;| the Free Software Foundation, either version 3 of the License, or           |
+;| (at your option) any later version.                                         |
+;|                                                                             |
+;| This program is distributed in the hope that it will be useful,             |
+;| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+;| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+;| GNU General Public License for more details.                                |
+;|                                                                             |
+;| You should have received a copy of the GNU General Public License           |
+;| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+;|                                                                             |
+;-------------------------------------------------------------------------------
+
+;-------------------------------------------------------------------------------
+; boot_start - entry point for boot strap bios code
+;-------------------------------------------------------------------------------
+
+boot_start:
+  ; tasks to complete:
+  ;
+  ; 1. Check where the RAM top is (assume contiguous memory)
+  ; 2. Set stack pointer
+  ; 3. Initialise UART (takes time and has no dependencies)
+  ; 4. Wait for the GPU
+  ; 5. By now the keyboard should be ready, check that
+  ; 6. Clear any bytes from USB or SD card buffers
+  ; 7. Enable keyboard interrupt
+  ; 8. Check for DELETE key press, call menu_start or bootstrap_start
+
+; -- Check RAM Size ------------------------------------------------------------
+  ; this is fairly rudimentary.  Writes a byte to each 8K descending from 64K.
+  ; if the byte read back is the same then assume there is RAM there.
+  ld            bc, $2000       ; going to use this as the step size
+  ld            hl, $ffff       ; start at top of RAM
+
+  ; step one - label the highest byte of each 8K with its high address byte
+boot_ram_loop:
+  ld            a, h            ; use high byte as a check value
+  ld            (hl), a         
+  ; read byte wasn't what we wrote, so assume there's no RAM, move down 8K and
+  ; try again
+  scf                           ; set the carry flag
+  ccf                           ; invert it so now is 0
+  sbc           hl, bc          ; subtract with carry, moves hl 8k down
+  ld            a, $1F
+  xor           h               ; check if we're down to the BIOS top
+  jp            Z, boot_check_ram    ; the BIOS is 8K so if we're here all done
+
+  jp            boot_ram_loop
+
+  ; step two, see if the top byte of each 8K is properly filled.  If smaller
+  ; RAM chips are fitted then the high byte won't match until we're in valid
+  ; RAM.
+boot_check_ram:
+  ld            hl, $ffff
+boot_check_ram_loop:
+  ld            a, (hl)                 ; read a byte
+  xor           h                       ; compare with high address byte
+  jp            Z, boot_found_ramtop    ; if the byte equals h then we found ram
+
+  scf                                   ; set carry
+  ccf                                   ; invert carry
+  sbc           hl, bc                  ; subtract 8K
+  ld            a, $1F                  ; see if we're at BIOS yet
+  xor           h
+  jp            Z, boot_found_ramtop    ; if we are then only 8K of RAM
+
+  jp            boot_check_ram_loop     ; otherwise keep looking
+
+boot_found_ramtop:
+  ; hl now contains the top of RAM - save that in register $17FE
+  ld            (ram_top), hl
+  ld            hl, $00
+  ld            (ram_top+2), hl         ; clear the upper two bytes, reserved
+                                        ; for memory paged systems
+  
+; -- Set stack pointer ---------------------------------------------------------
+  ; point the stack pointer at $1FFF for now (2K stack space)
+  ld            hl, stack
+  ld            sp, hl
+                                
+; -- Initialise UART -----------------------------------------------------------
+  call          uart_init       ; in previously included file uart.z8a
+
+; -- Load BIOS settings from PIC -----------------------------------------------
+
+  ld            b, BIOS_CLOCK_ADDRESS
+  call          bios_load_var
+  and           $03             ; can be out of range if PIC has been flashed
+  ld            (system_clock), a
+
+  ld            b, BIOS_BOOT_ADDRESS
+  call          bios_load_var
+  and           $03
+  ld            (system_boot_order), a
+
+; -- Wait on the GPU -----------------------------------------------------------
+  ; once clock is figured, should set a timeout for this
+boot_gpu_wait:
+  in            a, (STATUS)
+  bit           GPU_RDY, a
+  jr            NZ, boot_gpu_wait
+
+  ; GPU is ready, send reset just in case
+  call          gpu_init
+
+  ; GPU is now ready, send some welcome messages to it
+  ld            hl, msg_boot
+  call          gpu_str
+
+  ; need to send the RAM size
+  ld            hl, (ram_top)
+  inc           hl                      ; because of addressing from 0...
+  ld            (gpu_variable), hl
+  ld            hl, gpu_variable
+  ld            a, 2                    ; 16 bit
+  ld            b, 5                    ; print 5 digits
+  call          gpu_dec
+
+  ; now send the second half of the screen
+  ld            hl, msg_boot2
+  ld            (gpu_variable), hl
+  call          gpu_str
+
+boot_setup_interrupts:
+; -- Configure the RTC ---------------------------------------------------------
+
+; need to setup RTC interrupt before doing keyboard timeout otherwise it will
+; never timeout
+  call          rtc_init
+
+  ld            a, KBIE | UARTIE | GPUIE | SDIE | USBIE | IE6 | IE7
+  call          bios_set_interrupts
+
+  im            1
+  ei
+
+; -- Check for keyboard --------------------------------------------------------
+  ; point to the error message in anticipation
+  ld            hl, msg_keyboard_error
+  in            a, (STATUS)
+  bit           KEY_RDY, a
+  jp            NZ, bios_error_exit
+
+  ld            a, (system_counter)
+  add           a, $02
+  ld            c, a
+
+  ld            hl, msg_keyboard_not_found
+boot_wait_keyboard:
+  ld            a, (system_counter)
+  xor           c
+  jp            Z, bios_error_exit      ; timed out after 2 seconds
+  in            a, (STATUS)
+  bit           KEY_DETECT, a
+  jr            NZ, boot_wait_keyboard
+
+  ; now keyboard is running send some setup commands
+  ld            a, KB_SET_CMD_REL_OFF
+  out           (KEY_DATA), a
+
+
+boot_keyboard_ok:
+
+; -- Enable keyboard and clock interrupts --------------------------------------
+
+; Keyboard interrupt is disabled, do polled key fetching.  Wait 5 seconds, if
+; there's a delete pressed in that time go into the menu
+
+;   jp            boot_no_menu
+
+  ld            a, (system_counter)
+  add           a, $06
+  ld            c, a
+
+boot_menu_wait_loop:
+  ld            a, (system_counter)
+  xor           c
+  jr            z, boot_no_menu         ; timed out without a menu request
+  di
+  ld            a, 0
+  out           (PIE), a
+
+  in            a, (PIF)
+  bit           KBIF, a
+  jr            z, boot_menu_check_key
+boot_menu_not_del:
+  ld            a, (system_interrupts)
+  out           (PIE), a
+  ei
+  jr            boot_menu_wait_loop
+
+boot_menu_check_key:
+  in            a, (KEY_DATA)
+  xor           $7F                     ; ascii code for delete
+  jr            NZ, boot_menu_not_del   ; not delete so keep waiting
+
+  ; was delete so tidy up interrupt flags and go to menu
+  ld            a, (system_interrupts)
+  out           (PIE), a
+  ei
+  jp            menu_start
+
+boot_no_menu:
+
+  ; see what the primary boot device is and look to see if it's present
+  ld            a, (system_boot_order)
+  cp            BOOT_SD_USB
+  jr            z, boot_sd_usb          ; sd then usb
+  cp            BOOT_USB_SD
+  jr            z, boot_usb_sd          ; try usb then sd
+  cp            BOOT_SD
+  jr            z, boot_sd_only         ; only try sd
+  cp            BOOT_USB
+  jr            z, boot_usb_only        ; only try usb
+
+  jp            boot_no_boot
+
+boot_sd_usb:
+  call          boot_sd
+  call          boot_usb
+  jp            boot_no_boot
+
+boot_sd_only:
+  call          boot_sd
+  jp            boot_no_boot
+
+boot_usb_sd:
+  call          boot_usb
+  call          boot_sd
+  jp            boot_no_boot
+
+boot_usb_only:
+  call          boot_usb
+  jp            boot_no_boot
+
+boot_no_boot:
+  ; no boot devices, print insert system disk and restart message
+  ld            hl, insert_system_disk_msg
+  jp            bios_error_exit
+
+;-------------------------------------------------------------------------------
+; boot_sd - look for any bootable files on the SD card
+;-------------------------------------------------------------------------------
+boot_sd:
+
+  ; first see if there is an SD card attached
+  in            a, (STATUS)
+  bit           SD_RDY, a
+  jp            nz, boot_no_sd
+
+  ; there is an SD inserted, get the size info
+  call          sd_csd
+
+  ; !!! Should check that that succeeded before continuing !!!
+
+  ; Okay, try and get the MBR
+  xor           a
+  ld            (sd_block), a
+  ld            (sd_block+1), a
+  ld            (sd_block+2), a
+  ld            (sd_block+3), a
+
+  ld            hl, disk_buf
+  call          sd_read_block
+  ; check that worked okay
+  jp            c, boot_disk_error
+
+  ; -- now look at the partition table -----------------------------------------
+
+  ld            b, 4
+;   ld            c, 0                    ; used for bootable partition count
+  ld            hl, disk_buf+$1C2    ; address of first partition entry
+partition_table_loop:
+  ld            a, (hl)               ; load partition type
+  cp            $06
+  jr            z, part_bootable        ; jump out as soon as we find a FAT
+  cp            $0B                     ; partition of some type
+  jr            z, part_bootable
+  ; not bootable partition type so move on to the next one
+  ld            de, $10
+  add           hl, de
+  djnz          partition_table_loop    ; check all four partitions
+
+  ; if we fell out of the loop, there are no bootable partitions, return
+  ld            hl, no_part_msg
+  call          gpu_str
+  ret
+
+boot_no_sd:
+  ld            hl, no_sd_disk_msg
+  call          gpu_str
+  ret
+
+part_bootable:
+  ld            (system_filesystem), a  ; save FS version for FAT driver
+  ld            bc, $0004
+  add           hl, bc                  ; jump to the start of the LBA address
+  ld            de, sd_block
+  ldir
+
+  ; start the FAT driver and see if there's a boot.z8b file
+  call          fat_init                ; initialise FAT driver
+  jp            c, boot_disk_error      ; jump out if there was an error
+
+  ld            hl, (fat_root_dir_cluster)
+  ld            (fat_cluster), hl
+  ld            hl, (fat_root_dir_cluster+2)
+  ld            (fat_cluster+2), hl
+
+  ld            hl, disk_buf
+  call          fat_select_cluster
+  jp            c, boot_disk_error
+
+  ld            hl, disk_buf
+boot_list_root_dir_loop:
+  push          hl
+  pop           iy
+  ld            a, (hl)
+  cp            $E5
+  jp            z, boot_list_bootables_skip     ; it's a deleted file, ignore
+  cp            $00
+  jp            z, boot_no_kernel               ; no more entries, and no kernel
+  ld            ix, boot_file_name-1
+  ld            bc, $000B                       ; 11 bytes, 8.3
+boot_check_name_loop:
+  inc           ix
+  ld            a, (ix+0)
+  cpi
+  jr            nz, boot_list_bootables_skip    ; if not 'z' ignore this entry
+  jp            pe, boot_check_name_loop
+  
+  ; just make sure this isn't an LFN entry
+  ld            a, $0F
+  cp            (hl)
+  jr            z, boot_list_bootables_skip     ; if it is $0F it's an LFN
+
+  ; right, this is the right file...
+  ; next need to check it matches this hardware version
+  jp            boot_check_version
+
+boot_list_bootables_skip:
+  push          iy
+  pop           hl
+  ld            de, $0020
+  add           hl, de
+  ex            de, hl
+  ld            hl, disk_buf + $200
+  xor           a
+  sbc           hl, de
+  ex            de, hl
+  jr            nz, boot_list_root_dir_loop
+  ; got to the end of a block, request another
+  ld            hl, disk_buf
+  call          fat_next_block
+  jr            c, boot_no_kernel       ; if there are no more blocks exit
+  ld            hl, disk_buf
+  jr            boot_list_root_dir_loop
+
+boot_no_kernel:
+  ld            hl, boot_no_kernel_msg
+  call          gpu_str
+  ret
+
+boot_disk_error:
+  ld            hl, disk_error_msg
+  call          gpu_str
+
+  ld            hl, sd_error
+  ld            a, 2
+  call          gpu_hex
+  ld            a, $A
+  out           (GPU_DATA), a
+  ret
+
+boot_check_version:
+  ; need to get first block of the selected file
+  ld            hl, $0000
+  ld            (fat_cluster+2), hl     ; in case it's only a FAT16 address
+  ld            a, (iy+$1A)
+  ld            (fat_cluster), a
+  ld            a, (iy+$1B)
+  ld            (fat_cluster+1), a
+  ld            a, (system_filesystem)
+  cp            $06
+  jr            z, boot_check_version_skip_high
+  ld            a, (iy+$14)
+  ld            (fat_cluster+2), a
+  ld            a, (iy+$15)
+  ld            (fat_cluster+3), a
+
+boot_check_version_skip_high:
+
+  ld            hl, disk_buf
+  call          fat_select_cluster
+  jp            c, boot_disk_error
+  ; now need to check the version byte at the start of the boot file
+
+  ld            a, (disk_buf)
+  cp            $02             ; Z80 Project Mark 2
+  jp            nz, boot_version_fail
+
+  ; clear screen and say booting
+  call          gpu_cls
+  ld            hl, booting_msg
+  call          gpu_str
+
+  ; next read the header length, a number of bytes must be 3 or more
+  ; 16 bit byte count so load it into BC for now
+  ld            hl, (disk_buf+1)
+
+  ; need to see if it's larger than 512 (i.e. if we need to load another block
+  xor           a               ; clears carry flag
+  ld            bc, $200
+boot_skip_header:
+  sbc           hl, bc          ; sets carry flag if hl is smaller than 512
+  jr            c, boot_load_first_block
+  ; hl wasn't smaller than 512 so skip this block and try again
+  call          fat_next_block
+  jr            boot_skip_header
+
+boot_load_first_block:
+  ; hl has now overflowed, add 512
+  add           hl, bc
+  ; hl is now the remainder, i.e. the offset from the start of disk_buf to start
+  ; loading ram from
+  xor           a               ; clear carry
+  ex            de, hl          ; save a copy
+  ld            hl, $200
+  sbc           hl, de          ; hl now is the byte count and de is the offset
+  push          hl
+  pop           bc              ; bc is now the byte count
+  ; currently:
+  ; bc = count, de = source offset, hl = count
+  ; we want:
+  ; bc = count, de = dest, hl = source
+  ld            hl, disk_buf
+  add           hl, de
+  ld            de, $0000
+
+  ; now, running ldir will copy the first chunk of data to the appropriate place
+  ; this is going to overwrite interrupt service routines so need to stop
+  ; all interrupts now
+  di
+  ldir
+
+  ; going to use hl as the destination pointer from now on as we're loading
+  ; direct from IO to memory rather than copying within RAM.
+  ex            de, hl
+
+  ; keep reading blocks until the file is empty or hl has reached $7FFF
+boot_sd_bootload:
+  call          fat_next_block
+  ; check for error
+  ; check if we're at $7FFF yet
+  ex            de, hl
+  ld            hl, $7FFF
+  xor           a
+  sbc           hl, de
+  jr            z, boot_sd_boot_done
+  ex            de, hl
+  ld            a, (sd_error)
+  cp            0
+  jr            z, boot_sd_boot_done    ; end of file condition
+  cp            'O'
+  jr            z, boot_sd_bootload     ; block transfer success
+  jp            boot_disk_error
+
+boot_sd_boot_done:
+  jp            0
+
+
+boot_version_fail:
+  ld            hl, boot_version_error
+  call          gpu_str
+  ret
+
+;-------------------------------------------------------------------------------
+; boot_usb - search the root dir of a USB key for a file called boot.z8b
+;-------------------------------------------------------------------------------
+boot_usb:
+  ; because of the very limited list of functions needed, probably easiest to
+  ; hard code the operation here
+  
+  ; flush all bytes from the USB host controller
+  ; can be a delay so keep trying for a couple of seconds
+  ld            a, (system_counter)
+  add           a, $3
+  ld            b, a
+boot_usb_flush:
+  ld            a, (system_counter)
+  cp            b
+  jr            z, boot_usb_done_flush
+  in            a, (STATUS)
+  bit           USB_RXF, a
+  jp            nz, boot_usb_flush
+  in            a, (USB_DATA)           ; don't care what it is
+  jr            boot_usb_flush
+
+boot_usb_done_flush:
+  ; set the VDIP to short command mode
+  ld            a, 'S'
+  call          usb_write_byte
+  ld            a, 'C'
+  call          usb_write_byte
+  ld            a, 'S'
+  call          usb_write_byte
+  ld            a, '\r'
+  call          usb_write_byte
+
+  ; see what the response is
+  call          usb_get_byte
+  cp            '>'
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            $D
+  jp            nz, usb_debug
+
+  ; send IPH
+  ld            a, $91
+  call          usb_write_byte
+  ld            a, $0D
+  call          usb_write_byte
+
+  call          usb_get_byte
+  cp            '>'
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            $D
+  jp            nz, usb_debug
+
+
+  ; now send "\x01 boot.z8b\r"
+  ld            b, $B                   ; 11 characters
+  ld            hl, usb_stat_boot_msg
+usb_wr_loop:
+  ld            a, (hl)                                  ; output all characters
+  inc           hl
+  call          usb_write_byte
+  djnz          usb_wr_loop
+
+  call          usb_get_byte
+  cp            '\r'
+  jp            nz, usb_debug
+
+; it was the start of the file name so get the rest
+  call          usb_get_byte
+  cp            'B'
+  jp            nz, usb_debug            ; start of "Command Failed"
+  call          usb_get_byte
+  cp            'O'
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            'O'
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            'T'
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            '.'
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            'Z'
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            '8'
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            'B'
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            ' '
+  jp            nz, usb_debug
+
+  call          usb_get_byte
+  ld            (usb_file_len), a
+  call          usb_get_byte
+  ld            (usb_file_len+1), a
+  call          usb_get_byte
+  ld            (usb_file_len+2), a
+  call          usb_get_byte
+  ld            (usb_file_len+3), a
+
+  call          usb_get_byte
+  call          usb_get_byte
+  call          usb_get_byte
+
+
+  ; verify the image is valid for this version of the hardware
+  ;call          mktime
+  ld            hl, usb_msg_opr
+  ld            b, $B
+usb_open_loop:
+  ld            a, (hl)
+  call          usb_write_byte
+  inc           hl
+  djnz          usb_open_loop
+
+  call          usb_get_byte
+  cp            $3E
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            $D
+  jp            nz, usb_debug
+
+  ld            hl, usb_msg_rdf
+  ld            b, 7
+usb_rdf_loop:
+  ld            a, (hl)
+  call          usb_write_byte
+  inc           hl
+  djnz          usb_rdf_loop
+
+  call          usb_get_byte
+  cp            2
+  jp            nz, boot_version_fail
+
+  ; print booting message
+  call          gpu_cls
+  ld            hl, booting_msg
+  call          gpu_str
+
+  ; get offset past file header
+  call          usb_get_byte
+  ld            e, a
+  ld            (usb_msg_sek+5),a
+  call          usb_get_byte
+  ld            d, a
+  ld            (usb_msg_sek+4),a
+
+  ; see how many bytes to read
+  ld            (maths_op_b), de
+  ld            hl, $00
+  ld            (maths_op_b+2), hl
+
+  ld            hl, (usb_file_len)
+  ld            (maths_op_a), hl
+  ld            hl, (usb_file_len+2)
+  ld            (maths_op_a+2), hl
+
+  call          maths_sub32
+
+  ; maths_op_a now has the length of the data in the file (excluding the header
+  ;     region)
+  ld            bc, (maths_op_a)
+
+  ld            hl, $8000
+  ld            (maths_op_b), hl
+
+  call          maths_sub32
+
+  ld            a, (maths_flags)
+  bit           MATHS_C, a
+  jp            nz, usb_boot_small_file         ; if carry is set the file was
+                                                ; smaller than 32K and BC
+                                                ; contains the length
+  ld            bc, $8000                       ; otherwise load the first 32K
+
+usb_boot_small_file:
+
+  ld            a, c
+  ld            (usb_msg_rdf+5), a
+  ld            a, b
+  ld            (usb_msg_rdf+4), a
+
+  push          bc
+
+  ld            hl, usb_msg_sek
+  ld            b, 7
+usb_boot_sek_loop:
+  ld            a, (hl)
+  call          usb_write_byte
+  inc           hl
+  djnz          usb_boot_sek_loop
+
+  call          usb_get_byte
+  cp            $3E
+  jp            nz, usb_debug
+  call          usb_get_byte
+  cp            $D
+  jp            nz, usb_debug
+
+  di            ; now into the load loop don't do anything else
+
+  ld            hl, usb_msg_rdf
+  ld            b, 7
+usb_boot_rdf_loop2:
+  ld            a, (hl)
+  call          usb_write_byte
+  inc           hl
+  djnz          usb_boot_rdf_loop2
+
+  pop           bc
+  ; right, just get the bytes!!
+  ld            hl, 0
+usb_bootload:
+  call          usb_get_byte
+  ld            (hl), a
+  inc           hl
+  dec           bc
+  xor           a
+  add           a, b
+  jr            nz, usb_bootload
+  add           a, c
+  jr            nz, usb_bootload
+
+  ; all done, jump into the new OS!!
+
+  jp            0
+
+usb_debug:
+  out           (GPU_DATA), a
+  in            a, (STATUS)
+  bit           USB_RXF, a
+  ret           nz
+  in            a, (USB_DATA)
+  jr            usb_debug
+
+; == Strings ===================================================================
+msg_keyboard_not_found:
+  defm          "\nERROR: Keyboard Not Detected.\n"
+  defb          $0
+
+msg_keyboard_error:
+  defm          "\nERROR: Keyboard controller error\n"
+  defb          $0
+
+msg_boot:
+  defm          "Z80 Project Mark 2: Booting\nRAM "
+  defb          $0
+
+msg_boot2:
+  defm          " bytes\n\nPress DELETE to enter setup\n"
+  defb          $0
+
+no_part_msg:
+  defm          "No bootable partitions on SD\n"
+  defb          0
+
+no_sd_disk_msg:
+  defm          "No SD card inserted\n"
+  defb          0
+
+; root_dir_listing:
+;   defm          "Contents of root folder\n"
+;   defb          0
+
+insert_system_disk_msg:
+  defm          "No OS found, insert system disk and press RESET\n"
+  defb          0
+
+disk_error_msg:
+  defm          "Unknown error in FAT driver "
+  defb          0
+
+boot_file_name:
+  defm          "BOOT    Z8B"
+
+boot_no_kernel_msg:
+  defm          "No Kernel found.\n"
+  defb          0
+
+boot_found_kernel:
+  defm          "Found a bootable Kernel\n"
+  defb          0
+
+boot_version_error:
+  defm          "The kernel on this disk is not compatible with the hardware.\n"
+  defb          0
+
+booting_msg:
+  defm          "Booting...\n"
+  defb          0

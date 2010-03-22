@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+################################################################################
+#                                                                              #
+#  rom_dump - dump the ROM contents to a file.                                 #
+#                                                                              #
+################################################################################
+
+# uses protocol specific serial library
+import seriallib
+
+import os, sys
+
+if len(sys.argv) < 2:
+  sys.stderr.write("Usage: %s imagename.bin\n" % sys.argv[0])
+  sys.exit(1)
+
+# got a suggested file name, try and open it
+try:
+  fw = file(sys.argv[1],"wb")
+except IOError, e:
+  sys.stderr.write("Could not open file for writing:\n%s\n" % e)
+  sys.exit(1)
+
+ser = seriallib.Port()
+tp = seriallib.Packet()
+
+for n in range(64):             # 64 * 128 = 8192
+  tp.set_command(seriallib.RDMEMBLK)
+  rdaddr = "%c%c%c" % ((n & 0x1FE) >> 1, (n & 0x01) << 7, 128)
+  tp.set_data(rdaddr)
+  ser.send(tp)
+
+  rp = ser.receive()
+
+  if rp.get_error()[0] > 0:
+    sys.stderr.write("Error getting memory block:\n  Code %d: %s\n" % rp.get_error())
+    sys.exit(1)
+
+  fw.write(rp[2:-1])
+
+
+fw.close()

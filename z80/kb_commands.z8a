@@ -1,0 +1,4 @@
+KB_SET_CMD_REL_OFF:      equ     $E0
+KB_SET_CMD_REL_ON:       equ     $E1
+KB_SET_REL_OFF:          equ     $D0
+KB_SET_REL_ON:           equ     $D1     

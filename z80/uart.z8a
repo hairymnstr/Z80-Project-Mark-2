@@ -1,0 +1,69 @@
+;-------------------------------------------------------------------------------
+;|                                                                             |
+;| uart.z8a - UART code for the Mark 2 Z80 project                             |
+;| File Version: 1.0                                                           |
+;| hairymnstr@gmail.com                                                        |
+;|                                                                             |
+;| Copyright (C) 2010  Nathan Dumont                                           |
+;|                                                                             |
+;| This program is free software: you can redistribute it and/or modify        |
+;| it under the terms of the GNU General Public License as published by        |
+;| the Free Software Foundation, either version 3 of the License, or           |
+;| (at your option) any later version.                                         |
+;|                                                                             |
+;| This program is distributed in the hope that it will be useful,             |
+;| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+;| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+;| GNU General Public License for more details.                                |
+;|                                                                             |
+;| You should have received a copy of the GNU General Public License           |
+;| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+;|                                                                             |
+;-------------------------------------------------------------------------------
+
+;-------------------------------------------------------------------------------
+; uart_init - initialise the 6402 UART chip
+;-------------------------------------------------------------------------------
+
+uart_init:
+    ; initialise the UART, need to make sure reset gets pulsed
+    ld  a,$80
+    out (DEBUG),a
+    ld  a,$00         ; time taken to load A is sufficient delay up to 40MHz+
+    out (DEBUG),a
+
+    ; need to wait ~150uS for UART to settle down
+    ; @5MHz 150uS = 750 clock cycles
+    ; djnz takes 13 cycles when b != 0, 8 when b == 0
+    ; hence 59 * 13 + 8 = 775 so B = 60 is sufficient to delay at up to 5MHz
+    ld  b, 60d
+
+    djnz        $
+
+    ret
+
+;===============================================================================
+; uart_write - Writes the contents of *A* to the UART
+;===============================================================================
+
+;; UART write checks the status of the UART and sends once the buffer is empty.
+;; This is an indefinitely blocking call, however the UART clock can't be
+;; stopped in this system so it should always complete.
+
+uart_write:
+    push        bc
+    ld          b, a            ; save the byte to send
+
+uart_write_wait:
+    ; read the UART status register
+    in          a,(RCSTA)
+
+    ; test TBRE, only write if high
+    and         TBRE
+    jr          Z,uart_write_wait
+
+    ; transmit buffer is not full so write the byte and return
+    ld          a, b
+    out         (TXREG), a
+
+    ret

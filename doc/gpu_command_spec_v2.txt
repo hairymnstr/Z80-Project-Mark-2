@@ -1,0 +1,13 @@
+revised gpu command set
+
+00000000        reset
+00010000        cls
+
+0010bccc        set colour to ccc if b = 1, get colour if b = 0
+0011b000 n      set column to n if b = 1, get colour if b = 0
+0100b000 n      set row to n if b = 1, get colour if b = 0
+
+01010yyy        set vga screen to yyy
+01011yyy        set tv screen to yyy
+
+0110yyyy        set active buffer to yyyy

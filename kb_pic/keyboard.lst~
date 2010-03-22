@@ -1,0 +1,1999 @@
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00001 ;==============================================================================
+               00002 ;    main.asm
+               00003 ;==============================================================================
+               00004 
+               00005 ;------------------------------------------------------------------------------
+               00006 ;
+               00007 ; PS/2 Keyboard driver and buffer firmware
+               00008 ; File Version 1.0 - 5 Feb 2010
+               00009 ; hairymnstr@gmail.com
+               00010 ;
+               00011 ; Copyright (C) 2010  Nathan Dumont
+               00012 ;
+               00013 ; This program is free software: you can redistribute it and/or modify
+               00014 ; it under the terms of the GNU General Public License as published by
+               00015 ; the Free Software Foundation, either version 3 of the License, or
+               00016 ; (at your option) any later version.
+               00017 ;
+               00018 ; This program is distributed in the hope that it will be useful,
+               00019 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
+               00020 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+               00021 ; GNU General Public License for more details.
+               00022 ;
+               00023 ; You should have received a copy of the GNU General Public License
+               00024 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+               00025 ;
+               00026 ;
+               00027 ;------------------------------------------------------------------------------
+               00028 
+               00029 list p=18f4520
+               00030 include <p18f4520.inc>
+               00001         LIST
+               00002 
+               00003 ;==========================================================================
+               00004 ;  MPASM PIC18F4520 processor include
+               00005 ; 
+               00006 ;  (c) Copyright 1999-2007 Microchip Technology, All rights reserved
+               00007 ;==========================================================================
+               00008 
+               01336         LIST
+               00031 include scancodes.inc
+  00000000     00001 CC_0            equ 0x00
+  00000001     00002 CC_1            equ 0x01
+  00000002     00003 CC_2            equ 0x02
+  00000003     00004 CC_3            equ 0x03
+  00000004     00005 CC_4            equ 0x04
+  00000005     00006 CC_5            equ 0x05
+  00000006     00007 CC_6            equ 0x06
+  00000007     00008 CC_7            equ 0x07
+  00000008     00009 CC_8            equ 0x08
+  00000009     00010 CC_9            equ 0x09
+  0000000A     00011 CC_A            equ 0x0A
+  0000000B     00012 CC_B            equ 0x0B
+  0000000C     00013 CC_C            equ 0x0C
+  0000000D     00014 CC_D            equ 0x0D
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+  0000000E     00015 CC_E            equ 0x0E
+  0000000F     00016 CC_F            equ 0x0F
+  00000010     00017 CC_G            equ 0x10
+  00000011     00018 CC_H            equ 0x11
+  00000012     00019 CC_I            equ 0x12
+  00000013     00020 CC_J            equ 0x13
+  00000014     00021 CC_K            equ 0x14
+  00000015     00022 CC_L            equ 0x15
+  00000016     00023 CC_M            equ 0x16
+  00000017     00024 CC_N            equ 0x17
+  00000018     00025 CC_O            equ 0x18
+  00000019     00026 CC_P            equ 0x19
+  0000001A     00027 CC_Q            equ 0x1A
+  0000001B     00028 CC_R            equ 0x1B
+  0000001C     00029 CC_S            equ 0x1C
+  0000001D     00030 CC_T            equ 0x1D
+  0000001E     00031 CC_U            equ 0x1E
+  0000001F     00032 CC_V            equ 0x1F
+  00000020     00033 CC_W            equ 0x20
+  00000021     00034 CC_X            equ 0x21
+  00000022     00035 CC_Y            equ 0x22
+  00000023     00036 CC_Z            equ 0x23
+  00000024     00037 CC_LQ           equ 0x24        ;`
+  00000025     00038 CC_DSH          equ 0x25        ;-
+  00000026     00039 CC_EQ           equ 0x26        ;=
+  00000027     00040 CC_LSB          equ 0x27        ;[
+  00000028     00041 CC_RSB          equ 0x28        ;]
+  00000029     00042 CC_AP           equ 0x29        ;'
+  0000002A     00043 CC_CM           equ 0x2A        ;,
+  0000002B     00044 CC_FS           equ 0x2B        ;.
+  0000002C     00045 CC_WS           equ 0x2C        ;\
+  0000002D     00046 CC_US           equ 0x2D        ;/
+  0000002E     00047 CC_SC           equ 0x2E        ;;
+  0000002F     00048 CC_SP           equ 0x2F        ;SPACE
+  00000030     00049 CC_TAB          equ 0x30        ;TAB
+  00000031     00050 CC_ENTER        equ 0x31        ;ENTER
+  00000032     00051 CC_DEL          equ 0x32        ;DELETE
+  00000033     00052 CC_BKSP         equ 0x33        ;BACKSPACE
+               00053 
+  00000080     00054 CC_ESC          equ 0x80        ;ESCAPE
+  00000081     00055 CC_F1           equ 0x81
+  00000082     00056 CC_F2           equ 0x82
+  00000083     00057 CC_F3           equ 0x83
+  00000084     00058 CC_F4           equ 0x84
+  00000085     00059 CC_F5           equ 0x85
+  00000086     00060 CC_F6           equ 0x86
+  00000087     00061 CC_F7           equ 0x87
+  00000088     00062 CC_F8           equ 0x88
+  00000089     00063 CC_F9           equ 0x89
+  0000008A     00064 CC_F10          equ 0x8A
+  0000008B     00065 CC_F11          equ 0x8B
+  0000008C     00066 CC_F12          equ 0x8C
+  0000008D     00067 CC_PRINT        equ 0x8D
+  0000008E     00068 CC_SCROLL       equ 0x8E
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+  0000008F     00069 CC_PAUSE        equ 0x8F
+  00000090     00070 CC_NUM          equ 0x90
+  00000091     00071 CC_CAPS         equ 0x91
+  00000092     00072 CC_LSHIFT       equ 0x92
+  00000093     00073 CC_RSHIFT       equ 0x93
+  00000094     00074 CC_CTRL         equ 0x94
+  00000095     00075 CC_ALT          equ 0x95
+  00000096     00076 CC_GUIL         equ 0x96
+  00000097     00077 CC_GUIR         equ 0x97
+  00000098     00078 CC_APPS         equ 0x98
+               00079 
+  000000C0     00080 CC_KP0          equ 0xC0
+  000000C1     00081 CC_KP1          equ 0xC1
+  000000C2     00082 CC_KP2          equ 0xC2
+  000000C3     00083 CC_KP3          equ 0xC3
+  000000C4     00084 CC_KP4          equ 0xC4
+  000000C5     00085 CC_KP5          equ 0xC5
+  000000C6     00086 CC_KP6          equ 0xC6
+  000000C7     00087 CC_KP7          equ 0xC7
+  000000C8     00088 CC_KP8          equ 0xC8
+  000000C9     00089 CC_KP9          equ 0xC9
+  000000CA     00090 CC_KPD          equ 0xCA        ;.
+  000000CB     00091 CC_KPS          equ 0xCB        ;*
+  000000CC     00092 CC_KPP          equ 0xCC        ;+
+  000000CD     00093 CC_KPM          equ 0xCD        ;-
+               00032 include <portpins.inc>
+               00001 ;== PORT Definitions ==========================================================
+               00002 
+               00003 ;-- PORT A --------------------------------------------------------------------
+               00004 
+  00000000     00005 P_READY         EQU     0
+  00000001     00006 P_FOUND         EQU     1
+  00000005     00007 P_INT           EQU     5
+               00008 
+  00000020     00009 PORTADEF        EQU     b'00100000'
+  000000DC     00010 PORTADIR        EQU     b'11011100'
+               00011 
+               00012 ;-- PORT B --------------------------------------------------------------------
+               00013 
+  00000000     00014 PORTBDEF        EQU     b'00000000'
+  0000007F     00015 PORTBDIR        EQU     b'01111111'
+               00016 
+               00017 ;-- PORT C --------------------------------------------------------------------
+               00018 
+  00000006     00019 P_TX            EQU     6
+  00000007     00020 P_RX            EQU     7
+               00021 
+  00000000     00022 PORTCDEF        EQU     b'00000000'
+  000000FF     00023 PORTCDIR        EQU     b'11111111'
+               00024 
+               00025 ;-- PORT E --------------------------------------------------------------------
+               00026 
+  00000000     00027 P_RD            EQU     0
+  00000001     00028 P_WR            EQU     1
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+  00000002     00029 P_CS            EQU     2
+               00030 
+  00000017     00031 PORTEDIR        EQU     b'00010111'
+  00000000     00032 PORTEDEF        EQU     b'00000000'
+               00033 
+               00034 ;-- ADC PINS -------------------------------------------------------------------
+               00035 
+  0000000F     00033 
+               00034 errorlevel -302
+               00035 errorlevel -205
+               00036 
+300000 0000    00037 CONFIG OSC = HSPLL
+               00038 CONFIG FCMEN = ON, IESO = OFF, PWRT = ON, BOREN = OFF, BORV = 0
+300004 0000    00039 CONFIG WDT = OFF, WDTPS = 1, MCLRE = ON, LPT1OSC = OFF
+300006 0000    00040 CONFIG PBADEN = OFF, CCP2MX = PORTC, STVREN = ON, LVP = OFF
+               00041 CONFIG XINST = OFF, DEBUG = OFF, CP0 = OFF, CP1 = OFF, CP2 = OFF, CP3 = OFF
+               00042 CONFIG CPB = OFF, CPD = OFF, WRT0 = OFF, WRT1 = OFF, WRT2 = OFF, WRT3 = OFF
+               00043 CONFIG WRTB = OFF, WRTC = OFF, WRTD = OFF, EBTR0 = OFF, EBTR1 = OFF
+30000C 0000    00044 CONFIG EBTR2 = OFF, EBTR3 = OFF, EBTRB = OFF
+               00045 
+               00046 UDATA
+               00047 
+               00048 count           res     3
+               00049 bit_count       res     1
+               00050 rxreg           res     1
+               00051 txreg           res     1
+               00052 translate_mode  res     1
+               00053 
+  00000001     00054 TRANSLATE_ASCII equ     0x01
+               00055 
+               00056 flags           res     1
+               00057 
+  00000000     00058 scroll_flag     equ     0
+  00000001     00059 num_flag        equ     1
+  00000002     00060 caps_flag       equ     2
+  00000003     00061 shift_flag      equ     3
+  00000004     00062 release_flag    equ     4
+  00000005     00063 talking_flag    equ     5
+  00000006     00064 send_failed_flag equ    6
+  00000007     00065 update_leds_flag equ    7
+               00066 
+               00067 parity          res     1
+               00068 
+  00000000     00069 parity_flag     equ     0
+               00070 
+               00071 org 0x00
+0000 EF00 F000 00072     goto        init
+               00073 
+               00074 org 0x08
+0008 00075 interrupt
+0008 BE9E      00076   btfsc         PIR1, PSPIF
+000A EF00 F000 00077   goto          psp_rd_int
+000E B4F2      00078   btfsc         INTCON, TMR0IF
+0010 EF00 F000 00079   goto          timeout
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+0014 EF00 F000 00080   goto          edge_event
+               00081 
+0018 00082 psp_rd_int
+               00083   ; a byte has been read by the Z80
+               00084   ; see if there is a new byte and load that into the buffer
+               00085   ; first clear the interrupt so that the Z80 doesn't come back immediately
+0018 8A89      00086   bsf           LATA, P_INT
+               00087 
+001A 9E9E      00088   bcf           PIR1, PSPIF             ; clear the interrupt flag
+001C 50E9      00089   movf          FSR0L,w
+001E 18E1      00090   xorwf         FSR1L,w
+0020 E000      00091   bz            exit_interrupt          ; if low bytes of fifo write and read
+               00092                                         ; match, there's no new data
+               00093   ; if not then there's more data for the Z80
+0022 50E6      00094   movf          POSTINC1,w              ; get the byte from the read pointer
+0024 6E83      00095   movwf         PORTD                   ; put it in the buffer for the next read
+0026 0E01      00096   movlw         0x01
+0028 6EE2      00097   movwf         FSR1H                   ; make sure we don't overflow the buffer
+002A 9A89      00098   bcf           LATA, P_INT             ; set the interrupt again
+002C EF00 F000 00099   goto          exit_interrupt
+               00100 
+0030 00101 timeout
+               00102   ; called if Timer0 overflows.  This means that there wasn't a bit edge in time
+               00103   ; alternatively that we've initiated host->device comms
+0030 BA00      00104   btfsc         flags, talking_flag
+0032 EF00 F000 00105   goto          timeout_talking
+               00106   ; just a timeout.  Set all registers back to zero
+0036 6A00      00107   clrf          bit_count
+0038 6A00      00108   clrf          rxreg
+003A 9ED5      00109   bcf           T0CON, TMR0ON           ; disable the timeout until the next
+               00110                                         ; start bit
+003C 94F2      00111   bcf           INTCON, TMR0IF
+003E EF00 F000 00112   goto          exit_interrupt
+               00113 
+0042 00114 timeout_talking
+               00115   ; Timer0 overflowed, but this is the start of the talking routine
+0042 0E00      00116   movlw         0x00
+0044 1800      00117   xorwf         bit_count,w
+0046 E000      00118   bz            timeout_start_talking
+               00119   ; it's a timeout in some other part of the talk routine.  set send_failed_flag
+               00120   ; and clear up
+0048 8C00      00121   bsf           flags, send_failed_flag
+004A 9A00      00122   bcf           flags, talking_flag
+004C 9ED5      00123   bcf           T0CON, TMR0ON           ; disable the timer again
+004E 8293      00124   bsf           TRISB,1                 ; make sure the data pin is an input!
+0050 6A00      00125   clrf          bit_count
+0052 6A00      00126   clrf          txreg
+0054 94F2      00127   bcf           INTCON, TMR0IF          ; clear the interrupt flag
+0056 EF00 F000 00128   goto          exit_interrupt          ; all done
+               00129 
+005A 00130 timeout_start_talking
+               00131   ; just finished the "I want to talk signal"
+               00132   ; initialise the parity counter for odd parity
+005A 8000      00133   bsf           parity, parity_flag
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00134   ; set data as output
+005C 9293      00135   bcf           TRISB, 1
+005E 0E14      00136   movlw         d'20'
+0060 6E00      00137   movwf         count
+0062 00138 timeout_wait_loop
+0062 2E00      00139   decfsz        count,f
+0064 D000      00140   bra           timeout_wait_loop
+               00141   ; set clock as input
+0066 8093      00142   bsf           TRISB, 0
+               00143   ; clear the edge interrupt flag
+0068 92F2      00144   bcf           INTCON, INT0IF
+               00145   ; enable the edge interrupt again
+006A 88F2      00146   bsf           INTCON, INT0IE
+               00147   ; increment the bit counter because that data bit is the start bit
+006C 2A00      00148   incf          bit_count,f
+               00149   ; re-enable the timer overflow interrupt
+006E 94F2      00150   bcf           INTCON, TMR0IF
+0070 9ED5      00151   bcf           T0CON, TMR0ON
+0072 6AD6      00152   clrf          TMR0L
+               00153 ;   clrf          txreg
+               00154   ; leave the interrupt
+0074 EF00 F000 00155   goto          exit_interrupt
+               00156 
+0078 00157 edge_event
+               00158   ; a falling edge on the keyboard clock save the bit
+0078 8ED5      00159   bsf           T0CON, TMR0ON           ; enable timeout counter
+007A 0E00      00160   movlw         d'0'
+007C 1800      00161   xorwf         bit_count,w
+007E E000      00162   bz            edge_event_start
+0080 0E09      00163   movlw         d'9'
+0082 1800      00164   xorwf         bit_count,w
+0084 E000      00165   bz            edge_event_parity
+0086 0E0A      00166   movlw         d'10'
+0088 1800      00167   xorwf         bit_count,w
+008A E000      00168   bz            edge_event_stop
+008C 0E0B      00169   movlw         d'11'                   ; ack bit in tx mode only
+008E 1800      00170   xorwf         bit_count,w
+0090 E000      00171   bz            edge_event_ack
+               00172 
+               00173   ; it's a data bit
+               00174   ; see if we're in talk or listen mode
+0092 BA00      00175   btfsc         flags, talking_flag
+0094 D000      00176   bra           edge_event_send_bit
+               00177   ; listening so clock in a bit
+0096 4200      00178   rrncf         rxreg,f
+0098 9E00      00179   bcf           rxreg,7
+009A B281      00180   btfsc         PORTB, 1
+009C 8E00      00181   bsf           rxreg,7
+009E EF00 F000 00182   goto          edge_event_exit
+               00183 
+00A2 00184 edge_event_send_bit
+00A2 B000      00185   btfsc         txreg,0
+00A4 8293      00186   bsf           TRISB, 1        ; only one of these will run but it avoids
+00A6 A000      00187   btfss         txreg,0         ; 'glitching' the hardware line with a clear-set
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+00A8 9293      00188   bcf           TRISB, 1
+00AA B000      00189   btfsc         txreg,0
+00AC 7000      00190   btg           parity,parity_flag  ; don't forget the parity bit
+00AE 4200      00191   rrncf         txreg,f         ; rotate the register to put the next bit at 0
+00B0 EF00 F000 00192   goto          edge_event_exit ; all done
+               00193 
+00B4 00194 edge_event_stop
+               00195   ; if we got this far it's the stop bit
+               00196   ; see if we need to receive or send
+00B4 BA00      00197   btfsc         flags, talking_flag
+00B6 D000      00198   bra           edge_event_send_stop
+00B8 9ED5      00199   bcf           T0CON, TMR0ON           ; turn off the timer
+00BA 6800      00200   setf          bit_count               ; clear the bit count for the next one
+00BC EF00 F000 00201   goto          key_translate
+               00202   ; do some translation here
+               00203 
+00C0 00204 edge_event_send_stop
+               00205   ; need to send the stop bit
+00C0 8293      00206   bsf           TRISB, 1                ; set data as HIGH-Z
+               00207   ; not quite done, need to wait for an ack as well
+00C2 EF00 F000 00208   goto          edge_event_exit
+               00209 
+00C6 00210 edge_event_save_byte
+00C6 BC96      00211   btfsc         TRISE,OBF
+00C8 D000      00212   bra           edge_event_load_fifo
+               00213   ; the buffer is empty so load the byte directly to the Z80
+               00214 ;   movf          rxreg,w
+00CA 6E83      00215   movwf         PORTD
+00CC 9A89      00216   bcf           LATA,P_INT              ; set an interrupt.
+00CE EF00 F000 00217   goto          edge_event_exit
+               00218 
+00D2 00219 edge_event_load_fifo
+               00220 ;   movf          rxreg,w
+00D2 6EEE      00221   movwf         POSTINC0                ; bung the byte in the fifo
+00D4 0E01      00222   movlw         0x01
+00D6 6EEA      00223   movwf         FSR0H                   ; make sure we wrap around 256 bytes
+00D8 EF00 F000 00224   goto          edge_event_exit
+               00225 
+00DC 00226 edge_event_start
+               00227   ; only do this on receive
+00DC 6A00      00228   clrf          rxreg
+00DE 8ED5      00229   bsf           T0CON, TMR0ON           ; enable the timeout function
+00E0 EF00 F000 00230   goto          edge_event_exit
+               00231 
+00E4 00232 edge_event_parity
+               00233   ; only care when we're talking but need to check this
+00E4 AA00      00234   btfss         flags, talking_flag
+00E6 EF00 F000 00235   goto          edge_event_exit
+               00236   ; okay so we're talking, send the parity bit
+00EA A000      00237   btfss         parity, parity_flag
+00EC 9293      00238   bcf           TRISB,1
+00EE B000      00239   btfsc         parity, parity_flag
+00F0 8293      00240   bsf           TRISB,1
+               00241   ; all done
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+00F2 EF00 F000 00242   goto          edge_event_exit
+               00243 
+00F6 00244 edge_event_ack
+               00245   ; this is the acknowledge from the keyboard when we've just sent a byte
+00F6 B281      00246   btfsc         PORTB,1
+00F8 D000      00247   bra           edge_event_ack_error    ; should have been low
+               00248   ; all done transmitting, clear the flags and tidy up
+00FA 9ED5      00249   bcf           T0CON, TMR0ON           ; stop the timer
+00FC 6800      00250   setf          bit_count               ; reset the bit counter
+00FE 9A00      00251   bcf           flags, talking_flag     ; exit talking mode
+0100 6A00      00252   clrf          txreg
+0102 EF00 F000 00253   goto          edge_event_exit
+               00254 
+0106 00255 edge_event_ack_error
+               00256   ; all went wrong somewhere, set send_failed bit and clear the status
+0106 8C00      00257   bsf           flags, send_failed_flag
+0108 9A00      00258   bcf           flags, talking_flag
+010A 6800      00259   setf          bit_count
+010C 9ED5      00260   bcf           T0CON, TMR0ON
+010E 6A00      00261   clrf          txreg
+0110 EF00 F000 00262   goto          edge_event_exit
+               00263 
+0114 00264 edge_event_exit
+0114 2A00      00265   incf          bit_count,f
+0116 6AD6      00266   clrf          TMR0L                   ; clear the timeout counter
+0118 92F2      00267   bcf           INTCON, INT0IF
+011A EF00 F000 00268   goto          exit_interrupt
+               00269 
+011E 00270 exit_interrupt
+011E 0011      00271   retfie        FAST
+               00272 
+               00273 ; == End of Interrupt code ====================================================
+               00274 
+0120 00275 init
+0120 0E0F      00276   movlw         ADCONDEF
+0122 6EC1      00277   movwf         ADCON1
+               00278 
+0124 0E20      00279   movlw         PORTADEF
+0126 6E89      00280   movwf         LATA
+0128 0EDC      00281   movlw         PORTADIR
+012A 6E92      00282   movwf         TRISA
+               00283 
+012C 0E00      00284   movlw         PORTBDEF
+012E 6E8A      00285   movwf         LATB
+0130 0E7F      00286   movlw         PORTBDIR
+0132 6E93      00287   movwf         TRISB
+               00288 
+0134 0E00      00289   movlw         PORTCDEF
+0136 6E8B      00290   movwf         LATC
+0138 0EFF      00291   movlw         PORTCDIR
+013A 6E94      00292   movwf         TRISC
+               00293 
+               00294   ; don't need to set up port D because it is controlled by the PSP mode bits
+               00295   ; in TRISE
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00296 
+013C 0E00      00297   movlw         PORTEDEF
+013E 6E8D      00298   movwf         LATE
+0140 0E17      00299   movlw         PORTEDIR
+0142 6E96      00300   movwf         TRISE
+               00301 
+               00302   ; setup the pointers
+0144 0E01      00303   movlw         0x01
+0146 6EEA      00304   movwf         FSR0H
+0148 6EE2      00305   movwf         FSR1H
+014A 6AE9      00306   clrf          FSR0L
+014C 6AE1      00307   clrf          FSR1L
+               00308 
+014E 6A00      00309   clrf          bit_count
+               00310 
+0150 0E42      00311   movlw         b'01000010'
+0152 6ED5      00312   movwf         T0CON                   ; setup for interrupt ~5kHz
+0154 6AD6      00313   clrf          TMR0L
+               00314 
+               00315   ; set the default translation mode to ascii
+0156 0E01      00316   movlw         TRANSLATE_ASCII
+0158 6E00      00317   movwf         translate_mode
+               00318 
+               00319   ; set the default flags
+015A 0E02      00320   movlw         b'00000010'
+015C 6E00      00321   movwf         flags
+               00322 
+015E 9CF1      00323   bcf           INTCON2, INTEDG0        ; interrupt on falling edge on RB0
+               00324 
+0160 88F2      00325   bsf           INTCON, INT0IE
+0162 8AF2      00326   bsf           INTCON, TMR0IE
+0164 94F2      00327   bcf           INTCON, TMR0IF
+0166 92F2      00328   bcf           INTCON, INT0IF
+0168 9E9E      00329   bcf           PIR1, PSPIF
+016A 8E9D      00330   bsf           PIE1, PSPIE
+016C 8CF2      00331   bsf           INTCON, PEIE
+016E 8EF2      00332   bsf           INTCON, GIE
+               00333    
+0170 8089      00334   bsf           LATA, P_READY           ; set the ready bit in the Z80 status register
+               00335 
+0172 00336 waiting_start
+0172 7E8A      00337   btg           LATB,7
+0174 6800      00338   setf          count
+0176 6800      00339   setf          count+1                 ; set up a timeout
+0178 0E20      00340   movlw         0x20
+017A 6E00      00341   movwf         count+2
+017C 00342 wait_new_board_loop
+017C B289      00343   btfsc         LATA, P_FOUND           ; keep checking if there's a keyboard
+017E EF00 F000 00344   goto          main2                    ; ready
+0182 2E00      00345   decfsz        count,f
+0184 D000      00346   bra           wait_new_board_loop     ; wait until there is
+0186 2E00      00347   decfsz        count+1,f
+0188 D000      00348   bra           wait_new_board_loop
+018A 2E00      00349   decfsz        count+2,f
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+018C D000      00350   bra           wait_new_board_loop
+               00351 
+               00352   ; wait timed out - try sending a reset
+018E 0EFF      00353   movlw         0xff
+0190 6E00      00354   movwf         txreg
+               00355 
+0192 EC00 F000 00356   call          wait_to_talk
+               00357 
+0196 D000      00358   bra           waiting_start
+               00359 
+0198 00360 main2
+0198 0EED      00361   movlw         0xED
+019A 6E00      00362   movwf         txreg
+               00363 
+019C 00364 main
+               00365 ;   bra           main
+               00366 
+019C BE00      00367   btfsc         flags, update_leds_flag
+019E D000      00368   bra           send_leds_byte
+               00369   ; keep looking for bytes to send, and then to see if it's safe to send them
+01A0 0E00      00370   movlw         0x00
+01A2 1800      00371   xorwf         txreg,w
+01A4 E000      00372   bz            main            ; if it's a null byte don't send
+               00373   ; check if this is a set LEDs command and set a flag
+01A6 0EED      00374   movlw         0xED
+01A8 1800      00375   xorwf         txreg,w
+01AA B4D8      00376   btfsc         STATUS,Z        ; don't set flag if not zero
+01AC 8E00      00377   bsf           flags, update_leds_flag
+               00378 
+01AE EC00 F000 00379   call          wait_to_talk
+01B2 D000      00380   bra           main
+               00381 
+01B4 00382 wait_to_talk
+01B4 0E00      00383   movlw         0x00
+01B6 1800      00384   xorwf         bit_count,w     ; see if we're already receiving something
+01B8 E000      00385   bz            start_talking   ; if not start talking
+               00386   
+01BA D000      00387   bra           wait_to_talk       ; other wise wait for a gap
+               00388 
+01BC 00389 send_leds_byte
+01BC 0E20      00390   movlw         0x20
+01BE 6E00      00391   movwf         count+1
+01C0 6800      00392   setf          count
+               00393 ;   setf          count+1
+01C2 00394 loop
+01C2 2E00      00395   decfsz        count,f
+01C4 D000      00396   bra           loop
+01C6 2E00      00397   decfsz        count+1,f
+01C8 D000      00398   bra           loop
+01CA 5000      00399   movf          flags,w
+01CC 0B07      00400   andlw         0x07            ; mask the led bits
+01CE 6E00      00401   movwf         txreg
+01D0 9E00      00402   bcf           flags, update_leds_flag
+01D2 EC00 F000 00403   call          wait_to_talk
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+01D6 EF00 F000 00404   goto          main
+               00405 
+               00406 ; ------------------------------------------------------------------------------
+               00407 ;       Host -> device comms
+               00408 ; ------------------------------------------------------------------------------
+               00409 
+01DA 00410 start_talking
+               00411   ; turn off the edge interrupt for a bit
+01DA 98F2      00412   bcf           INTCON, INT0IE
+               00413   ; set the clock pin to output (drive the line low)
+01DC 9093      00414   bcf           TRISB, 0
+               00415   ; clear timer 0 for a ~200uS delay, longer than the 100uS minimum
+01DE 6AD6      00416   clrf          TMR0L
+               00417   ; start the timer to do the startup delay
+01E0 8ED5      00418   bsf           T0CON, TMR0ON
+               00419   ; set the flag to say we're in talk mode
+01E2 8A00      00420   bsf           flags, talking_flag
+               00421   ; wait for the flag to get cleared by the last interrupt (ack bit)
+               00422 
+01E4 00423 talking_loop
+01E4 BA00      00424   btfsc         flags, talking_flag
+01E6 D000      00425   bra           talking_loop
+               00426   ; all done go back to main
+01E8 0012      00427   return
+               00428 
+01EA 00429 test_startup
+01EA 0EAA      00430   movlw         0xAA
+01EC 1800      00431   xorwf         rxreg,w
+01EE B4D8      00432   btfsc         STATUS,Z
+01F0 8289      00433   bsf           LATA, P_FOUND
+01F2 EF00 F000 00434   goto          edge_event_exit
+               00435 
+01F6 00436 key_translate
+01F6 A289      00437   btfss         LATA, P_FOUND
+01F8 EF00 F000 00438   goto          test_startup
+               00439   ; see what translation mode is enabled
+01FC 0E01      00440   movlw         TRANSLATE_ASCII
+01FE 1800      00441   xorwf         translate_mode,w
+0200 B4D8      00442   btfsc         STATUS,Z
+0202 EF00 F000 00443   goto          key_ascii
+               00444   ; failsafe do key_none
+0206 5000      00445   movf          rxreg,w
+0208 EF00 F000 00446   goto          edge_event_save_byte
+               00447 
+020C 00448 key_ascii
+020C 0EF0      00449   movlw         0xF0
+020E 1800      00450   xorwf         rxreg, w
+0210 E000      00451   bz            key_ascii_release
+0212 0EE0      00452   movlw         0xE0
+0214 1800      00453   xorwf         rxreg, w
+0216 E000      00454   bz            key_ascii_special
+0218 0E83      00455   movlw         0x83                    ; F7 - only scan code above 7F
+021A 1800      00456   xorwf         rxreg, w
+021C B4D8      00457   btfsc         STATUS,Z
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+021E 6800      00458   setf          rxreg
+0220 9E00      00459   bcf           rxreg, 7                ; sets code to 7F if we just set the register,
+               00460                                         ; if not then it won't affect it.
+               00461 ;   movlw         0xFE
+               00462 ;   andwf         rxreg,w                 ; make both shits seem the same
+               00463 ;   xorlw         CC_L_SHIFT
+               00464 ;   btfsc         flags, dump_next
+               00465 ;   bra           key_ascii_no_char
+               00466 
+               00467   ; do a first pass lookup into "nathan-code"
+0222 5000      00468   movf          rxreg,w
+0224 EC00 F000 00469   call          key_nd_decode
+               00470 ;   goto          edge_event_save_byte            ; TESTING
+               00471   ; now it's easy to decide what key group the key was in
+0228 BEE8      00472   btfsc         WREG, 7
+022A EF00 F000 00473   goto          key_ascii_control       ; it's a control or keypad key
+               00474   ; if it's not a control key (and it's not!!) then we don't care about release
+022E B800      00475   btfsc         flags, release_flag
+0230 EF00 F000 00476   goto          key_ascii_exit_release
+               00477   ; not a special key, translate it into something based on shift/caps
+0234 B600      00478   btfsc         flags, shift_flag
+0236 EF00 F000 00479   goto          key_ascii_decode_shift
+023A B400      00480   btfsc         flags, caps_flag
+023C EF00 F000 00481   goto          key_ascii_decode_caps
+               00482   ; no modifiers, just translate to ascii
+0240 EF00 F000 00483   goto          key_ascii_decode_nomod
+               00484 
+               00485 ; key_ascii_no_char
+               00486 ;   bcf           flags, dump_next
+               00487 ;   goto          edge_event_exit         ; don't send this byte
+               00488 
+0244 00489 key_ascii_special
+0244 EF00 F000 00490   goto          edge_event_exit
+               00491 
+0248 00492 key_ascii_exit_release
+               00493   ; release event on a character key, don't care, clear the flag and exit
+0248 9800      00494   bcf           flags, release_flag
+024A EF00 F000 00495   goto          edge_event_exit
+               00496 
+024E 00497 key_ascii_release
+024E 8800      00498   bsf           flags, release_flag
+0250 EF00 F000 00499   goto          edge_event_exit
+               00500 
+0254 00501 key_ascii_control
+               00502   ; control or keypad button
+               00503   ; first trap locally important keys (shift, caps)
+0254 6E00      00504   movwf         rxreg
+0256 0EFE      00505   movlw         0xFE            ; mask makes LSHIFT == RSHIFT
+0258 1400      00506   andwf         rxreg, w
+025A 0A92      00507   xorlw         CC_LSHIFT
+025C B4D8      00508   btfsc         STATUS,Z
+025E EF00 F000 00509   goto          key_ascii_set_shift
+               00510   ; don't care about key release on any of these
+0262 B800      00511   btfsc         flags, release_flag
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+0264 EF00 F000 00512   goto          key_ascii_exit_release
+0268 0E91      00513   movlw         CC_CAPS
+026A 1800      00514   xorwf         rxreg, w
+026C B4D8      00515   btfsc         STATUS,Z
+026E EF00 F000 00516   goto          key_ascii_set_caps
+0272 0E90      00517   movlw         CC_NUM
+0274 1800      00518   xorwf         rxreg, w
+0276 B4D8      00519   btfsc         STATUS,Z
+0278 EF00 F000 00520   goto          key_ascii_set_num
+027C EF00 F000 00521   goto          edge_event_exit         ; key code we're not interested in
+               00522 
+0280 00523 key_ascii_set_shift
+               00524   ; see if this is a press or release event
+0280 B800      00525   btfsc         flags, release_flag
+0282 EF00 F000 00526   goto          key_ascii_clear_shift
+               00527   ; it's a shift key press, set the shift flag
+0286 8600      00528   bsf           flags, shift_flag
+0288 EF00 F000 00529   goto          edge_event_exit
+               00530 
+028C 00531 key_ascii_clear_shift
+028C 9600      00532   bcf           flags, shift_flag
+028E 9800      00533   bcf           flags, release_flag
+0290 EF00 F000 00534   goto          edge_event_exit
+               00535 
+0294 00536 key_ascii_set_caps
+               00537   ; actually this is toggle caps
+0294 7400      00538   btg           flags, caps_flag
+               00539   ; queue a set CAPS LED command
+0296 0EED      00540   movlw         0xED
+0298 6E00      00541   movwf         txreg
+029A EF00 F000 00542   goto          edge_event_exit
+               00543 
+029E 00544 key_ascii_set_num
+029E 0EED      00545   movlw         0xED
+02A0 6E00      00546   movwf         txreg
+02A2 7200      00547   btg           flags, num_flag
+02A4 EF00 F000 00548   goto          edge_event_exit
+               00549 
+02A8 00550 key_ascii_decode_nomod
+02A8 6EF6      00551   movwf         TBLPTRL
+02AA 0E80      00552   movlw         0x80
+02AC 12F6      00553   iorwf         TBLPTRL,f
+02AE 6AF8      00554   clrf          TBLPTRU
+02B0 0E77      00555   movlw         0x77
+02B2 6EF7      00556   movwf         TBLPTRH
+02B4 0008      00557   tblrd*
+02B6 50F5      00558   movf          TABLAT,w
+02B8 EF00 F000 00559   goto          edge_event_save_byte
+               00560 
+02BC 00561 key_ascii_decode_shift
+02BC 6EF6      00562   movwf         TBLPTRL
+02BE 0EC0      00563   movlw         0xC0
+02C0 12F6      00564   iorwf         TBLPTRL,f
+02C2 6AF8      00565   clrf          TBLPTRU
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+02C4 0E77      00566   movlw         0x77
+02C6 6EF7      00567   movwf         TBLPTRH
+02C8 0008      00568   tblrd*
+02CA 50F5      00569   movf          TABLAT,w
+02CC EF00 F000 00570   goto          edge_event_save_byte
+               00571 
+02D0 00572 key_ascii_decode_caps
+02D0 6EF6      00573   movwf         TBLPTRL
+02D2 6AF8      00574   clrf          TBLPTRU
+02D4 0E78      00575   movlw         0x78
+02D6 6EF7      00576   movwf         TBLPTRH
+02D8 0008      00577   tblrd*
+02DA 50F5      00578   movf          TABLAT,w
+02DC EF00 F000 00579   goto          edge_event_save_byte
+               00580 
+02E0 00581 key_nd_decode
+               00582   ; return a keycode in the custom code map specified in scancodes.inc
+               00583   ; this sets bit 7 if the key is a control (escape - F1-F12 - Home, Insert etc.)
+               00584   ; bits 7 and 6 are set if it is a numberpad key
+               00585   ; if neither bit 6 or 7 are set it's a main character/number key
+02E0 6EF6      00586   movwf         TBLPTRL
+02E2 6AF8      00587   clrf          TBLPTRU
+02E4 0E77      00588   movlw         0x77
+02E6 6EF7      00589   movwf         TBLPTRH
+02E8 0008      00590   tblrd*
+02EA 50F5      00591   movf          TABLAT,w
+02EC 0012      00592   return
+               00593   
+               00594 org 0x7700
+7700 00595 SCAN_CODES_ND
+7700 89FF      00596         db 0xFF,CC_F9   ;00, 01 - F9
+7702 85FF      00597         db 0xFF,CC_F5   ;02, 03 - F5
+7704 8183      00598         db CC_F3,CC_F1  ;04 - F3, 05 - F1
+7706 8C82      00599         db CC_F2,CC_F12 ;06 - F2, 07 - F12
+7708 8AFF      00600         db 0xFF,CC_F10  ;08, 09 - F10
+770A 8688      00601         db CC_F8,CC_F6  ;0A - F8, 0B - F6
+770C 3084      00602         db CC_F4,CC_TAB ;0C - F4, 0D - TAB
+770E FF24      00603         db CC_LQ,0xFF   ;0E - `, 0F
+7710 95FF      00604         db 0xFF,CC_ALT  ;10, 11 - ALT
+7712 FF92      00605         db CC_LSHIFT,0xFF       ;12 - L SHIFT, 13
+7714 1A94      00606         db CC_CTRL,CC_Q ;14 - CTRL, 15 - Q
+7716 FF01      00607         db CC_1,0xFF    ;16 - 1, 17
+7718 FFFF      00608         db 0xFF,0xFF    ;18, 19
+771A 1C23      00609         db CC_Z,CC_S    ;1A - Z, 1B - S
+771C 200A      00610         db CC_A,CC_W    ;1C - A, 1D - W
+771E 9602      00611         db CC_2,CC_GUIL ;1E - 2, 1F - L GUI
+7720 0CFF      00612         db 0xFF,CC_C    ;20, 21 - C
+7722 0D21      00613         db CC_X,CC_D    ;22 - X, 23 - D
+7724 040E      00614         db CC_E,CC_4    ;24 - E, 25 - 4
+7726 9703      00615         db CC_3,CC_GUIR ;26 - 3, 27 - R GUI
+7728 2FFF      00616         db 0xFF,CC_SP   ;28, 29 - SPACE
+772A 0F1F      00617         db CC_V,CC_F    ;2A - V,2B - F
+772C 1B1D      00618         db CC_T,CC_R    ;2C - T,2D - R
+772E 9805      00619         db CC_5,CC_APPS ;2E - 5, 2F - APPS
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+7730 17FF      00620         db 0xFF,CC_N    ;30, 31 - N
+7732 110B      00621         db CC_B,CC_H    ;32 - B, 33 - H
+7734 2210      00622         db CC_G,CC_Y    ;34 - G,35 - Y
+7736 FF06      00623         db CC_6,0xFF    ;36 - 6, 37
+7738 FFFF      00624         db 0xFF,0xFF    ;38, 39
+773A 1316      00625         db CC_M,CC_J    ;3A - M, 3B - J
+773C 071E      00626         db CC_U,CC_7    ;3C - U, 3D - 7
+773E FF08      00627         db CC_8,0xFF    ;3E - 8, 3F
+7740 2AFF      00628         db 0xFF,CC_CM   ;40, 41 - ,
+7742 1214      00629         db CC_K,CC_I    ;42 - K, 43 - I
+7744 0018      00630         db CC_O,CC_0    ;44 - O, 45 - 0 (zero)
+7746 FF09      00631         db CC_9,0xFF    ;46 - 9, 47
+7748 2BFF      00632         db 0xFF,CC_FS   ;48, 49 - .
+774A 152D      00633         db CC_US,CC_L   ;4A - /,4B - L
+774C 192E      00634         db CC_SC,CC_P   ;4C - ;, 4D - P
+774E FF25      00635         db CC_DSH,0xFF  ;4E - -, 4F
+7750 FFFF      00636         db 0xFF,0xFF    ;50, 51
+7752 FF29      00637         db CC_AP,0xFF   ;52 - ', 53
+7754 2627      00638         db CC_LSB,CC_EQ ;54 - [, 55     - =
+7756 FFFF      00639         db 0xFF,0xFF    ;56, 57
+7758 9391      00640         db CC_CAPS,CC_RSHIFT    ;58 - CAPS, 59 - R SHIFT
+775A 2831      00641         db CC_ENTER,CC_RSB      ;5A - ENTER, 5B - ]
+775C 2CFF      00642         db 0xFF,CC_WS   ;5C, 5D - \
+775E FFFF      00643         db 0xFF,0xFF    ;5E, 5F
+7760 FFFF      00644         db 0xFF,0xFF    ;60, 61
+7762 FFFF      00645         db 0xFF,0xFF    ;62,63
+7764 FFFF      00646         db 0xFF,0xFF    ;64, 65
+7766 FF33      00647         db CC_BKSP,0xFF ;66 - BKSP, 67
+7768 C1FF      00648         db 0xFF,CC_KP1  ;68, 69 - KP 1
+776A C4FF      00649         db 0xFF,CC_KP4  ;6A, 6B - KP 4
+776C FFC7      00650         db CC_KP7,0xFF  ;6C - KP 7, 6D
+776E FFFF      00651         db 0xFF,0xFF    ;6E, 6F
+7770 CAC0      00652         db CC_KP0,CC_KPD        ;70 - KP 0, 71 - KP .
+7772 C5C2      00653         db CC_KP2,CC_KP5        ;72 - KP 2, 73 - KP 5
+7774 C8C6      00654         db CC_KP6,CC_KP8        ;74 - KP 6, 75 - KP 8
+7776 9080      00655         db CC_ESC,CC_NUM        ;76 - ESC, 77 - NUM
+7778 CC8B      00656         db CC_F11,CC_KPP        ;78 - F11,79 - KP+
+777A CDC3      00657         db CC_KP3,CC_KPM        ;7A - KP 3, 7B - KP -
+777C C9CB      00658         db CC_KPS,CC_KP9        ;7C - KP *, 7D - KP 9
+777E 878E      00659         db CC_SCROLL,CC_F7      ;7E - SCROLL, 7F - F7 (Not real scan code, has to be moved here from 83)
+               00660 
+               00661 org 0x7780
+7780 00662 ND_CODES_ASCII_NOMOD
+7780 3130      00663         db '0','1'
+7782 3332      00664         db '2','3'
+7784 3534      00665         db '4','5'
+7786 3736      00666         db '6','7'
+7788 3938      00667         db '8','9'
+778A 6261      00668         db 'a','b'
+778C 6463      00669         db 'c','d'
+778E 6665      00670         db 'e','f'
+7790 6867      00671         db 'g','h'
+7792 6A69      00672         db 'i','j'
+7794 6C6B      00673         db 'k','l'
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+7796 6E6D      00674         db 'm','n'
+7798 706F      00675         db 'o','p'
+779A 7271      00676         db 'q','r'
+779C 7473      00677         db 's','t'
+779E 7675      00678         db 'u','v'
+77A0 7877      00679         db 'w','x'
+77A2 7A79      00680         db 'y','z'
+77A4 2D60      00681         db '`','-'
+77A6 5B3D      00682         db '=','['
+77A8 275D      00683         db ']','\''
+77AA 2E2C      00684         db ',','.'
+77AC 2F5C      00685         db '\\','/'
+77AE 203B      00686         db ';',' '
+77B0 0A09      00687         db '\t','\n'
+77B2 087F      00688         db 0x7F,0x08
+               00689 
+               00690 org 0x77C0
+77C0 00691 ND_CODES_ASCII_SHIFT
+77C0 2129      00692         db ')','!'
+77C2 A322      00693         db '\"',0xA3    ; £ symbol
+77C4 2524      00694         db '$','%'
+77C6 265E      00695         db '^','&'
+77C8 282A      00696         db '*','('
+77CA 4241      00697         db 'A','B'
+77CC 4443      00698         db 'C','D'
+77CE 4645      00699         db 'E','F'
+77D0 4847      00700         db 'G','H'
+77D2 4A49      00701         db 'I','J'
+77D4 4C4B      00702         db 'K','L'
+77D6 4E4D      00703         db 'M','N'
+77D8 504F      00704         db 'O','P'
+77DA 5251      00705         db 'Q','R'
+77DC 5453      00706         db 'S','T'
+77DE 5655      00707         db 'U','V'
+77E0 5857      00708         db 'W','X'
+77E2 5A59      00709         db 'Y','Z'
+77E4 5FB0      00710         db 0xB0,'_'     ;¬ character mapped to degree symbol
+77E6 7B2B      00711         db '+','{'
+77E8 407D      00712         db '}','@'
+77EA 3E3C      00713         db '<','>'
+77EC 3F7C      00714         db '|','?'
+77EE 203A      00715         db ':',' '
+77F0 0A09      00716         db '\t','\n'
+77F2 087F      00717         db 0x7F, 0x08
+               00718 
+               00719 org 0x7800
+7800 00720 ND_CODES_ASCII_CAPS
+7800 3130      00721         db '0','1'
+7802 3332      00722         db '2','3'
+7804 3534      00723         db '4','5'
+7806 3736      00724         db '6','7'
+7808 3938      00725         db '8','9'
+780A 4241      00726         db 'A','B'
+780C 4443      00727         db 'C','D'
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 17
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+780E 4645      00728         db 'E','F'
+7810 4847      00729         db 'G','H'
+7812 4A49      00730         db 'I','J'
+7814 4C4B      00731         db 'K','L'
+7816 4E4D      00732         db 'M','N'
+7818 504F      00733         db 'O','P'
+781A 5251      00734         db 'Q','R'
+781C 5453      00735         db 'S','T'
+781E 5655      00736         db 'U','V'
+7820 5857      00737         db 'W','X'
+7822 5A59      00738         db 'Y','Z'
+7824 2D60      00739         db '`','-'
+7826 5B3D      00740         db '=','['
+7828 275D      00741         db ']','\''
+782A 2E2C      00742         db ',','.'
+782C 2F5C      00743         db '\\','/'
+782E 203B      00744         db ';',' '
+7830 0A09      00745         db '\t','\n'
+7832 087F      00746         db 0x7F,0x08
+               00747 
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 18
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+A                                 00000000
+ABDEN                             00000000
+ABDOVF                            00000007
+ACCESS                            00000000
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ACQT0                             00000003
+ACQT1                             00000004
+ACQT2                             00000005
+ADCON0                            00000FC2
+ADCON1                            00000FC1
+ADCON2                            00000FC0
+ADCONDEF                          0000000F
+ADCS0                             00000000
+ADCS1                             00000001
+ADCS2                             00000002
+ADDEN                             00000003
+ADEN                              00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADIP                              00000006
+ADON                              00000000
+ADRES                             00000FC3
+ADRESH                            00000FC4
+ADRESL                            00000FC3
+AN0                               00000000
+AN1                               00000001
+AN10                              00000001
+AN11                              00000004
+AN12                              00000000
+AN2                               00000002
+AN3                               00000003
+AN4                               00000005
+AN5                               00000000
+AN6                               00000001
+AN7                               00000002
+AN8                               00000002
+AN9                               00000003
+BANKED                            00000001
+BAUDCON                           00000FB8
+BAUDCTL                           00000FB8
+BCLIE                             00000003
+BCLIF                             00000003
+BCLIP                             00000003
+BF                                00000000
+BGST                              00000005
+BOR                               00000000
+BRG16                             00000003
+BRGH                              00000002
+BSR                               00000FE0
+C                                 00000000
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+C1INV                             00000004
+C1OUT                             00000006
+C2INV                             00000005
+C2OUT                             00000007
+CCP1                              00000002
+CCP1CON                           00000FBD
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1IP                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCP2CON                           00000FBA
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2IP                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2X                             00000005
+CCP2Y                             00000004
+CCP2_PORTB                        00000003
+CCP2_PORTC                        00000001
+CCPR1                             00000FBE
+CCPR1H                            00000FBF
+CCPR1L                            00000FBE
+CCPR2                             00000FBB
+CCPR2H                            00000FBC
+CCPR2L                            00000FBB
+CC_0                              00000000
+CC_1                              00000001
+CC_2                              00000002
+CC_3                              00000003
+CC_4                              00000004
+CC_5                              00000005
+CC_6                              00000006
+CC_7                              00000007
+CC_8                              00000008
+CC_9                              00000009
+CC_A                              0000000A
+CC_ALT                            00000095
+CC_AP                             00000029
+CC_APPS                           00000098
+CC_B                              0000000B
+CC_BKSP                           00000033
+CC_C                              0000000C
+CC_CAPS                           00000091
+CC_CM                             0000002A
+CC_CTRL                           00000094
+CC_D                              0000000D
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 20
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+CC_DEL                            00000032
+CC_DSH                            00000025
+CC_E                              0000000E
+CC_ENTER                          00000031
+CC_EQ                             00000026
+CC_ESC                            00000080
+CC_F                              0000000F
+CC_F1                             00000081
+CC_F10                            0000008A
+CC_F11                            0000008B
+CC_F12                            0000008C
+CC_F2                             00000082
+CC_F3                             00000083
+CC_F4                             00000084
+CC_F5                             00000085
+CC_F6                             00000086
+CC_F7                             00000087
+CC_F8                             00000088
+CC_F9                             00000089
+CC_FS                             0000002B
+CC_G                              00000010
+CC_GUIL                           00000096
+CC_GUIR                           00000097
+CC_H                              00000011
+CC_I                              00000012
+CC_J                              00000013
+CC_K                              00000014
+CC_KP0                            000000C0
+CC_KP1                            000000C1
+CC_KP2                            000000C2
+CC_KP3                            000000C3
+CC_KP4                            000000C4
+CC_KP5                            000000C5
+CC_KP6                            000000C6
+CC_KP7                            000000C7
+CC_KP8                            000000C8
+CC_KP9                            000000C9
+CC_KPD                            000000CA
+CC_KPM                            000000CD
+CC_KPP                            000000CC
+CC_KPS                            000000CB
+CC_L                              00000015
+CC_LQ                             00000024
+CC_LSB                            00000027
+CC_LSHIFT                         00000092
+CC_M                              00000016
+CC_N                              00000017
+CC_NUM                            00000090
+CC_O                              00000018
+CC_P                              00000019
+CC_PAUSE                          0000008F
+CC_PRINT                          0000008D
+CC_Q                              0000001A
+CC_R                              0000001B
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 21
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+CC_RSB                            00000028
+CC_RSHIFT                         00000093
+CC_S                              0000001C
+CC_SC                             0000002E
+CC_SCROLL                         0000008E
+CC_SP                             0000002F
+CC_T                              0000001D
+CC_TAB                            00000030
+CC_U                              0000001E
+CC_US                             0000002D
+CC_V                              0000001F
+CC_W                              00000020
+CC_WS                             0000002C
+CC_X                              00000021
+CC_Y                              00000022
+CC_Z                              00000023
+CFGS                              00000006
+CHS0                              00000002
+CHS1                              00000003
+CHS2                              00000004
+CHS3                              00000005
+CIS                               00000003
+CK                                00000006
+CKE                               00000006
+CKP                               00000004
+CLKI                              00000007
+CLKO                              00000006
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             00000FB4
+CMIE                              00000006
+CMIF                              00000006
+CMIP                              00000006
+CREN                              00000004
+CS                                00000002
+CSRC                              00000007
+CVR0                              00000000
+CVR1                              00000001
+CVR2                              00000002
+CVR3                              00000003
+CVRCON                            00000FB5
+CVREF                             00000002
+CVREN                             00000007
+CVROE                             00000006
+CVRR                              00000005
+CVRSS                             00000004
+D                                 00000005
+DC                                00000001
+DC1B0                             00000004
+DC1B1                             00000005
+DC2B0                             00000004
+DC2B1                             00000005
+DONE                              00000001
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 22
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+D_A                               00000005
+ECCP1AS                           00000FB6
+ECCPAS0                           00000004
+ECCPAS1                           00000005
+ECCPAS2                           00000006
+ECCPASE                           00000007
+EEADR                             00000FA9
+EECON1                            00000FA6
+EECON2                            00000FA7
+EEDATA                            00000FA8
+EEIE                              00000004
+EEIF                              00000004
+EEIP                              00000004
+EEPGD                             00000007
+FAST                              00000001
+FERR                              00000002
+FLTS                              00000002
+FREE                              00000004
+FSR0                              00000000
+FSR0H                             00000FEA
+FSR0L                             00000FE9
+FSR1                              00000001
+FSR1H                             00000FE2
+FSR1L                             00000FE1
+FSR2                              00000002
+FSR2H                             00000FDA
+FSR2L                             00000FD9
+GCEN                              00000007
+GIE                               00000007
+GIEH                              00000007
+GIEL                              00000006
+GO                                00000001
+GO_DONE                           00000001
+HLVDCON                           00000FD2
+HLVDEN                            00000004
+HLVDIE                            00000002
+HLVDIF                            00000002
+HLVDIP                            00000002
+HLVDL0                            00000000
+HLVDL1                            00000001
+HLVDL2                            00000002
+HLVDL3                            00000003
+IBF                               00000007
+IBOV                              00000005
+IDLEN                             00000007
+INDF0                             00000FEF
+INDF1                             00000FE7
+INDF2                             00000FDF
+INT0                              00000000
+INT0E                             00000004
+INT0F                             00000001
+INT0IE                            00000004
+INT0IF                            00000001
+INT1                              00000001
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 23
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+INT1E                             00000003
+INT1F                             00000000
+INT1IE                            00000003
+INT1IF                            00000000
+INT1IP                            00000006
+INT1P                             00000006
+INT2                              00000002
+INT2E                             00000004
+INT2F                             00000001
+INT2IE                            00000004
+INT2IF                            00000001
+INT2IP                            00000007
+INT2P                             00000007
+INTCON                            00000FF2
+INTCON2                           00000FF1
+INTCON3                           00000FF0
+INTEDG0                           00000006
+INTEDG1                           00000005
+INTEDG2                           00000004
+INTSRC                            00000007
+IOFS                              00000002
+IPEN                              00000007
+IPR1                              00000F9F
+IPR2                              00000FA2
+IRCF0                             00000004
+IRCF1                             00000005
+IRCF2                             00000006
+IRVST                             00000005
+IVRST                             00000005
+KBI0                              00000004
+KBI1                              00000005
+KBI2                              00000006
+KBI3                              00000007
+LATA                              00000F89
+LATA0                             00000000
+LATA1                             00000001
+LATA2                             00000002
+LATA3                             00000003
+LATA4                             00000004
+LATA5                             00000005
+LATA6                             00000006
+LATA7                             00000007
+LATB                              00000F8A
+LATB0                             00000000
+LATB1                             00000001
+LATB2                             00000002
+LATB3                             00000003
+LATB4                             00000004
+LATB5                             00000005
+LATB6                             00000006
+LATB7                             00000007
+LATC                              00000F8B
+LATC0                             00000000
+LATC1                             00000001
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 24
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+LATC2                             00000002
+LATC3                             00000003
+LATC4                             00000004
+LATC5                             00000005
+LATC6                             00000006
+LATC7                             00000007
+LATD                              00000F8C
+LATD0                             00000000
+LATD1                             00000001
+LATD2                             00000002
+LATD3                             00000003
+LATD4                             00000004
+LATD5                             00000005
+LATD6                             00000006
+LATD7                             00000007
+LATE                              00000F8D
+LATE0                             00000000
+LATE1                             00000001
+LATE2                             00000002
+LVDCON                            00000FD2
+LVDEN                             00000004
+LVDIE                             00000002
+LVDIF                             00000002
+LVDIN                             00000005
+LVDIP                             00000002
+LVDL0                             00000000
+LVDL1                             00000001
+LVDL2                             00000002
+LVDL3                             00000003
+LVV0                              00000000
+LVV1                              00000001
+LVV2                              00000002
+LVV3                              00000003
+MCLR                              00000003
+N                                 00000004
+ND_CODES_ASCII_CAPS               00007800
+ND_CODES_ASCII_NOMOD              00007780
+ND_CODES_ASCII_SHIFT              000077C0
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BOR                           00000000
+NOT_CS                            00000002
+NOT_DONE                          00000001
+NOT_MCLR                          00000003
+NOT_PD                            00000002
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RD                            00000000
+NOT_RI                            00000004
+NOT_SS                            00000005
+NOT_T1SYNC                        00000002
+NOT_T3SYNC                        00000002
+NOT_TO                            00000003
+NOT_W                             00000002
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 25
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+NOT_WR                            00000001
+NOT_WRITE                         00000002
+OBF                               00000006
+OERR                              00000001
+OSC1                              00000007
+OSC2                              00000006
+OSCCON                            00000FD3
+OSCFIE                            00000007
+OSCFIF                            00000007
+OSCFIP                            00000007
+OSCTUNE                           00000F9B
+OSTS                              00000003
+OV                                00000003
+P                                 00000004
+P1B                               00000005
+P1C                               00000006
+P1D                               00000007
+P1M0                              00000006
+P1M1                              00000007
+PC                                00000FF9
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000FF9
+PCLATH                            00000FFA
+PCLATU                            00000FFB
+PD                                00000002
+PDC0                              00000000
+PDC1                              00000001
+PDC2                              00000002
+PDC3                              00000003
+PDC4                              00000004
+PDC5                              00000005
+PDC6                              00000006
+PEIE                              00000006
+PEN                               00000002
+PGC                               00000006
+PGD                               00000007
+PGM                               00000005
+PIE1                              00000F9D
+PIE2                              00000FA0
+PIR1                              00000F9E
+PIR2                              00000FA1
+PLLEN                             00000006
+PLUSW0                            00000FEB
+PLUSW1                            00000FE3
+PLUSW2                            00000FDB
+POR                               00000001
+PORTA                             00000F80
+PORTADEF                          00000020
+PORTADIR                          000000DC
+PORTB                             00000F81
+PORTBDEF                          00000000
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 26
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+PORTBDIR                          0000007F
+PORTC                             00000F82
+PORTCDEF                          00000000
+PORTCDIR                          000000FF
+PORTD                             00000F83
+PORTE                             00000F84
+PORTEDEF                          00000000
+PORTEDIR                          00000017
+POSTDEC0                          00000FED
+POSTDEC1                          00000FE5
+POSTDEC2                          00000FDD
+POSTINC0                          00000FEE
+POSTINC1                          00000FE6
+POSTINC2                          00000FDE
+PR2                               00000FCB
+PREINC0                           00000FEC
+PREINC1                           00000FE4
+PREINC2                           00000FDC
+PROD                              00000FF3
+PRODH                             00000FF4
+PRODL                             00000FF3
+PRSEN                             00000007
+PSA                               00000003
+PSP0                              00000000
+PSP1                              00000001
+PSP2                              00000002
+PSP3                              00000003
+PSP4                              00000004
+PSP5                              00000005
+PSP6                              00000006
+PSP7                              00000007
+PSPIE                             00000007
+PSPIF                             00000007
+PSPIP                             00000007
+PSPMODE                           00000004
+PSSAC0                            00000002
+PSSAC1                            00000003
+PSSBD0                            00000000
+PSSBD1                            00000001
+PWM1CON                           00000FB7
+P_CS                              00000002
+P_FOUND                           00000001
+P_INT                             00000005
+P_RD                              00000000
+P_READY                           00000000
+P_RX                              00000007
+P_TX                              00000006
+P_WR                              00000001
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 27
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+RA5                               00000005
+RA6                               00000006
+RA7                               00000007
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RBIP                              00000000
+RBPU                              00000007
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RCEN                              00000003
+RCIDL                             00000006
+RCIE                              00000005
+RCIF                              00000005
+RCIP                              00000005
+RCMT                              00000006
+RCON                              00000FD0
+RCREG                             00000FAE
+RCSTA                             00000FAB
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD16                              00000007
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+RE3                               00000003
+RI                                00000004
+RSEN                              00000001
+RX                                00000007
+RX9                               00000006
+RX9D                              00000000
+RXDTP                             00000005
+R_W                               00000002
+S                                 00000003
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 28
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+SBOREN                            00000006
+SCAN_CODES_ND                     00007700
+SCK                               00000003
+SCKP                              00000004
+SCL                               00000003
+SCS0                              00000000
+SCS1                              00000001
+SDA                               00000004
+SDI                               00000004
+SDO                               00000005
+SEN                               00000000
+SENDB                             00000003
+SMP                               00000007
+SP0                               00000000
+SP1                               00000001
+SP2                               00000002
+SP3                               00000003
+SP4                               00000004
+SPBRG                             00000FAF
+SPBRGH                            00000FB0
+SPEN                              00000007
+SREN                              00000005
+SS                                00000005
+SSPADD                            00000FC8
+SSPBUF                            00000FC9
+SSPCON1                           00000FC6
+SSPCON2                           00000FC5
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPIP                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000FC7
+STATUS                            00000FD8
+STKFUL                            00000007
+STKOVF                            00000007
+STKPTR                            00000FFC
+STKUNF                            00000006
+SWDTE                             00000000
+SWDTEN                            00000000
+SYNC                              00000004
+T08BIT                            00000006
+T0CKI                             00000004
+T0CON                             00000FD5
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0PS0                             00000000
+T0PS1                             00000001
+T0PS2                             00000002
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 29
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+T0SE                              00000004
+T13CKI                            00000000
+T1CKI                             00000000
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000FCD
+T1OSCEN                           00000003
+T1OSI                             00000001
+T1OSO                             00000000
+T1RUN                             00000006
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000FCA
+T2OUTPS0                          00000003
+T2OUTPS1                          00000004
+T2OUTPS2                          00000005
+T2OUTPS3                          00000006
+T3CCP1                            00000003
+T3CCP2                            00000006
+T3CKPS0                           00000004
+T3CKPS1                           00000005
+T3CON                             00000FB1
+T3SYNC                            00000002
+TABLAT                            00000FF5
+TBLPTR                            00000FF6
+TBLPTRH                           00000FF7
+TBLPTRL                           00000FF6
+TBLPTRU                           00000FF8
+TMR0H                             00000FD7
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR0IP                            00000002
+TMR0L                             00000FD6
+TMR0ON                            00000007
+TMR1CS                            00000001
+TMR1H                             00000FCF
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1IP                            00000000
+TMR1L                             00000FCE
+TMR1ON                            00000000
+TMR2                              00000FCC
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2IP                            00000001
+TMR2ON                            00000002
+TMR3CS                            00000001
+TMR3H                             00000FB3
+TMR3IE                            00000001
+TMR3IF                            00000001
+TMR3IP                            00000001
+TMR3L                             00000FB2
+TMR3ON                            00000000
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 30
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+TO                                00000003
+TOS                               00000FFD
+TOSH                              00000FFE
+TOSL                              00000FFD
+TOSU                              00000FFF
+TRANSLATE_ASCII                   00000001
+TRISA                             00000F92
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISA6                            00000006
+TRISA7                            00000007
+TRISB                             00000F93
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000F94
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000F95
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000F96
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TUN0                              00000000
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TX                                00000006
+TX9                               00000006
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 31
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+TX9D                              00000000
+TXCKP                             00000004
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXIP                              00000004
+TXREG                             00000FAD
+TXSTA                             00000FAC
+UA                                00000001
+VCFG0                             00000004
+VCFG1                             00000005
+VDIRMAG                           00000007
+VPP                               00000003
+VREFN                             00000002
+VREFP                             00000003
+W                                 00000000
+WCOL                              00000007
+WDTCON                            00000FD1
+WR                                00000001
+WREG                              00000FE8
+WREN                              00000002
+WRERR                             00000003
+WUE                               00000001
+Z                                 00000002
+_BOREN_NOSLP_2L                   000000FD
+_BOREN_OFF_2L                     000000F9
+_BOREN_ON_2L                      000000FB
+_BOREN_SBORDIS_2L                 000000FF
+_BORV_0_2L                        000000E7
+_BORV_1_2L                        000000EF
+_BORV_2_2L                        000000F7
+_BORV_3_2L                        000000FF
+_CCP2MX_PORTBE_3H                 000000FE
+_CCP2MX_PORTC_3H                  000000FF
+_CONFIG1H                         00300001
+_CONFIG2H                         00300003
+_CONFIG2L                         00300002
+_CONFIG3H                         00300005
+_CONFIG4L                         00300006
+_CONFIG5H                         00300009
+_CONFIG5L                         00300008
+_CONFIG6H                         0030000B
+_CONFIG6L                         0030000A
+_CONFIG7H                         0030000D
+_CONFIG7L                         0030000C
+_CP0_OFF_5L                       000000FF
+_CP0_ON_5L                        000000FE
+_CP1_OFF_5L                       000000FF
+_CP1_ON_5L                        000000FD
+_CP2_OFF_5L                       000000FF
+_CP2_ON_5L                        000000FB
+_CP3_OFF_5L                       000000FF
+_CP3_ON_5L                        000000F7
+_CPB_OFF_5H                       000000FF
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 32
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+_CPB_ON_5H                        000000BF
+_CPD_OFF_5H                       000000FF
+_CPD_ON_5H                        0000007F
+_DEBUG_OFF_4L                     000000FF
+_DEBUG_ON_4L                      0000007F
+_DEVID1                           003FFFFE
+_DEVID2                           003FFFFF
+_EBTR0_OFF_7L                     000000FF
+_EBTR0_ON_7L                      000000FE
+_EBTR1_OFF_7L                     000000FF
+_EBTR1_ON_7L                      000000FD
+_EBTR2_OFF_7L                     000000FF
+_EBTR2_ON_7L                      000000FB
+_EBTR3_OFF_7L                     000000FF
+_EBTR3_ON_7L                      000000F7
+_EBTRB_OFF_7H                     000000FF
+_EBTRB_ON_7H                      000000BF
+_FCMEN_OFF_1H                     000000BF
+_FCMEN_ON_1H                      000000FF
+_IDLOC0                           00200000
+_IDLOC1                           00200001
+_IDLOC2                           00200002
+_IDLOC3                           00200003
+_IDLOC4                           00200004
+_IDLOC5                           00200005
+_IDLOC6                           00200006
+_IDLOC7                           00200007
+_IESO_OFF_1H                      0000007F
+_IESO_ON_1H                       000000FF
+_LPT1OSC_OFF_3H                   000000FB
+_LPT1OSC_ON_3H                    000000FF
+_LVP_OFF_4L                       000000FB
+_LVP_ON_4L                        000000FF
+_MCLRE_OFF_3H                     0000007F
+_MCLRE_ON_3H                      000000FF
+_OSC_ECIO6_1H                     000000F5
+_OSC_EC_1H                        000000F4
+_OSC_HSPLL_1H                     000000F6
+_OSC_HS_1H                        000000F2
+_OSC_INTIO67_1H                   000000F8
+_OSC_INTIO7_1H                    000000F9
+_OSC_LP_1H                        000000F0
+_OSC_RCIO6_1H                     000000F7
+_OSC_RC_1H                        000000F3
+_OSC_XT_1H                        000000F1
+_PBADEN_OFF_3H                    000000FD
+_PBADEN_ON_3H                     000000FF
+_PWRT_OFF_2L                      000000FF
+_PWRT_ON_2L                       000000FE
+_STVREN_OFF_4L                    000000FE
+_STVREN_ON_4L                     000000FF
+_WDTPS_1024_2H                    000000F5
+_WDTPS_128_2H                     000000EF
+_WDTPS_16384_2H                   000000FD
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 33
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+_WDTPS_16_2H                      000000E9
+_WDTPS_1_2H                       000000E1
+_WDTPS_2048_2H                    000000F7
+_WDTPS_256_2H                     000000F1
+_WDTPS_2_2H                       000000E3
+_WDTPS_32768_2H                   000000FF
+_WDTPS_32_2H                      000000EB
+_WDTPS_4096_2H                    000000F9
+_WDTPS_4_2H                       000000E5
+_WDTPS_512_2H                     000000F3
+_WDTPS_64_2H                      000000ED
+_WDTPS_8192_2H                    000000FB
+_WDTPS_8_2H                       000000E7
+_WDT_OFF_2H                       000000FE
+_WDT_ON_2H                        000000FF
+_WRT0_OFF_6L                      000000FF
+_WRT0_ON_6L                       000000FE
+_WRT1_OFF_6L                      000000FF
+_WRT1_ON_6L                       000000FD
+_WRT2_OFF_6L                      000000FF
+_WRT2_ON_6L                       000000FB
+_WRT3_OFF_6L                      000000FF
+_WRT3_ON_6L                       000000F7
+_WRTB_OFF_6H                      000000FF
+_WRTB_ON_6H                       000000BF
+_WRTC_OFF_6H                      000000FF
+_WRTC_ON_6H                       000000DF
+_WRTD_OFF_6H                      000000FF
+_WRTD_ON_6H                       0000007F
+_XINST_OFF_4L                     000000BF
+_XINST_ON_4L                      000000FF
+__18F4520                         00000001
+bit_count                         00000003
+caps_flag                         00000002
+count                             00000000
+edge_event                        00000078
+edge_event_ack                    000000F6
+edge_event_ack_error              00000106
+edge_event_exit                   00000114
+edge_event_load_fifo              000000D2
+edge_event_parity                 000000E4
+edge_event_save_byte              000000C6
+edge_event_send_bit               000000A2
+edge_event_send_stop              000000C0
+edge_event_start                  000000DC
+edge_event_stop                   000000B4
+exit_interrupt                    0000011E
+flags                             00000007
+init                              00000120
+interrupt                         00000008
+key_ascii                         0000020C
+key_ascii_clear_shift             0000028C
+key_ascii_control                 00000254
+key_ascii_decode_caps             000002D0
+gpasm-0.13.7 beta               main.asm    2-16-2010  22:07:25          PAGE 34
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+key_ascii_decode_nomod            000002A8
+key_ascii_decode_shift            000002BC
+key_ascii_exit_release            00000248
+key_ascii_release                 0000024E
+key_ascii_set_caps                00000294
+key_ascii_set_num                 0000029E
+key_ascii_set_shift               00000280
+key_ascii_special                 00000244
+key_nd_decode                     000002E0
+key_translate                     000001F6
+loop                              000001C2
+main                              0000019C
+main2                             00000198
+num_flag                          00000001
+parity                            00000008
+parity_flag                       00000000
+psp_rd_int                        00000018
+release_flag                      00000004
+rxreg                             00000004
+scroll_flag                       00000000
+send_failed_flag                  00000006
+send_leds_byte                    000001BC
+shift_flag                        00000003
+start_talking                     000001DA
+talking_flag                      00000005
+talking_loop                      000001E4
+test_startup                      000001EA
+timeout                           00000030
+timeout_start_talking             0000005A
+timeout_talking                   00000042
+timeout_wait_loop                 00000062
+translate_mode                    00000006
+txreg                             00000005
+update_leds_flag                  00000007
+wait_new_board_loop               0000017C
+wait_to_talk                      000001B4
+waiting_start                     00000172
+DDRA                              TRISA
+DDRB                              TRISB
+DDRC                              TRISC
+DDRD                              TRISD
+DDRE                              TRISE
+
+
+Errors   :       0
+Warnings :       0 reported,      15 suppressed
+Messages :       0 reported,       0 suppressed
+

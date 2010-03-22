@@ -1,0 +1,686 @@
+;------------------------------------------------------------------------------
+;
+; Simple Debug Kernel for CPU supervisor on Z80 Project Mark 2
+; File Version 1 - 20 - Sep - 2009
+; hairymnstr@gmail.com
+;
+; Copyright (C) 2009  Nathan Dumont
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;
+;
+;------------------------------------------------------------------------------
+
+list p=18f4520
+#include <p18f4520.inc>
+
+errorlevel -302
+errorlevel -205
+
+CONFIG OSC = HSPLL
+CONFIG FCMEN = ON, IESO = OFF, PWRT = ON, BOREN = OFF, BORV = 0
+CONFIG WDT = OFF, WDTPS = 1, MCLRE = ON, LPT1OSC = OFF
+CONFIG PBADEN = OFF, CCP2MX = PORTC, STVREN = ON, LVP = OFF
+CONFIG XINST = OFF, DEBUG = OFF, CP0 = OFF, CP1 = OFF, CP2 = OFF, CP3 = OFF
+CONFIG CPB = OFF, CPD = OFF, WRT0 = OFF, WRT1 = OFF, WRT2 = OFF, WRT3 = OFF
+CONFIG WRTB = OFF, WRTC = OFF, WRTD = OFF, EBTR0 = OFF, EBTR1 = OFF
+CONFIG EBTR2 = OFF, EBTR3 = OFF, EBTRB = OFF
+
+;== PORT Definitions ==========================================================
+
+;-- PORT A --------------------------------------------------------------------
+
+P_RESET         EQU     0
+P_BUSRQ         EQU     1
+P_MREQ          EQU     2
+P_IORQ          EQU     3
+P_WAIT          EQU     4
+P_HI_LAT        EQU     5
+
+;-- PORT C --------------------------------------------------------------------
+
+P_BUSACK        EQU     0
+P_SD_CS         EQU     1
+P_CLK           EQU     2
+P_SD_CK         EQU     3
+P_SD_DI         EQU     4
+P_SD_DO         EQU     5
+P_TX            EQU     6
+P_RX            EQU     7
+
+;-- PORT E --------------------------------------------------------------------
+
+P_RD            EQU     0
+P_WR            EQU     1
+P_CS            EQU     2
+
+;== Variables =================================================================
+
+UDATA
+
+count   RES     3
+LO_ADDR RES     1
+HI_ADDR RES     1
+DREG    RES     1
+RX_MODE RES     1
+; -- RX MODE CONSTANTS --------------------------------------------------------
+RX_COM  EQU     0
+RX_LEN  EQU     1
+RX_DAT  EQU     2
+RX_CKS  EQU     3
+RX_BSY  EQU     4
+
+RX_COMMAND      RES     1
+RX_COUNT        RES     1
+RX_CHECKSUM     RES     1
+RX_FLAGS        RES     1
+; -- FLAG VALUES --------------------------------------------------------------
+CHECKSUM_FAIL   EQU     0x01
+
+TX_CHECKSUM     RES     1
+TX_COUNT        RES     1
+
+org 0x00
+    goto init
+
+org 0x08
+interrupt
+    btfsc       PIR1,RCIF       ;test serial receive interrupt flag
+    call        serial_rx_int   ;set, so handle received data
+    retfie      FAST            ;all interrupts serviced, return reinstating context
+
+init
+    clrf        RX_FLAGS
+    movlw       0x01
+    movwf       FSR0H           ; set FSR0 to BANK1, RX Buffer
+    clrf        FSR0L
+    movlw       0x02
+    movwf       FSR1H           ; set FSR1 to BANK2, TX Buffer
+    clrf        FSR1L
+    movlw       RX_COM
+    movwf       RX_MODE         ; set RX_MODE to look for a command
+    call        serial_init     ; initialise the serial port
+    call        set_master      ; Z80 not fitted so PIC is always master atm.
+    movlw       0x00
+    movwf       HI_ADDR
+    movlw       0x01
+    movwf       LO_ADDR         ; Port address of "debug port"
+    bcf         TRISC,5         ; the extra LED on SD card port needs output
+    bsf         LATC,5          ; turn the extra LED on
+    movlw       0x01
+    movwf       DREG            ; initialise DREG with a 1 in the lsb
+
+main
+    ; call serial_command_dispatch, checks for a whole command received and
+    ; calls an appropriate handler function for the command
+    call        serial_command_dispatch
+    goto        main
+
+
+
+
+
+;== Z80 Bus interfacing functions =============================================
+
+;******************************************************************************
+;*                                                                            *
+;* set_master - configure pins so PIC is master device                        *
+;*                                                                            *
+;* Inputs:  NONE                                                              *
+;* Outputs: NONE                                                              *
+;* Called:                                                                    *
+;* Changes: TRISB, TRISE, TRISA                                               *
+;*                                                                            *
+;******************************************************************************
+
+set_master
+
+
+    ; set the address pins to output
+    clrf        TRISB
+    movlw       b'11101100'     ;RD and WR as output, disable PSP
+    andwf       TRISE,f
+    movlw       0xFF
+    movwf       LATE            ;set RD and WR High
+
+    movlw       b'11010000'
+    andwf       TRISA,f
+    movlw       b'00111100'
+    iorwf       LATA,f
+    return
+
+;******************************************************************************
+;*                                                                            *
+;* io_read - Read an address on the IO bus                                    *
+;*                                                                            *
+;* Inputs:  HI_ADDR, LO_ADDR                                                  *
+;* Outputs: DREG                                                              *
+;* Called:                                                                    *
+;* Changes:                                                                   *
+;*                                                                            *
+;* Asssumes the PIC is in master mode (WAIT in, RD,WR,IORQ,MREQ and ADDR out  *
+;*                                                                            *
+;******************************************************************************
+
+io_read
+    ; set address
+    movf    HI_ADDR,w
+    movwf   LATB
+    bcf     LATA,P_HI_LAT
+    movf    LO_ADDR,w
+    bsf     LATA,P_HI_LAT
+    movwf   LATB
+    ; 200ns delay before IORQ and RD
+    nop
+    bcf     LATA,P_IORQ
+    bcf     LATE,P_RD
+    nop
+    ; mandatory wait state
+io_read_wait_loop
+    btfss   PORTA,P_WAIT
+    bra     io_read_wait_loop
+    ; store the read data
+    movf    PORTD,w
+    ;release IORQ and RD
+    bsf     LATE,P_RD
+    bsf     LATA,P_IORQ
+    movwf   DREG
+    return
+
+;******************************************************************************
+;*                                                                            *
+;* io_write - Write an address on the IO bus                                  *
+;*                                                                            *
+;* Inputs:  HI_ADDR, LO_ADDR, DREG                                            *
+;* Outputs: NONE                                                              *
+;* Called:                                                                    *
+;* Changes:                                                                   *
+;*                                                                            *
+;* Asssumes the PIC is in master mode (WAIT in, RD,WR,IORQ,MREQ and ADDR out  *
+;*                                                                            *
+;******************************************************************************
+
+io_write
+    ; set address
+    movf        HI_ADDR,w
+    movwf       LATB
+    bcf         LATA,P_HI_LAT
+    movf        LO_ADDR,w
+    bsf         LATA,P_HI_LAT
+    movwf       LATB
+    ; 200ns delay before IORQ and RD
+    movf        DREG,w          ; write the data to the bus
+    movwf       LATD
+    clrf        TRISD           ; don't forget to drive the bus for a write!!
+    bcf         LATA,P_IORQ
+    bcf         LATE,P_WR
+    nop
+    ; mandatory wait state
+io_write_wait_loop
+    btfss       PORTA,P_WAIT
+    bra         io_write_wait_loop
+    ;release IORQ and RD
+    bsf         LATE,P_WR
+    bsf         LATA,P_IORQ
+    setf        TRISD           ; stop driving the bus again
+    return
+
+;******************************************************************************
+;*                                                                            *
+;* mem_read - Read from an address on the memory bus                          *
+;*                                                                            *
+;* Inputs:  HI_ADDR, LO_ADDR                                                  *
+;* Outputs: DREG                                                              *
+;* Called:                                                                    *
+;* Changes:                                                                   *
+;*                                                                            *
+;* Asssumes the PIC is in master mode (WAIT in, RD,WR,IORQ,MREQ and ADDR out) *
+;*                                                                            *
+;******************************************************************************
+
+mem_read
+    ; set address
+    movf    HI_ADDR,w
+    movwf   LATB
+    bcf     LATA,P_HI_LAT
+    movf    LO_ADDR,w
+    bsf     LATA,P_HI_LAT
+    movwf   LATB
+    bcf     LATA,P_MREQ
+    bcf     LATE,P_RD
+mem_read_wait_loop
+    btfss   PORTA,P_WAIT
+    bra     mem_read_wait_loop
+    ; store the read data
+    movf    PORTD,w
+    ;release IORQ and RD
+    bsf     LATE,P_RD
+    bsf     LATA,P_MREQ
+    movwf   DREG
+    return
+
+;******************************************************************************
+;*                                                                            *
+;* mem_write - Write to an address on the memory bus                          *
+;*                                                                            *
+;* Inputs:  HI_ADDR, LO_ADDR, DREG                                            *
+;* Outputs: NONE                                                              *
+;* Called:                                                                    *
+;* Changes:                                                                   *
+;*                                                                            *
+;* Asssumes the PIC is in master mode (WAIT in, RD,WR,IORQ,MREQ and ADDR out) *
+;*                                                                            *
+;******************************************************************************
+
+mem_write
+    ; set address
+    movf        HI_ADDR,w
+    movwf       LATB
+    bcf         LATA,P_HI_LAT
+    movf        LO_ADDR,w
+    bsf         LATA,P_HI_LAT
+    movwf       LATB
+    ; 200ns delay before IORQ and RD
+    movf        DREG,w          ; write the data to the bus
+    movwf       LATD
+    clrf        TRISD           ; don't forget to drive the bus for a write!!
+    bcf         LATA,P_MREQ
+    bcf         LATE,P_WR
+    ; mandatory wait state
+mem_write_wait_loop
+    btfss       PORTA,P_WAIT
+    bra         mem_write_wait_loop
+    ;release IORQ and RD
+    bsf         LATE,P_WR
+    bsf         LATA,P_MREQ
+    setf        TRISD           ; stop driving the bus again
+    return
+
+
+;== Serial Console Functions ==================================================
+
+;******************************************************************************
+;*                                                                            *
+;* serial_init - set up the serial port for PC comms                          *
+;*                                                                            *
+;* Inputs:  NONE                                                              *
+;* Outputs: NONE                                                              *
+;* Called:                                                                    *
+;* Changes: SPBRG, RCSTA, TXSTA, BAUDCON, TRISC, RCON, PIR1, PIE1, INTCON     *
+;*                                                                            *
+;******************************************************************************
+
+serial_init
+    ; first make sure that the RX and TX are both set input, hardware changes
+    ; this once the UART is enabled
+    movlw       b'11000000'
+    iorwf       TRISC,f
+
+    ; next set the UART up
+    movlw       0x10
+    movwf       SPBRG
+    movlw       0x04
+    movwf       SPBRGH          ; 9600 baud high speed 16 bit mode
+    movlw       b'00100100'     ; enable sending, 8-bit, high speed baud rate
+    movwf       TXSTA
+    movlw       b'00010000'     ; enable receiving 8-bit
+    movwf       RCSTA
+    movlw       b'00001000'     ; no-auto sensing - 16 bit baud rate
+    movwf       BAUDCON
+    bsf         RCSTA,SPEN      ; enable the serial port
+
+    ; set up interrupt on receive
+    bsf         RCON, IPEN
+    bcf         PIR1, RCIF
+    bsf         PIE1, RCIE
+    bsf         INTCON, GIEH    ; enable global interrupts
+    return
+
+;******************************************************************************
+;*                                                                            *
+;* serial_send - send the contents of W via the UART                          *
+;*                                                                            *
+;* Inputs:  Byte to send in W                                                 *
+;* Outputs: NONE                                                              *
+;* Called:                                                                    *
+;* Changes: TXREG                                                             *
+;*                                                                            *
+;******************************************************************************
+
+serial_send
+    btfss PIR1,TXIF     ;test transmit interrupt flag
+    bra serial_send     ;if clear, TXREG is full
+    movwf TXREG         ;if set, TXREG is empty, so copy data into it
+    return
+
+; -- serial_tx_send_packet ----------------------------------------------------
+
+serial_tx_send_packet
+    ; send a whole message packet from the TX Buffer
+    ; first set the TX pointer to the start of the buffer
+    clrf        FSR1L
+    ; send the first byte (the command code)
+    movf        POSTINC1,w
+    call        serial_send
+    ; now send the length byte, and initialise the counter
+    movf        POSTINC1,w
+    call        serial_send
+    movwf       TX_COUNT
+
+    ; now we loop over send and decrement the counter
+serial_tx_send_packet_data_loop
+    movf        POSTINC1,w
+    call        serial_send
+    decfsz      TX_COUNT,f
+    bra         serial_tx_send_packet_data_loop
+    
+    ; lastly send the checksum
+    movf        POSTINC1,w
+    call        serial_send
+
+    ; done, return
+    return
+
+;******************************************************************************
+;*                                                                            *
+;* serial_rx_int - UART receive interrupt routine                             *
+;*                                                                            *
+;* Inputs:  None                                                              *
+;* Outputs: None                                                              *
+;* Called:                                                                    *
+;* Changes: PIR1, w                                                           *
+;*                                                                            *
+;******************************************************************************
+
+serial_rx_int
+    movlw       b'00000110'
+    andwf       RCSTA,w                 ;test if either of the error bits are set
+    bnz         serial_rx_int_error     ;if result is not zero an error occurred
+serial_rx_int_no_error                  ;if no error occurred, just echo input
+
+    ; if RX_MODE & FC != 0 -> error message, busy
+    movlw       0xFC                    ; three non-busy modes
+    andwf       RX_MODE,w               ; don't change the RX_MODE
+    bnz         serial_nak_exit         ; busy mode so reply NAK, we don't want data at the moment
+
+    movlw       UPPER serial_rx_jump_table
+    movwf       PCLATU
+    movlw       HIGH serial_rx_jump_table
+    movwf       PCLATH
+    movf        RX_MODE,w
+    rlncf       WREG,f
+    rlncf       WREG,f
+    goto        serial_rx_jump_table
+
+PAGE            ; doing a jump table need to make sure it's all in one page of memory
+serial_rx_jump_table
+    addwf       PCL,f
+    goto        serial_rx_command       ;0
+    goto        serial_rx_length        ;1
+    goto        serial_rx_data          ;2
+    goto        serial_rx_checksum      ;3
+
+;command byte
+serial_rx_command
+    ; store the command
+    movf        RCREG,w
+    movwf       RX_COMMAND    
+    ; also store it to start the checksum
+    movwf       RX_CHECKSUM
+    ; change to length mode
+    incf        RX_MODE,f
+    ; return
+    return
+
+; length byte
+serial_rx_length
+    ; set the byte count
+    movf        RCREG,w
+    movwf       RX_COUNT
+    ; xor the length for checksum
+    xorwf       RX_CHECKSUM,f
+    ; change to data mode
+    incf        RX_MODE,f
+    ; if the byte count is 0 skip data mode
+    movlw       0x00
+    cpfseq      RX_COUNT
+    return
+    incf        RX_MODE,f       ; inc to checksum mode
+    return
+
+serial_rx_data
+    ; store the data byte in the indirect register
+    movf        RCREG,w
+    movwf       POSTINC0
+    ; update the checksum
+    xorwf       RX_CHECKSUM,f
+    ; decrement the byte counter
+    decfsz      RX_COUNT,f
+    return
+    ; if execution got here the full count of bytes is done
+    incf        RX_MODE,f       ; inc to checksum mode
+    return
+
+serial_rx_checksum
+    movf        RCREG,w
+    ; do an xor with the calculated checksum so far, should result in zero
+    xorwf       RX_CHECKSUM,f
+    bz          serial_rx_checksum_passed
+    ; if execution got here the checksum failed
+    xorwf       RX_CHECKSUM,f           ; return to the calculated checksum for debug
+    bsf         RX_FLAGS,CHECKSUM_FAIL  ; set a flag
+    incf        RX_MODE,f               ; switch to busy mode
+    return
+
+serial_rx_checksum_passed
+    ; checksum okay, set busy mode and exit
+    incf        RX_MODE,f
+    return
+
+serial_nak_exit
+    movlw       0x15
+    call        serial_send
+    return
+
+serial_rx_int_error
+    bcf         RCSTA,CREN              ;clear the CREN bit to clear errors
+    movlw       0x15                    ;prepare a NAK symbol
+    call        serial_send             ;and send it
+    bsf         RCSTA,CREN              ;re-enable receiving
+    movf        RCREG,w                 ;have to read the RCREG to clear the interrupt
+    return
+
+; -- End of interrupt routines ------------------------------------------------
+
+;******************************************************************************
+;*                                                                            *
+;*      serial_command_dispatch - checks command and branches to appropriate  *
+;*                                routine                                     *
+;*                                                                            *
+;*      Called from the main loop to deal with any complete commands          *
+;*                                                                            *
+;******************************************************************************
+
+serial_command_dispatch
+    ; first check if there is a command
+    btfss       RX_MODE,2       ; if bit 2 is set (mode 4 == RX_BUSY) there is a command ready
+    return                      ; otherwise nothing to do here
+    ; next see if there was an error in the checksum
+    btfsc       RX_FLAGS,CHECKSUM_FAIL
+    goto        serial_error_checksum           ; if there was report the error
+    ; no error, so check the command is within bounds
+    movlw       'A'
+    subwf       RX_COMMAND, f   ; turn it to a jump number (A=0, B=1...Z=25)
+    movlw       d'26'
+    cpfslt      RX_COMMAND
+    goto        serial_error_bad_command        ;command was not in range A-Z
+    ; We know RX_COMMAND is a valid command now.  Jump
+    movlw       UPPER serial_command_jump_table
+    movwf       PCLATU
+    movlw       HIGH serial_command_jump_table
+    movwf       PCLATH
+    movf        RX_COMMAND,w
+    rlncf       WREG,f
+    rlncf       WREG,f
+    goto        serial_command_jump_table
+
+PAGE
+serial_command_jump_table
+    addwf       PCL,f
+    goto        serial_error_unused_command     ; A
+    goto        serial_error_unused_command     ; B
+    goto        serial_error_unused_command     ; C
+    goto        serial_error_unused_command     ; D
+    goto        serial_error_unused_command     ; E
+    goto        serial_error_unused_command     ; F
+    goto        serial_error_unused_command     ; G
+    goto        serial_error_unused_command     ; H
+    goto        serial_error_unused_command     ; I
+    goto        serial_error_unused_command     ; J
+    goto        serial_error_unused_command     ; K
+    goto        serial_error_unused_command     ; L
+    goto        serial_error_unused_command     ; M
+    goto        serial_error_unused_command     ; N
+    goto        serial_error_unused_command     ; O
+    goto        serial_error_unused_command     ; P
+    goto        serial_error_unused_command     ; Q
+    goto        serial_error_unused_command     ; R
+    goto        serial_error_unused_command     ; S
+    goto        serial_error_unused_command     ; T
+    goto        serial_error_unused_command     ; U
+    goto        serial_error_unused_command     ; V
+    goto        serial_error_unused_command     ; W
+    goto        serial_error_unused_command     ; X
+    goto        serial_error_unused_command     ; Y
+    goto        serial_error_unused_command     ; Z
+
+; -- serial command functions -------------------------------------------------
+
+; -- serial error functions ---------------------------------------------------
+
+serial_error_checksum
+    ; report a message received with a bad checksum
+    ; special first character because we don't know if the command was corrupt
+    ; or data following it so start with a "0"
+    ; set the send pointer to the start of the buffer
+    clrf        FSR1L
+    movlw       '0'
+    movwf       POSTINC1
+    movwf       TX_CHECKSUM
+    ; next is length byte.  checksum fail message is always 3 bytes
+    movlw       0x03
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    ; now is the error code.  checksum fail = 0x0001
+    movlw       0x00
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    movlw       0x01
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    ; now send the calculated checksum for debugging
+    movf        RX_CHECKSUM,w
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    ; now add the checksum
+    movf        TX_CHECKSUM,w
+    movwf       POSTINC1
+    
+    ; packet assembled, send the packet
+    call        serial_tx_send_packet
+
+    goto        serial_handler_exit
+
+serial_error_bad_command
+    ; report a bad command i.e. byte outside [A-Z]
+    ; set the send pointer to the start of the buffer
+    clrf        FSR1L
+    movlw       '1'     ; bad command so can't do the normal upper/lower conversion
+    movwf       POSTINC1
+    movwf       TX_CHECKSUM
+    ; next is length byte.  always 3 bytes for bad command
+    movlw       0x03
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    ; now is the error code.  bad command = 0x0002
+    movlw       0x00
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    movlw       0x02
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    ; now send the bad command for debug
+    movf        RX_COMMAND,w
+    addlw       'A'
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    ; finally add the checksum
+    movf        TX_CHECKSUM,w
+    movwf       POSTINC1
+
+    ; packet assembled, send the packet
+    call        serial_tx_send_packet
+
+    goto        serial_handler_exit
+
+serial_error_unused_command
+    ; valid command letter but not used
+    ; set the send pointer to the start of the buffer
+    clrf        FSR1L
+    ; command code is lowercase of the command for an error message
+    movf        RX_COMMAND,w
+    addlw       'a'
+    movwf       POSTINC1
+    movwf       TX_CHECKSUM
+    ; now the length only the error code now
+    movlw       0x02
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    ; now the error code 0x0003 for unused command
+    movlw       0x00
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    movlw       0x03
+    movwf       POSTINC1
+    xorwf       TX_CHECKSUM,f
+    ; now the checksum
+    movf        TX_CHECKSUM,w
+    movwf       POSTINC1
+
+    call        serial_tx_send_packet
+
+    goto        serial_handler_exit
+
+serial_handler_exit
+    ; standard exit for all serial response functions
+    clrf        FSR0L           ; reset RX pointer
+    clrf        RX_FLAGS        ; get rid of any flags from this message
+    clrf        RX_MODE         ; go back to waiting
+    return
+
+delay
+    clrf count
+    clrf count+1
+    movlw 0x08
+    movwf count+2
+delay_loop
+    decfsz count,f
+    goto delay_loop
+    decfsz count+1,f
+    goto delay_loop
+    decfsz count+2,f
+    goto delay_loop
+    return
+
+end

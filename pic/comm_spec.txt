@@ -1,0 +1,17 @@
+Serial Protocol
+
+Command Codes
+
+Command         Description                     Parameters
+-------------------------------------------------------------------------------
+
+
+Error Codes
+
+Error Code      Description                             Additional Data
+-------------------------------------------------------------------------------
+0000            Unknown/Undefined error
+0001 (80)       Checksum Fail                           Failed checksum
+0002 (81)       Bad Command (not in range 0-31)         Command code
+0003            Unused Command
+0004            Wrong parameter length                  Correct length

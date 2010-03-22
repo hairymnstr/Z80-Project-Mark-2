@@ -1,0 +1,107 @@
+\BOOKMARK [1][-]{section.2}{License}{}
+\BOOKMARK [1][-]{section.3}{Revisions}{}
+\BOOKMARK [0][-]{chapter.4}{Z80 I/O Ports}{}
+\BOOKMARK [1][-]{section.6}{RCSTA - 0x01R}{chapter.4}
+\BOOKMARK [1][-]{section.7}{PIF - 0x06R}{chapter.4}
+\BOOKMARK [1][-]{section.8}{PIE - 0x06W}{chapter.4}
+\BOOKMARK [1][-]{section.9}{STATUS - 0x08R}{chapter.4}
+\BOOKMARK [0][-]{chapter.10}{Hardware Layout}{}
+\BOOKMARK [1][-]{section.11}{UART}{chapter.10}
+\BOOKMARK [2][-]{subsection.12}{Jumpers}{section.11}
+\BOOKMARK [0][-]{chapter.18}{GPU Commands}{}
+\BOOKMARK [1][-]{section.19}{GPU Ports}{chapter.18}
+\BOOKMARK [2][-]{subsection.20}{GPU\137DATA}{section.19}
+\BOOKMARK [2][-]{subsection.21}{GPU\137COMMAND}{section.19}
+\BOOKMARK [1][-]{section.23}{GPU Modes}{chapter.18}
+\BOOKMARK [0][-]{chapter.24}{Keyboard Controller}{}
+\BOOKMARK [1][-]{section.25}{Keyboard Controller Commands}{chapter.24}
+\BOOKMARK [1][-]{section.26}{Translation Modes}{chapter.24}
+\BOOKMARK [1][-]{section.28}{ASCII Mode Codes}{chapter.24}
+\BOOKMARK [2][-]{subsection.29}{Control Keys}{section.28}
+\BOOKMARK [2][-]{subsection.30}{Media Keys}{section.28}
+\BOOKMARK [2][-]{subsection.31}{ACPI Control Keys}{section.28}
+\BOOKMARK [0][-]{chapter.32}{PIC Pin Allocations}{}
+\BOOKMARK [0][-]{chapter.34}{PIC Source Structure}{}
+\BOOKMARK [1][-]{section.35}{Files}{chapter.34}
+\BOOKMARK [2][-]{subsection.36}{Main \(main.asm\)}{section.35}
+\BOOKMARK [2][-]{subsection.40}{Serial \(serial.asm\)}{section.35}
+\BOOKMARK [2][-]{subsection.44}{Z80 Bus \(host\137bus.asm\)}{section.35}
+\BOOKMARK [2][-]{subsection.48}{SD Card Functions \(sd\137card.asm\)}{section.35}
+\BOOKMARK [2][-]{subsection.52}{Z80 Boot \(boot.asm\)}{section.35}
+\BOOKMARK [2][-]{subsection.56}{Boot ROM \(rom.asm\)}{section.35}
+\BOOKMARK [0][-]{chapter.60}{Variables and Constants}{}
+\BOOKMARK [0][-]{chapter.61}{Debug Comms Protocol}{}
+\BOOKMARK [1][-]{section.62}{Buffer Locations}{chapter.61}
+\BOOKMARK [1][-]{section.63}{Packet Specifications}{chapter.61}
+\BOOKMARK [2][-]{subsection.64}{Host to Device Packet Definition}{section.63}
+\BOOKMARK [2][-]{subsection.65}{Device to Host Packet Definition}{section.63}
+\BOOKMARK [1][-]{section.66}{Response Codes}{chapter.61}
+\BOOKMARK [1][-]{section.67}{Command Codes}{chapter.61}
+\BOOKMARK [2][-]{subsection.68}{Summary}{section.67}
+\BOOKMARK [2][-]{subsection.69}{Mem Block Write}{section.67}
+\BOOKMARK [2][-]{subsection.70}{BIOS Update}{section.67}
+\BOOKMARK [2][-]{subsection.71}{Do Command}{section.67}
+\BOOKMARK [1][-]{section.72}{Error Messages}{chapter.61}
+\BOOKMARK [1][-]{section.73}{seriallib.py}{chapter.61}
+\BOOKMARK [2][-]{subsection.74}{Packet}{section.73}
+\BOOKMARK [0][-]{chapter.76}{Z80 BIOS Routines}{}
+\BOOKMARK [1][-]{section.77}{Alphabetical List of Functions}{chapter.76}
+\BOOKMARK [2][-]{subsection.78}{bios\137error\137exit}{section.77}
+\BOOKMARK [2][-]{subsection.80}{bios\137load\137var}{section.77}
+\BOOKMARK [2][-]{subsection.82}{bios\137reset}{section.77}
+\BOOKMARK [2][-]{subsection.84}{bios\137save\137var}{section.77}
+\BOOKMARK [2][-]{subsection.86}{fat\137init}{section.77}
+\BOOKMARK [2][-]{subsection.88}{fat\137next\137block}{section.77}
+\BOOKMARK [2][-]{subsection.90}{fat\137next\137cluster}{section.77}
+\BOOKMARK [2][-]{subsection.92}{fat\137select\137cluster}{section.77}
+\BOOKMARK [2][-]{subsection.94}{gpu\137cls}{section.77}
+\BOOKMARK [2][-]{subsection.96}{gpu\137dec}{section.77}
+\BOOKMARK [2][-]{subsection.98}{gpu\137get\137colour}{section.77}
+\BOOKMARK [2][-]{subsection.100}{gpu\137hex}{section.77}
+\BOOKMARK [2][-]{subsection.102}{gpu\137init}{section.77}
+\BOOKMARK [2][-]{subsection.104}{gpu\137set\137colour}{section.77}
+\BOOKMARK [2][-]{subsection.106}{gpu\137str}{section.77}
+\BOOKMARK [2][-]{subsection.108}{maths\137add32}{section.77}
+\BOOKMARK [2][-]{subsection.110}{maths\137asl32}{section.77}
+\BOOKMARK [2][-]{subsection.112}{maths\137asln32}{section.77}
+\BOOKMARK [2][-]{subsection.114}{maths\137asr32}{section.77}
+\BOOKMARK [2][-]{subsection.116}{maths\137asrn32}{section.77}
+\BOOKMARK [2][-]{subsection.118}{maths\137bcd\137to\137bin}{section.77}
+\BOOKMARK [2][-]{subsection.120}{maths\137bin\137to\137bcd}{section.77}
+\BOOKMARK [2][-]{subsection.122}{maths\137div32}{section.77}
+\BOOKMARK [2][-]{subsection.124}{maths\137mod}{section.77}
+\BOOKMARK [2][-]{subsection.126}{maths\137sub32}{section.77}
+\BOOKMARK [2][-]{subsection.128}{maths\137test\137z32}{section.77}
+\BOOKMARK [2][-]{subsection.130}{maths\137test\137z64}{section.77}
+\BOOKMARK [2][-]{subsection.132}{uart\137write}{section.77}
+\BOOKMARK [1][-]{section.134}{Alphabetical List of Variables}{chapter.76}
+\BOOKMARK [2][-]{subsection.135}{gpu\137hex\137lut}{section.134}
+\BOOKMARK [2][-]{subsection.137}{maths\137flags}{section.134}
+\BOOKMARK [2][-]{subsection.139}{maths\137op\137a}{section.134}
+\BOOKMARK [2][-]{subsection.141}{maths\137op\137b}{section.134}
+\BOOKMARK [2][-]{subsection.143}{maths\137op\137c}{section.134}
+\BOOKMARK [2][-]{subsection.145}{ram\137top}{section.134}
+\BOOKMARK [2][-]{subsection.147}{stack}{section.134}
+\BOOKMARK [2][-]{subsection.149}{system\137boot\137device}{section.134}
+\BOOKMARK [2][-]{subsection.151}{system\137boot\137file}{section.134}
+\BOOKMARK [2][-]{subsection.153}{system\137boot\137order}{section.134}
+\BOOKMARK [2][-]{subsection.155}{system\137clock}{section.134}
+\BOOKMARK [2][-]{subsection.157}{system\137clock\137speeds}{section.134}
+\BOOKMARK [2][-]{subsection.159}{system\137filesystem}{section.134}
+\BOOKMARK [1][-]{section.161}{Functions and Variables by Source File}{chapter.76}
+\BOOKMARK [2][-]{subsection.162}{fat.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.165}{bios.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.168}{sd\137commands.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.171}{boot.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.174}{menu.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.177}{uart.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.180}{gpu\137commands.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.183}{gpu.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.186}{statics.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.189}{kb\137commands.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.192}{rtc.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.195}{scancodes.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.198}{maths.z8a}{section.161}
+\BOOKMARK [2][-]{subsection.201}{sd.z8a}{section.161}
+\BOOKMARK [1][-]{section.204}{Functions by Memory Location}{chapter.76}
+\BOOKMARK [1][-]{section.205}{Variables by Memory Location}{chapter.76}

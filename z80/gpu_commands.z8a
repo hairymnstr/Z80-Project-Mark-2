@@ -1,0 +1,44 @@
+; gpu_commands.z8a
+
+GPU_RESET_COMMAND:      equ     00000000b
+GPU_CLS_COMMAND:        equ     00010000b
+
+GPU_WHITE:              equ     0d
+GPU_RED:                equ     1d
+GPU_GREEN:              equ     2d
+GPU_BLUE:               equ     3d
+GPU_YELLOW:             equ     4d
+GPU_CYAN:               equ     5d
+GPU_MAGENTA:            equ     6d
+GPU_BLACK:              equ     7d
+;GPU_WHITE:      equ     01100000b
+;GPU_RED:        equ     01100001b
+;GPU_GREEN:      equ     01100010b
+;GPU_BLUE:       equ     01100011b
+;GPU_YELLOW:     equ     01100100b
+;GPU_MAGENTA:    equ     01100101b
+;GPU_CYAN:       equ     01100110b
+;GPU_BLACK:      equ     01100111b
+
+;GPU_SET_COL:    equ     10100000b
+;GPU_SET_ROW:    equ     11100000b
+
+;GPU_GET_COLOUR: equ     01000000b
+;GPU_GET_COL:    equ     10000000b
+;GPU_GET_ROW:    equ     11000000b
+
+;GPU_VGA_SCREEN1:        equ     00001000b
+;GPU_VGA_SCREEN2:        equ     00001001b
+;GPU_TV_SCREEN1:         equ     00001100b
+;GPU_TV_SCREEN2:         equ     00001101b
+
+;GPU_SELECT_SCREEN1:     equ     00010000b
+;GPU_SELECT_SCREEN2:     equ     00010001b
+
+GPU_COLOUR_COMMAND:     equ     00100000b
+GPU_COLUMN_COMMAND:     equ     00110000b
+GPU_ROW_COMMAND:        equ     01000000b
+
+GPU_SELECT_COMMAND:     equ     01010000b
+
+GPU_ACTIVE_COMMAND:     equ     01100000b

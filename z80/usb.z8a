@@ -1,0 +1,87 @@
+;-------------------------------------------------------------------------------
+;|                                                                             |
+;| usb.z8a - USB Host (FTDI Vinculum) subroutines for the Mark 2 Z80 project   |
+;| File Version: 1.0                                                           |
+;| hairymnstr@gmail.com                                                        |
+;|                                                                             |
+;| Copyright (C) 2010  Nathan Dumont                                           |
+;|                                                                             |
+;| This program is free software: you can redistribute it and/or modify        |
+;| it under the terms of the GNU General Public License as published by        |
+;| the Free Software Foundation, either version 3 of the License, or           |
+;| (at your option) any later version.                                         |
+;|                                                                             |
+;| This program is distributed in the hope that it will be useful,             |
+;| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+;| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+;| GNU General Public License for more details.                                |
+;|                                                                             |
+;| You should have received a copy of the GNU General Public License           |
+;| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+;|                                                                             |
+;-------------------------------------------------------------------------------
+
+;===============================================================================
+; usb_get_byte - read a byte from the Vinculum chip.
+;===============================================================================
+
+;; This call fetches a single byte from the Vinculum chip.  It obeys the status
+;; flag USB_RXF to avoid reading bytes before they are ready.  Note that it will
+;; block indefinitely for bytes to be ready so call with caution.
+
+usb_get_byte:
+  in            a, (STATUS)
+  bit           USB_RXF, a
+  jr            nz, usb_get_byte
+  in            a, (USB_DATA)
+  ret
+
+;===============================================================================
+; usb_write_byte - write a byte to the Vinculum chip
+;===============================================================================
+
+;; Writes a single byte (from *A*) to the USB host chip.  The USB_TXE flag is
+;; checked to make sure that the Vinculum is ready to accept bytes.  If there
+;; are bytes to be read these are read and discarded as the output buffer must
+;; be empty before you try writing.
+
+usb_write_byte:
+  push          af
+usb_write_byte_loop:
+  in            a, (STATUS)
+  bit           USB_RXF, a
+  jr            z, usb_write_get_byte
+  bit           USB_TXE, a
+  jr            nz, usb_write_byte_loop
+  pop           af
+  out           (USB_DATA), a
+  ret
+
+usb_write_get_byte:
+  in            a, (USB_DATA)
+  jr            usb_write_byte_loop
+
+; -- local vars ----------------------------------------------------------------
+
+; usb_device_state:       defs    1
+; usb_rx_count:           defs    1
+usb_file_len:           defs    4
+; usb_msg_scs:
+;   defm          "SCS"
+; 
+; usb_msg_dir:
+;   defb          $01
+
+usb_stat_boot_msg:
+  defb          $01
+  defm          " BOOT.Z8B\r"
+
+usb_msg_rdf:
+  defb          $0B, $20, $00, $00, $00, $03, $0D
+
+usb_msg_opr:
+  defb          $0E, $20, 'B', 'O', 'O', 'T', '.', 'Z', '8', 'B', $0D
+
+usb_msg_sek:
+  defb          $28, $20, $00, $00, $00, $00, $0D
+  

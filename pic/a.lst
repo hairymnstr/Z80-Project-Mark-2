@@ -1,0 +1,249 @@
+gplink-0.13.6 alpha
+Copyright (c) 1998-2005 gputils project
+Listing File Generated: 9-20-2009  16:39:35
+ 
+ 
+Address  Value    Disassembly              Source
+-------  -----    -----------              ------
+                                           ;------------------------------------------------------------------------------
+                                           ;
+                                           ;
+                                           ;
+                                           ;------------------------------------------------------------------------------
+                                           
+                                           list p=18f4520
+                                           #include <p18f4520.inc>
+                                                   LIST
+                                           
+                                           ;==========================================================================
+                                           ;  $Id: p18f4520.inc 447 2006-08-19 02:39:44Z craigfranklin $
+                                           ;  MPASM PIC18F4520 processor include
+                                           ; 
+                                           ;  (c) Copyright 1999-2005 Microchip Technology, All rights reserved
+                                           ;==========================================================================
+                                           
+                                                   NOLIST
+                                           
+                                           errorlevel -302
+                                           errorlevel -205
+                                           
+                                           CONFIG OSC = HSPLL
+                                           CONFIG FCMEN = ON, IESO = OFF, PWRT = ON, BOREN = OFF, BORV = 0
+                                           CONFIG WDT = OFF, WDTPS = 1, MCLRE = ON, LPT1OSC = OFF
+                                           CONFIG PBADEN = OFF, CCP2MX = PORTC, STVREN = ON, LVP = OFF
+                                           CONFIG XINST = OFF, DEBUG = OFF, CP0 = OFF, CP1 = OFF, CP2 = OFF, CP3 = OFF
+                                           CONFIG CPB = OFF, CPD = OFF, WRT0 = OFF, WRT1 = OFF, WRT2 = OFF, WRT3 = OFF
+                                           CONFIG WRTB = OFF, WRTC = OFF, WRTD = OFF, EBTR0 = OFF, EBTR1 = OFF
+                                           CONFIG EBTR2 = OFF, EBTR3 = OFF, EBTRB = OFF
+                                           
+                                           ;== PORT Definitions ==========================================================
+                                           
+                                           ;-- PORT A --------------------------------------------------------------------
+                                           
+                                           P_RESET         EQU     0
+                                           P_BUSRQ         EQU     1
+                                           P_MREQ          EQU     2
+                                           P_IORQ          EQU     3
+                                           P_WAIT          EQU     4
+                                           P_HI_LAT        EQU     5
+                                           
+                                           ;-- PORT C --------------------------------------------------------------------
+                                           
+                                           P_BUSACK        EQU     0
+                                           P_SD_CS         EQU     1
+                                           P_CLK           EQU     2
+                                           P_SD_CK         EQU     3
+                                           P_SD_DI         EQU     4
+                                           P_SD_DO         EQU     5
+                                           P_TX            EQU     6
+                                           P_RX            EQU     7
+                                           
+                                           ;-- PORT E --------------------------------------------------------------------
+                                           
+                                           P_RD            EQU     0
+                                           P_WR            EQU     1
+                                           P_CS            EQU     2
+                                           
+                                           ;== Variables =================================================================
+                                           
+                                           UDATA
+                                           
+                                           count   RES     3
+                                           LO_ADDR RES     1
+                                           HI_ADDR RES     1
+                                           DREG    RES     1
+                                           
+                                           org 0x00
+000000   ef02     goto	0x4                     goto init
+000002   f000
+                                           
+                                           
+                                           init
+000004   ec18     call	0x30, 0                 call        set_master
+000006   f000
+000008   0e00     movlw	0                      movlw       0x00
+00000a   6f84     movwf	0x84, 0x1              movwf       HI_ADDR
+00000c   0e01     movlw	0x1                    movlw       0x01
+00000e   6f83     movwf	0x83, 0x1              movwf       LO_ADDR
+                                               ; turn on the red LED to indicate the PIC is in master mode
+                                               ; this needs to be removed if SD card is being used
+000010   9a94     bcf	0x94, 0x5, 0             bcf         TRISC,5
+                                           
+                                           main
+000012   8a8b     bsf	0x8b, 0x5, 0             bsf         LATC,5    
+000014   0e55     movlw	0x55                   movlw       0x55
+000016   6f85     movwf	0x85, 0x1              movwf       DREG
+000018   ec33     call	0x66, 0                 call        io_write
+00001a   f000
+00001c   ec44     call	0x88, 0                 call        delay
+00001e   f000
+000020   9a8b     bcf	0x8b, 0x5, 0             bcf         LATC,5
+000022   0eaa     movlw	0xaa                   movlw       0xAA
+000024   6f85     movwf	0x85, 0x1              movwf       DREG
+000026   ec33     call	0x66, 0                 call        io_write
+000028   f000
+00002a   ec44     call	0x88, 0                 call        delay
+00002c   f000
+00002e   d7f1     bra	0x12                     bra         main
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           ;******************************************************************************
+                                           ;*                                                                            *
+                                           ;* set_master - configure pins so PIC is master device                        *
+                                           ;*                                                                            *
+                                           ;* Inputs:  NONE                                                              *
+                                           ;* Outputs: NONE                                                              *
+                                           ;* Called:                                                                    *
+                                           ;* Changes: TRISB, TRISE, TRISA                                               *
+                                           ;*                                                                            *
+                                           ;******************************************************************************
+                                           
+                                           set_master
+                                           
+                                           
+                                               ; set the address pins to output
+000030   6a93     clrf	0x93, 0                 clrf        TRISB
+000032   0eec     movlw	0xec                   movlw       b'11101100'     ;RD and WR as output, disable PSP
+000034   1696     andwf	0x96, 0x1, 0           andwf       TRISE,f
+000036   0eff     movlw	0xff                   movlw       0xFF
+000038   6e8d     movwf	0x8d, 0                movwf       LATE            ;set RD and WR High
+                                           
+00003a   0ed0     movlw	0xd0                   movlw       b'11010000'
+00003c   1692     andwf	0x92, 0x1, 0           andwf       TRISA,f
+00003e   0e3c     movlw	0x3c                   movlw       b'00111100'
+000040   1289     iorwf	0x89, 0x1, 0           iorwf       LATA,f
+000042   0012     return	0                     return
+                                           
+                                           ;******************************************************************************
+                                           ;*                                                                            *
+                                           ;* io_read - Read an address on the IO bus                                    *
+                                           ;*                                                                            *
+                                           ;* Inputs:  HI_ADDR, LO_ADDR                                                  *
+                                           ;* Outputs: DREG                                                              *
+                                           ;* Called:                                                                    *
+                                           ;* Changes:                                                                   *
+                                           ;*                                                                            *
+                                           ;* Asssumes the PIC is in master mode (WAIT in, RD,WR,IORQ,MREQ and ADDR out  *
+                                           ;*                                                                            *
+                                           ;******************************************************************************
+                                           
+                                           io_read
+                                               ; set address
+000044   5184     movf	0x84, 0, 0x1            movf    HI_ADDR,w
+000046   6e8a     movwf	0x8a, 0                movwf   LATB
+000048   9a89     bcf	0x89, 0x5, 0             bcf     LATA,P_HI_LAT
+00004a   5183     movf	0x83, 0, 0x1            movf    LO_ADDR,w
+00004c   8a89     bsf	0x89, 0x5, 0             bsf     LATA,P_HI_LAT
+00004e   6e8a     movwf	0x8a, 0                movwf   LATB
+                                               ; 200ns delay before IORQ and RD
+000050   0000     nop                          nop
+000052   9689     bcf	0x89, 0x3, 0             bcf     LATA,P_IORQ
+000054   908d     bcf	0x8d, 0, 0               bcf     LATE,P_RD
+000056   0000     nop                          nop
+                                               ; mandatory wait state
+                                           io_read_wait_loop
+000058   a880     btfss	0x80, 0x4, 0           btfss   PORTA,P_WAIT
+00005a   d7fe     bra	0x58                     bra     io_read_wait_loop
+                                               ; store the read data
+00005c   5083     movf	0x83, 0, 0              movf    PORTD,w
+                                               ;release IORQ and RD
+00005e   808d     bsf	0x8d, 0, 0               bsf     LATE,P_RD
+000060   8689     bsf	0x89, 0x3, 0             bsf     LATA,P_IORQ
+000062   6f85     movwf	0x85, 0x1              movwf   DREG
+000064   0012     return	0                     return
+                                           
+                                           ;******************************************************************************
+                                           ;*                                                                            *
+                                           ;* io_write - Write an address on the IO bus                                  *
+                                           ;*                                                                            *
+                                           ;* Inputs:  HI_ADDR, LO_ADDR, DREG                                            *
+                                           ;* Outputs: NONE                                                              *
+                                           ;* Called:                                                                    *
+                                           ;* Changes:                                                                   *
+                                           ;*                                                                            *
+                                           ;* Asssumes the PIC is in master mode (WAIT in, RD,WR,IORQ,MREQ and ADDR out  *
+                                           ;*                                                                            *
+                                           ;******************************************************************************
+                                           
+                                           io_write
+                                               ; set address
+000066   5184     movf	0x84, 0, 0x1            movf    HI_ADDR,w
+000068   6e8a     movwf	0x8a, 0                movwf   LATB
+00006a   9a89     bcf	0x89, 0x5, 0             bcf     LATA,P_HI_LAT
+00006c   5183     movf	0x83, 0, 0x1            movf    LO_ADDR,w
+00006e   8a89     bsf	0x89, 0x5, 0             bsf     LATA,P_HI_LAT
+000070   6e8a     movwf	0x8a, 0                movwf   LATB
+                                               ; 200ns delay before IORQ and RD
+000072   5185     movf	0x85, 0, 0x1            movf    DREG,w
+000074   6e8c     movwf	0x8c, 0                movwf   LATD
+000076   6a95     clrf	0x95, 0                 clrf    TRISD
+000078   9689     bcf	0x89, 0x3, 0             bcf     LATA,P_IORQ
+00007a   928d     bcf	0x8d, 0x1, 0             bcf     LATE,P_WR
+00007c   0000     nop                          nop
+                                               ; mandatory wait state
+                                           io_write_wait_loop
+00007e   a880     btfss	0x80, 0x4, 0           btfss   PORTA,P_WAIT
+000080   d7fe     bra	0x7e                     bra     io_write_wait_loop
+                                               ;release IORQ and RD
+000082   828d     bsf	0x8d, 0x1, 0             bsf     LATE,P_WR
+000084   8689     bsf	0x89, 0x3, 0             bsf     LATA,P_IORQ
+000086   0012     return	0                     return
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           
+                                           delay
+000088   6b80     clrf	0x80, 0x1               clrf count
+00008a   6b81     clrf	0x81, 0x1               clrf count+1
+00008c   0e08     movlw	0x8                    movlw 0x08
+00008e   6f82     movwf	0x82, 0x1              movwf count+2
+                                           delay_loop
+000090   2f80     decfsz	0x80, 0x1, 0x1        decfsz count,f
+000092   ef48     goto	0x90                    goto delay_loop
+000094   f000
+000096   2f81     decfsz	0x81, 0x1, 0x1        decfsz count+1,f
+000098   ef48     goto	0x90                    goto delay_loop
+00009a   f000
+00009c   2f82     decfsz	0x82, 0x1, 0x1        decfsz count+2,f
+00009e   ef48     goto	0x90                    goto delay_loop
+0000a0   f000
+0000a2   0012     return	0                     return
+                                           
+                                           end

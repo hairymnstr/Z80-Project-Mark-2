@@ -1,0 +1,570 @@
+;-------------------------------------------------------------------------------
+;|                                                                             |
+;| rtc.z8a - bq4845 RTC driver for the Mark 2 Z80 project                      |
+;| File Version: 1.0                                                           |
+;| hairymnstr@gmail.com                                                        |
+;|                                                                             |
+;| Copyright (C) 2010  Nathan Dumont                                           |
+;|                                                                             |
+;| This program is free software: you can redistribute it and/or modify        |
+;| it under the terms of the GNU General Public License as published by        |
+;| the Free Software Foundation, either version 3 of the License, or           |
+;| (at your option) any later version.                                         |
+;|                                                                             |
+;| This program is distributed in the hope that it will be useful,             |
+;| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+;| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+;| GNU General Public License for more details.                                |
+;|                                                                             |
+;| You should have received a copy of the GNU General Public License           |
+;| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+;|                                                                             |
+;-------------------------------------------------------------------------------
+
+;-------------------------------------------------------------------------------
+; rtc_init - setup the RTC
+;-------------------------------------------------------------------------------
+
+rtc_init:
+  ; make sure the control register is tidy
+  ld            a, RTC_STOPM | RTC_24M | RTC_DSEM    ; run, 24hr, auto daylight save
+  out           (CTRLREG), a
+
+  ld            a, $C0
+  out           (SECALM), a
+  out           (MINALM), a
+  out           (HRSALM), a
+  out           (DAYALM), a                     ; setup for 1s interrupt
+
+  ld            a, RTC_AIEM
+  out           (INTCON),a                      ; enable alarm interrupt
+
+  ret
+
+;-------------------------------------------------------------------------------
+; rtc_int - interrupt service routine for RTC
+;-------------------------------------------------------------------------------
+
+rtc_int:
+  ; see what flags are set, also clears the interrupt
+  in            a,(FLGREG)
+  bit           RTC_AF,a                        ; check alarm bit
+  ret           Z                               ; if not we've got nothing to do
+
+  ; seconds alarm, read the time
+  call          rtc_get_time
+  ; increment the system counter
+  ld            a, (system_counter)
+  inc           a
+  ld            (system_counter), a
+  ret
+;-------------------------------------------------------------------------------
+; rtc_get_time - freeze the clock and take a snapshot save it to RAM
+;-------------------------------------------------------------------------------
+
+rtc_get_time:
+  ; lock the updates
+  in            a,(CTRLREG)
+  set           RTC_UTI,a
+  out           (CTRLREG),a
+
+  in            a,(SECREG)
+  ld            (rtc_mem),a
+  in            a,(MINREG)
+  ld            (rtc_mem+1),a
+  in            a,(HRSREG)
+  and           $7F             ; this system uses 24 hour so mask the am/pm
+  ld            (rtc_mem+2),a
+  in            a,(DAYREG)
+  ld            (rtc_mem+3),a
+  in            a,(MONREG)
+  ld            (rtc_mem+4),a
+  in            a,(YRREG)
+  ld            (rtc_mem+5),a
+  ld            a, $20          ; century in bcd
+  ld            (rtc_mem+6),a
+
+  in            a, (DOWREG)
+  ld            (rtc_dow), a
+
+  in            a, (CTRLREG)
+  res           RTC_UTI,a
+  out           (CTRLREG),a
+
+  ret
+
+;-------------------------------------------------------------------------------
+; rtc_freeze_updates - set the Update inhibit bit
+;-------------------------------------------------------------------------------
+
+rtc_freeze_updates:
+  in            a, (CTRLREG)
+  set           RTC_UTI,a
+  out           (CTRLREG), a
+  ret
+
+;-------------------------------------------------------------------------------
+; rtc_enable_updates - clear the Update inhibit bit
+;-------------------------------------------------------------------------------
+
+rtc_enable_updates:
+  in            a, (CTRLREG)
+  res           RTC_UTI, a
+  out           (CTRLREG), a
+  ret
+
+; == YEAR ======================================================================
+;-------------------------------------------------------------------------------
+; rtc_add_year - add a (bcd format) to the year
+;-------------------------------------------------------------------------------
+
+rtc_inc_year:
+  call          rtc_freeze_updates
+
+  in            a, (YRREG)
+  inc           a
+  daa
+  out           (YRREG), a
+
+  call          rtc_enable_updates
+  call          rtc_get_time
+
+  ; make sure it's not changed from a leap year
+  call          rtc_freeze_updates
+  ld            a, (rtc_day)
+  jr            rtc_err_check_day
+
+;-------------------------------------------------------------------------------
+; rtc_sub_year - subtract a (bcd format) from the year
+;-------------------------------------------------------------------------------
+
+rtc_dec_year:
+  call          rtc_freeze_updates
+
+  in            a, (YRREG)
+  dec           a
+  daa
+  out           (YRREG), a
+
+  call          rtc_enable_updates
+  call          rtc_get_time
+
+  call          rtc_freeze_updates
+  ld            a, (rtc_day)
+  jr            rtc_err_check_day
+  
+; == MONTH =====================================================================
+;-------------------------------------------------------------------------------
+; rtc_inc_month - increment the month
+;-------------------------------------------------------------------------------
+
+rtc_inc_month:
+  call          rtc_freeze_updates
+
+  in            a, (MONREG)
+  inc           a
+  daa
+
+  jr            rtc_err_check_month
+
+;-------------------------------------------------------------------------------
+; rtc_dec_month - decrement the month
+;-------------------------------------------------------------------------------
+
+rtc_dec_month:
+  call          rtc_freeze_updates
+
+  in            a, (MONREG)
+  dec           a
+  daa
+
+;-------------------------------------------------------------------------------
+; rtc_err_check_month - apply logical limits to the month value
+;-------------------------------------------------------------------------------
+rtc_err_check_month:
+  ; do some error checking, can't be a month above 12 or below 1
+  jr            z, rtc_err_check_month_dec      ; if it's zero go to December
+  ld            b, a                            ; save this for a moment
+  sub           $13
+  jp            m, rtc_err_check_month_save
+  ld            b, $01                  ; if it's more than 12 assume wrapped
+  jr            rtc_err_check_month_save
+rtc_err_check_month_dec:
+  ld            b, $12
+rtc_err_check_month_save:
+  ld            a, b
+  out           (MONREG), a
+
+  call          rtc_enable_updates
+  call          rtc_get_time            ; update the local time
+
+  ; now make sure the day is sane (e.g. no Feb 31)
+  call          rtc_freeze_updates
+  
+  ld            a, (rtc_day)
+  jr            rtc_err_check_day
+
+; == DAY =======================================================================
+;-------------------------------------------------------------------------------
+; rtc_inc_day - increment the day of the month
+;-------------------------------------------------------------------------------
+
+rtc_inc_day:
+  call          rtc_freeze_updates
+
+  in            a, (DAYREG)
+  inc           a
+  daa
+
+  jr            rtc_err_check_day
+
+;-------------------------------------------------------------------------------
+; rtc_dec_day - decrement the day of the month
+;-------------------------------------------------------------------------------
+
+rtc_dec_day:
+  call          rtc_freeze_updates
+
+  in            a, (DAYREG)
+  dec           a
+  daa
+
+;-------------------------------------------------------------------------------
+; rtc_err_check_day - apply logical limits to the month value
+;-------------------------------------------------------------------------------
+rtc_err_check_day:
+  ld            b, a                          ; save this for a moment
+  in            a, (MONREG)                   ; see what month it is
+  xor           $02
+  jr            z, rtc_check_leap_year
+  xor           $02                           ; xor corrects itself :-)
+  dec           a                             ; count from 0 up
+  ld            hl, rtc_monlens
+  add           a, l
+  jr            nc, rtc_err_check_day_nc
+  inc           h
+rtc_err_check_day_nc:
+  ld            l, a
+  ; hl now points at the length of this month
+rtc_check_leap_year_return:
+  ld            a, b                            ; get the proposed day back
+  xor           0                               ; set the flags
+  ; do some error checking, can't be a day above 1 or below
+  jr            z, rtc_err_check_day_last     ; if it's zero go to last d.o.m.
+
+  ; other wise compare it to the month length
+  dec           a               ; so that the answer is minus not zero
+  sub           (hl)            ; set negative flag if less than days this month
+  jp            m, rtc_err_check_day_save
+  ld            b, $01                  ; if it's more than days this month go 1
+  jr            rtc_err_check_day_save
+rtc_err_check_day_last:
+  ld            b, (hl)                 ; set it to the last day of the month
+rtc_err_check_day_save:
+  ld            a, b
+  out           (DAYREG), a
+
+  call          rtc_enable_updates
+  call          rtc_get_time            ; update the local time
+
+  ; now update the day of week to correspond
+  call          rtc_update_dow
+
+  ret
+
+; -- check leapyear and let Feb be 29 days if so -------------------------------
+rtc_check_leap_year:
+  ; actually this is fairly easy.  If the year is a modulo 4 number it's a leap-
+  ; year.  So convert BCD to true binary then see if bottom two bits are zero
+  ; save b for later
+  ld            a, (rtc_year)
+  call          maths_bcd_to_bin
+  ; a now has a valid binary representation of the year in it
+  ; if bits <1:0> == 00 then it's a leap year
+  ; assume not a leap year
+  ld            hl, rtc_monlens+1
+  and           $03
+  jr            nz, rtc_check_leap_year_return
+  ld            hl, rtc_monlens+12
+  jr            rtc_check_leap_year_return
+
+; == HOUR ======================================================================
+;-------------------------------------------------------------------------------
+; rtc_inc_hour - increment the hour
+;-------------------------------------------------------------------------------
+
+rtc_inc_hour:
+  call          rtc_freeze_updates
+
+  in            a, (HRSREG)
+  inc           a
+  daa
+
+  jr            rtc_err_check_hour
+
+;-------------------------------------------------------------------------------
+; rtc_dec_hour - decrement the hour
+;-------------------------------------------------------------------------------
+
+rtc_dec_hour:
+  call          rtc_freeze_updates
+
+  in            a, (HRSREG)
+  xor           0
+  jr            z, rtc_dec_hour_wrapped
+  dec           a
+  daa
+  jr            rtc_err_check_hour
+rtc_dec_hour_wrapped:
+  ld            a, $23
+
+;-------------------------------------------------------------------------------
+; rtc_err_check_hour - apply logical limits to the hour value
+;-------------------------------------------------------------------------------
+rtc_err_check_hour:
+  ; do some error checking, hour can't be above 24, done the underflow above
+  ld            b, a                            ; save this for a moment
+  sub           $24
+  jp            m, rtc_err_check_hour_save
+  ld            b, $00                  ; if it's more than 24 assume wrapped
+rtc_err_check_hour_save:
+  ld            a, b
+  out           (HRSREG), a
+
+  call          rtc_enable_updates
+  call          rtc_get_time            ; update the local time
+  ret
+
+; == MINUTE ====================================================================
+;-------------------------------------------------------------------------------
+; rtc_inc_min - increment the minute
+;-------------------------------------------------------------------------------
+
+rtc_inc_min:
+  call          rtc_freeze_updates
+
+  in            a, (MINREG)
+  inc           a
+  daa
+
+  jr            rtc_err_check_min
+
+;-------------------------------------------------------------------------------
+; rtc_dec_min - decrement the minute
+;-------------------------------------------------------------------------------
+
+rtc_dec_min:
+  call          rtc_freeze_updates
+
+  in            a, (MINREG)
+  xor           0
+  jr            z, rtc_dec_min_wrapped
+  dec           a
+  daa
+  jr            rtc_err_check_min
+
+rtc_dec_min_wrapped:
+  ld            a, $59
+
+;-------------------------------------------------------------------------------
+; rtc_err_check_min - apply logical limits to the minute value
+;-------------------------------------------------------------------------------
+rtc_err_check_min:
+  ; do some error checking, can't be a minute can't be $60 or above
+  ld            b, a                            ; save this for a moment
+  sub           $60
+  jp            m, rtc_err_check_min_save
+  ld            b, $00                  ; if it's more than 59 assume wrapped
+rtc_err_check_min_save:
+  ld            a, b
+  out           (MINREG), a
+
+  call          rtc_enable_updates
+  call          rtc_get_time            ; update the local time
+  ret
+
+; == SECOND ====================================================================
+;-------------------------------------------------------------------------------
+; rtc_inc_sec - increment the second
+;-------------------------------------------------------------------------------
+
+rtc_inc_sec:
+  call          rtc_freeze_updates
+
+  in            a, (SECREG)
+  inc           a
+  daa
+
+  jr            rtc_err_check_sec
+
+;-------------------------------------------------------------------------------
+; rtc_dec_month - decrement the second
+;-------------------------------------------------------------------------------
+
+rtc_dec_sec:
+  call          rtc_freeze_updates
+
+  in            a, (SECREG)
+  xor           0
+  jr            z, rtc_dec_sec_wrapped
+  dec           a
+  daa
+  jr            rtc_err_check_sec
+rtc_dec_sec_wrapped:
+  ld            a, $59
+
+;-------------------------------------------------------------------------------
+; rtc_err_check_sec - apply logical limits to the second value
+;-------------------------------------------------------------------------------
+rtc_err_check_sec:
+  ; do some error checking, can't be a second above 59
+  ld            b, a                            ; save this for a moment
+  sub           $60
+  jp            m, rtc_err_check_sec_save
+  ld            b, $00                  ; if it's more than 12 assume wrapped
+rtc_err_check_sec_save:
+  ld            a, b
+  out           (SECREG), a
+
+  call          rtc_enable_updates
+  call          rtc_get_time            ; update the local time
+  ret
+
+; == Day Of Week ===============================================================
+
+; ------------------------------------------------------------------------------
+; rtc_update_dow - Update the day of week based on calculations :-o
+;-------------------------------------------------------------------------------
+rtc_update_dow:
+
+  call          rtc_freeze_updates
+
+  ld            b, 6            ; first day of 2000 (Sat)
+  ld            a, (rtc_year)   ; see how many years since then
+  call          maths_bcd_to_bin      ; convert to binary !!
+  ; since a normal year is 52 weeks +1 day add year to 6
+  add           a, b
+  ld            b, a
+
+  ; now add the number of leap years (floor div by 4 so shift right 2
+  ld            a, (rtc_year)
+  call          maths_bcd_to_bin
+  and           $FC
+  rrca
+  rrca                          ; divide 4
+  add           a, b            ; add to running total
+  ; worst case a now up to 129, can add month offset and day of month okay
+  ; a is the remainder now, keep that
+  ld            b, a            ; save a again
+
+  ld            hl, rtc_month_dow_offsets
+  ld            a, (rtc_month)
+  dec           a
+  add           a, l
+  jr            nc, rtc_update_dow_nc
+  inc           h
+rtc_update_dow_nc:
+  ld            l, a
+
+  ld            a, (hl)
+  add           a, b
+  ; finally add day of month
+  ld            b, a
+  ld            a, (rtc_day)
+  call          maths_bcd_to_bin
+  add           a, b
+  ; subtract one if it's a leapyear and this is January or February
+  ld            b, a
+
+  ld            a, (rtc_month)
+  sub           3
+  jp            p, rtc_update_dow_notleap
+  ; check if it's a leap year because it's Jan or Feb
+  ld            a, (rtc_year)
+  call          maths_bcd_to_bin
+  and           $3
+  jr            nz, rtc_update_dow_notleap
+  dec           b               ; decrement the total
+rtc_update_dow_notleap:
+  ld            a, b
+  ld            b, $7
+  call          maths_mod       ; get mod 7
+
+  inc           a               ; because rtc uses 1-7
+
+  out           (DOWREG), a
+
+  call          rtc_enable_updates
+
+  call          rtc_get_time
+
+  ret
+
+
+; == STRING FUNCTIONS ==========================================================
+
+;-------------------------------------------------------------------------------
+; rtc_dow_short_str - returns a pointer (in HL) to a three letter string
+;                     representing the day of the week e.g. Mon
+;                     if a contains 0 the current day is used
+;-------------------------------------------------------------------------------
+rtc_dow_short_str:
+  xor           0
+  jr            nz, rtc_dow_short_str_lu
+  ; need to use current day
+  ld            a, (rtc_dow)
+rtc_dow_short_str_lu:
+  and           $7              ; make sure of a clean exit in case of idiots
+  dec           a               ; count from zero (Sun)
+  sla           a               ; times 4 (four characters per string inc \0)
+  sla           a
+  ld            hl, rtc_dow_short_strings
+  add           a, l
+  jr            nc, rtc_short_str_lu_nc
+  inc           h
+rtc_short_str_lu_nc:
+  ld            l, a
+  ret
+
+rtc_mem:
+rtc_second:
+    ds          1
+rtc_minute:
+    ds          1
+rtc_hour:
+    ds          1
+rtc_day:
+    ds          1
+rtc_month:
+    ds          1
+rtc_year:
+    ds          2
+rtc_dow:
+    ds          1
+system_counter:
+    ds          1
+    ds    7              ; save space to keep local copies of all bytes in rtc
+
+rtc_dow_short_strings:
+  ; strings corresponding to days of the week
+  defm          "Sun"
+  defb          0
+  defm          "Mon"
+  defb          0
+  defm          "Tue"
+  defb          0
+  defm          "Wed"
+  defb          0
+  defm          "Thu"
+  defb          0
+  defm          "Fri"
+  defb          0
+  defm          "Sat"
+  defb          0
+
+rtc_monlens:
+  ; used for bounds-checking the day of month fields
+  defb          $31, $28, $31, $30, $31, $30, $31, $31, $30, $31, $30, $31, $29
+
+rtc_month_dow_offsets:
+  defb          $0, $3, $3, $6, $1, $4, $6, $2, $5, $0, $3, $5

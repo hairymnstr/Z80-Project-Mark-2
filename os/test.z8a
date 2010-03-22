@@ -1,0 +1,25 @@
+db      $02             ; version number
+db      $03             ; header length (LSB)
+db      $00             ;               (MSB)
+end_of_header:
+org     0
+  jp            main
+
+org     $100
+seek    end_of_header+$100
+main:
+  ld            hl, msg
+print_loop:
+  ld            a, (hl)
+  inc           hl
+  cp            0
+  jr            z, idle
+  out           (5), a
+  jr            print_loop
+
+idle:
+  halt
+
+msg:
+  defm          "Hello World, it works!!"
+  defb          0

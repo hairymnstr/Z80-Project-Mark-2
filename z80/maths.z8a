@@ -1,0 +1,808 @@
+;-------------------------------------------------------------------------------
+;|                                                                             |
+;| maths.z8a - generic maths routines for the Mark 2 Z80 project               |
+;| File Version: 1.0                                                           |
+;| hairymnstr@gmail.com                                                        |
+;|                                                                             |
+;| Copyright (C) 2010  Nathan Dumont                                           |
+;|                                                                             |
+;| This program is free software: you can redistribute it and/or modify        |
+;| it under the terms of the GNU General Public License as published by        |
+;| the Free Software Foundation, either version 3 of the License, or           |
+;| (at your option) any later version.                                         |
+;|                                                                             |
+;| This program is distributed in the hope that it will be useful,             |
+;| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+;| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+;| GNU General Public License for more details.                                |
+;|                                                                             |
+;| You should have received a copy of the GNU General Public License           |
+;| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+;|                                                                             |
+;-------------------------------------------------------------------------------
+
+;===============================================================================
+; maths_bcd_to_bin - convert a single byte from BCD to binary (in a)
+;===============================================================================
+maths_bcd_to_bin:
+  push          bc      ; gonna use them
+  ld            c, a
+  and           $f0     ; mask upper nibble
+  rrca                  ; shift upper nibble down one = nibble val * 8
+  ld            b, a    ; store that
+  rrca
+  rrca
+  rrca                  ; upper nibble now at bottom of a
+  add           a, a    ; add it to itself
+  add           a, b    ; add it to * 8 (n * 8 + n + n = n * 10)
+  ld            b,a
+  ld            a,c
+  and           $f      ; mask lower nibble
+  add           a,b     ; add upper nibble * 10
+  pop           bc
+  ret
+
+;===============================================================================
+; maths_mod - calculate a/b - returns b unaltered, a = a % b, c = a//b
+;===============================================================================
+maths_mod:
+  push          de
+  push          hl
+  ld            h, b
+  ld            c, a
+
+  ; if b is zero then return straight away
+  ld            a, b
+  xor           0
+  ret           z               ; should do div/0 error here
+
+  ld            d, 1
+  ld            e, 0
+
+  ; shift b up to the highest it can be without losing bits
+maths_mod_start:
+  inc           d
+  sla           b
+  jr            nc, maths_mod_start
+
+  ld            a, b
+  rrca
+  or            $80             ; carry had a bit in
+;   dec           d
+
+
+
+  ld            b, a            ; store the shifted divisor
+  ld            a, c            ; get the dividend back
+maths_mod_loop:
+  sub           b               ; subtract the dividend from divisor
+  jr            c, maths_mod_too_much
+  jr            z, maths_mod_done
+
+  ld            c, a            ; save this state
+  ld            a, d
+  add           e
+  ld            e, a            ; save factor
+
+maths_mod_too_much:     ; don't alter c so we'll keep going
+  dec           d
+  ld            a, d
+  xor           1
+  jr            z, maths_mod_done_set_a
+  rrc           b
+  ld            a, c            ; go back to calculate
+  jr            maths_mod_loop
+
+maths_mod_done_set_a:
+  ld            a, c            ; get last state of a, now remainder
+  dec           e
+maths_mod_done:
+  ; state now: a is remainder, d is factor
+  ld            c, e
+  ld            b, h
+  pop           hl
+  pop           de
+  ret
+
+;===============================================================================
+; maths_asr32 - 32 bit arithmetic shift right
+;===============================================================================
+
+;; The contents of maths_op_a are shifted one bit to the right.  The most 
+;; significant bit is left unaltered (so the sign of the number is not changed).
+;; 
+;; [31] -> [31 -> 0] -> [C]
+;;
+;; Flags:
+;;  maths_flags[Z] is set if the result is zero, reset otherwise
+;;  maths_flags[C] is set if the lsb was 1 before the operation, reset otherwise
+;;
+;; None of the CPU registers are affected by this function.
+
+maths_asr32:
+  push          af
+  ld            a, 1
+  call          maths_asrn32
+  pop           af
+  ret
+
+;===============================================================================
+; maths_asrn32 - 32 bit arithmetic shift right by n bits
+;===============================================================================
+
+;; The contents of maths_op_a are shifted a number of bits to the right.  The
+;; number of bits to shift is specified by the contents of *A* (the value is
+;; masked to 5 bits to provide a maximum of 31 bit shift).  The most significant
+;; bit is propagated down each shift (so the sign of the number is not changed).
+;; 
+;; [31] -n> [31 -> 0] -n> [C]
+;;
+;; Flags:
+;;  maths_flags[Z] is set if the result is zero, reset otherwise
+;;  maths_flags[C] is set if the last bit shifted out of bit 0 was 1, reset
+;;  otherwise
+;;
+;; The contents of the accumulator are not preserved by this operation, other
+;; registers are unaffected.
+
+maths_asrn32:
+  push          bc
+  push          hl
+
+  ld            c, a
+maths_asrn32_loop_outer:
+  ld            b, 4
+  ld            hl, maths_op_a+3
+
+  scf
+  ; see if the top bit is 1
+  bit           7, (hl)
+  ; if it is leave carry flag set
+  jr            nz, maths_asrn32_loop_inner
+  ccf           ; otherwise clear the carry flag
+maths_asrn32_loop_inner:
+  ld            a, (hl)
+  rra
+  ld            (hl), a
+  dec           hl
+  djnz          maths_asrn32_loop_inner
+
+  dec           c
+  jr            nz, maths_asrn32_loop_outer
+
+  pop           hl
+  pop           bc
+  ret
+
+;===============================================================================
+; maths_asl32 - shift maths_op_a one bit left and put a zero in the lsb
+;===============================================================================
+
+;; The contents of maths_op_a are shifted one bit to the left (upwards) and a
+;; zero is placed in the least significant bit.
+;;
+;; [C] <- [31 <- 0] <- 0
+;;
+;; Flags:
+;;  maths_flags[Z] is set if the result is zero, reset otherwise
+;;  maths_flags[C] is set if the most significant bit was 1 before the shift,
+;;                 reset otherwise
+;;
+;; The contents of internal registers are not affected by this function.
+maths_asl32:
+  push          af
+  ld            a, 1
+  call          maths_asln32
+  pop           af
+  ret
+
+
+;===============================================================================
+; maths_asln32 - shift maths_op_a n bits left and zero the new lsbs
+;===============================================================================
+
+;; The contents of maths_op_a are shifted n bit to the left (upwards) based on
+;; the value of *A* and zeros are placed in the least significant bits.
+;;
+;; [C] <n- [31 <n- 0] <n- 0
+;;
+;; Flags:
+;;  maths_flags[Z] is set if the result is zero, reset otherwise
+;;  maths_flags[C] is set if the last bit shifted out was 1 reset otherwise
+;;
+;; The contents of internal registers are not affected by this function, *A* is
+;; not preserved however.
+maths_asln32:
+  push          bc
+  push          hl
+
+  ld            c, a
+maths_asln32_loop_outer:
+  ld            b, 4
+  ld            hl, maths_op_a
+  scf
+  ccf           ; make sure we're shifting in zeros
+maths_asln32_loop_inner:
+  ld            a, (hl)
+  rla
+  ld            (hl), a
+  inc           hl
+  djnz          maths_asln32_loop_inner
+
+  dec           c
+  jr            nz, maths_asln32_loop_outer
+
+  pop           hl
+  pop           bc
+  ret
+
+;===============================================================================
+; maths_add32 - Add maths_op_b to maths_op_a and store in maths_op_a
+;===============================================================================
+
+;; Performs a 32 bit addition of a value in maths_op_a and maths_op_b.  The
+;; result is stored in maths_op_a by default, to use maths_op_b or maths_op_c
+;; as the target call maths_add32_b or maths_add32_c.  No registers are affected
+;; by this call.
+;;
+;; maths_op_a + maths_op_b => maths_op_x (depending on call)
+;;
+;; Flags:
+;;  maths_flags[C] is set if the addition resulted in overflow, reset otherwise
+;;  maths_flags[Z] is set if the result of the addition was zero, reset
+;;                 otherwise
+
+maths_add32_b:
+  push          hl
+  ld            hl, maths_op_b
+  jr            maths_add32_real
+
+maths_add32_c:
+  push          hl
+  ld            hl, maths_op_c
+  jr            maths_add32_real
+
+maths_add32_a:                          ; these two are the same
+maths_add32:
+  push          hl
+  ld            hl, maths_op_a
+
+maths_add32_real:
+  push          af
+  push          bc
+  push          ix
+  push          iy
+  
+  ld            a, 0
+  ld            c, 0
+  ld            b, 4
+  ld            ix, maths_op_a
+  ld            iy, maths_op_b
+
+maths_add32_loop:
+  add           a, (ix+0)
+  jr            nc, maths_add32_nc1
+  inc           c
+maths_add32_nc1:
+  add           a, (iy+0)
+  jr            nc, maths_add32_nc2
+  inc           c
+maths_add32_nc2:
+  ld            (hl), a
+  inc           ix
+  inc           iy
+  inc           hl
+  ld            a, c
+  ld            c, 0
+  djnz          maths_add32_loop
+
+  ; do the flags setting
+  ld            a, (maths_flags)
+  and           $fc                     ; clear carry and z flags
+  or            c                       ; set carry flag if set
+  
+  dec           hl
+  dec           hl
+  dec           hl
+  dec           hl
+  call          maths_test_z32          ; see if the result was zero
+  ld            (maths_flags), a
+
+  pop           iy
+  pop           ix
+  pop           bc
+  pop           af
+  pop           hl
+  ret
+
+;===============================================================================
+; maths_sub32 - do a 32 bit subtraction maths_op_a - maths_op_b
+;===============================================================================
+maths_sub32_b:
+  push          hl
+  ld            hl, maths_op_b
+  jr            maths_sub32_real
+
+maths_sub32_c:
+  push          hl
+  ld            hl, maths_op_c
+  jr            maths_sub32_real
+
+maths_sub32_a:                          ; these two are the same
+maths_sub32:
+  push          hl
+  ld            hl, maths_op_a
+
+maths_sub32_real:
+  push          af
+  push          bc
+  push          ix
+  push          iy
+  
+  ld            a, 0
+  scf
+  ccf
+  ld            c, 0
+  ld            b, 4
+  ld            ix, maths_op_a
+  ld            iy, maths_op_b
+
+maths_sub32_loop:
+  ld            a, (ix+0)
+  sbc           a, (iy+0)
+  ld            (hl), a
+  inc           ix
+  inc           iy
+  inc           hl
+  djnz          maths_sub32_loop
+
+  jr            nc, maths_sub32_nc
+  ld            c, 1
+maths_sub32_nc:
+  ; do the flags setting
+  ld            a, (maths_flags)
+  and           $fc                     ; clear carry and z flags
+  or            c
+  
+  dec           hl
+  dec           hl
+  dec           hl
+  dec           hl
+  call          maths_test_z32          ; see if the result was zero
+  ld            (maths_flags), a
+
+  pop           iy
+  pop           ix
+  pop           bc
+  pop           af
+  pop           hl
+  ret
+
+;===============================================================================
+; maths_div32 - calculate the div/mod result for two 32 bit numbers
+;===============================================================================
+;; The contents of maths_op_a are divided by the contents of maths_op_b.  The
+;; quotient is placed in the lower 32 bits of maths_op_c, the remainder is left
+;; in maths_op_a.  On return carry is set if it was an illegal (division by zero
+;; operation).
+
+maths_div32:
+  push          hl
+  push          de
+  push          bc
+;   push          af
+  ; divide op_a by op_b, save remainder in a and quotient in op_c
+  ; startegy: shift op_b left until it's bigger than op_a (or overflows)
+  ; then subtract, shift, subtract etc. each time add 2^n where n is the number
+  ; of shifts done so far (decreases) to the quotient
+  ld            hl, $0000
+  ld            (maths_op_c+6), hl
+  ld            (maths_op_c+2), hl
+  ld            (maths_op_c), hl
+  ld            hl, $0001
+  ld            (maths_op_c+4), hl
+
+  ; do the intitial shift to get highest power of 2 multiple of divisor
+  xor           a       ; clears carry flag in 1 m-cycle
+maths_div32_setup:
+  ; first test if op_b can be shifted up at all, i.e. if the msb is zero
+  ld            a, (maths_op_b+3)
+  bit           7, a
+  jr            nz, maths_div32_done_setup      ; that's it, no more shifts
+  
+  ; carry should still be clear here so just do the shifts
+
+  ld            a, (maths_op_c+4)
+  rla
+  ld            (maths_op_c+4), a
+  ld            a, (maths_op_c+5)
+  rla
+  ld            (maths_op_c+5), a
+  ld            a, (maths_op_c+6)
+  rla
+  ld            (maths_op_c+6), a
+  ld            a, (maths_op_c+7)
+  rla
+  ld            (maths_op_c+7), a
+
+  jp            c, maths_div32_div01    ; if marker bit is shifted out the val
+                                        ; in op_b is 0 or 1
+  ; now shift the divisor - carry must be clear already
+  ld            a, (maths_op_b)
+  rla
+  ld            (maths_op_b), a
+  ld            a, (maths_op_b+1)
+  rla
+  ld            (maths_op_b+1), a
+  ld            a, (maths_op_b+2)
+  rla
+  ld            (maths_op_b+2), a
+  ld            a, (maths_op_b+3)
+  rla
+  ld            (maths_op_b+3), a
+  
+  jr            maths_div32_setup   ; keep shifting
+
+maths_div32_done_setup:
+  ; maths_op_b now has the divisor shifted as far left as it can be, the high
+  ; half of maths_op_c has the multiplication factor to get this shift
+
+  ; now subtract b from a, and save and add maths_op_c high to low if no 
+  ; overflow, if there is overflow skip that
+  ; then shift maths_op_c high and maths_op_b down by one and loop until
+  ; maths_op_c high == 0x00000001
+
+  ; carry should be clear already
+  ld            hl, (maths_op_a)
+  ld            de, (maths_op_b)
+  sbc           hl, de
+  ex            de, hl           ; temp, only save if no overflow
+  ld            hl, (maths_op_a+2)
+  ld            bc, (maths_op_b+2)
+  sbc           hl, bc
+
+  jr            c, maths_div32_skip_writeback   ; don't save if there's overflow
+
+  ; save the result because it didn't overflow so it's a valid divide
+  ld            (maths_op_a+2), hl
+  ld            (maths_op_a), de
+
+  ; now add op_c high to op_c low
+  ld            hl, (maths_op_c+4)
+  ld            de, (maths_op_c)
+  add           hl, de
+  ld            (maths_op_c), hl
+  ld            hl, (maths_op_c+6)
+  ld            de, (maths_op_c+2)
+  adc           hl, de
+  ld            (maths_op_c+2), hl
+
+maths_div32_skip_writeback:
+  ; shift op_a and high op_c down one
+  ; do high op_c first because it will trigger exit
+  xor           a               ; clear carry flag
+  ld            a, (maths_op_c+7)
+  rra
+  ld            (maths_op_c+7), a
+  ld            a, (maths_op_c+6)
+  rra
+  ld            (maths_op_c+6), a
+  ld            a, (maths_op_c+5)
+  rra
+  ld            (maths_op_c+5), a
+  ld            a, (maths_op_c+4)
+  rra
+  ld            (maths_op_c+4), a
+
+  jr            c, maths_div32_finished ; if 1 is shifted out of bottom of c
+                                        ; done last subtraction
+
+  ld            a, (maths_op_b+3)
+  rra
+  ld            (maths_op_b+3), a
+  ld            a, (maths_op_b+2)
+  rra
+  ld            (maths_op_b+2), a
+  ld            a, (maths_op_b+1)
+  rra
+  ld            (maths_op_b+1), a
+  ld            a, (maths_op_b)
+  rra
+  ld            (maths_op_b), a
+
+  jr            maths_div32_done_setup
+
+maths_div32_finished:
+  ; really are finished, maths_op_c low has the quotient, maths_op_a has
+  ; remainder
+  ; just pop stuff and return
+  pop           bc
+  pop           de
+  pop           hl
+  
+  xor           a               ; clears a and carry flag - success
+  ret
+
+maths_div32_div01:
+  ; divide by zero or one, see which
+  ld            a, (maths_op_b+3)
+  bit           7, a
+  jr            z, maths_div32_div0
+
+  ; divide by 1, daft thing to do, but copying the op_a register to op_c low
+  ; and clearing op_a will give the right result quickly
+  ld            hl, (maths_op_a)
+  ld            (maths_op_c), hl
+  ld            hl, (maths_op_a+2)
+  ld            (maths_op_c+2), hl
+
+  ld            hl, $0000
+  ld            (maths_op_a), hl
+  ld            (maths_op_a+2), hl
+
+  pop           bc
+  pop           de
+  pop           hl
+
+  xor           a               ; clears a and carry flag - success
+  ret
+
+maths_div32_div0:
+  ; need to report error
+  ; load remainder and quotient with $ffffffff
+  ld            hl, $ffff
+  ld            (maths_op_a), hl
+  ld            (maths_op_a+2), hl
+  ld            (maths_op_c), hl
+  ld            (maths_op_c+2), hl
+
+  pop           bc
+  pop           de
+  pop           hl
+
+  ld            a, $ff
+  scf                           ; set a and carry flag - error
+
+  ret
+
+;===============================================================================
+; maths_test_z64 - test a 64 bit value for zero
+;===============================================================================
+
+;; Works identically to maths_test_z32 but tests a total of 8 bytes starting at
+;; location *HL*.  Used in testing results of 32x32 multiply etc.
+
+maths_test_z64:
+  push          af
+  push          bc
+
+  ld            bc, $0008
+  ld            a, 0
+  jr            maths_test_z32_loop
+
+;===============================================================================
+; maths_test_z32 - test a 32 bit value for zero
+;===============================================================================
+
+;; *HL* points to the least significant byte of a 32 bit value to be tested.  If
+;; the value is zero bit 1 (second least significant) of *A* is set, otherwise
+;; this bit is cleared.  This matches the *Z* bit position in the maths_flags 
+;; register so loading *A* with the contents of flags before a call and writing
+;; it back after will update the flags register.  *HL* is left pointing 4 bytes
+;; above where it started, no other registers are affected.
+
+maths_test_z32:
+  push          af
+  push          bc
+
+  ld            bc, $0004
+  ld            a, 0
+maths_test_z32_loop:
+  cpi
+  jr            nz, maths_test_z32_1
+  jp            pe, maths_test_z32_loop
+
+  pop           bc
+  pop           af
+  or            $02             ; set bit 1
+  ret
+
+maths_test_z32_1:
+  pop           bc
+  pop           af
+
+  and           $fd             ; zero bit 1
+  ret
+
+;===============================================================================
+; maths_bin_to_bcd - convert a 32/24/16/8 bit binary number to BCD
+;===============================================================================
+
+;; *HL* points to a value up to 4 bytes long to be converted, it is not altered
+;; so it is safe to point at values in ROM or that will be used later.  *HL* is
+;; the least significant byte, *A* contains the number of bytes to copy (1, 2
+;; 3 or 4) these bytes are copied to maths_op_b with higher bytes set to zero.
+;; The result of the conversion is stored in maths_op_c and may be up to 5 bytes
+;; long.
+
+maths_bin_to_bcd:
+  ; setup: copy the source into maths_op_b, can then shift into 64 bit op_c
+  ; because BCD is longer than binary.  Need to zero Op_C too
+  ; a contains number of bytes the source number is, pad this to 4 with leading
+  ; zeros
+
+  push          bc      ; going to use this
+  push          ix
+
+  ld            b, a
+  ld            a, 4
+  sub           b
+  ld            c, a    ; save the difference
+
+  ld            ix, maths_op_b
+
+maths_bin_to_bcd_init_loop:
+  ld            a, (hl)
+  ld            (ix+0),a
+  inc           ix
+  inc           hl
+  djnz          maths_bin_to_bcd_init_loop
+
+  ; now see if the data was less than 32 bit and pad some zeros
+  ld            a, 0
+  xor           c
+  jr            z, maths_bin_to_bcd_no_pad
+
+  ld            b, c
+  ld            a, 0
+
+maths_bin_to_bcd_pad:
+  ld            (ix+0),a
+  inc           ix
+  djnz          maths_bin_to_bcd_pad
+
+maths_bin_to_bcd_no_pad:
+
+  ; now load up maths op c with zeros
+  ld            a, 0
+  ld            b, 8
+maths_bin_to_bcd_init_loop2:
+  ld            (ix + 0), a
+  inc           ix
+  djnz          maths_bin_to_bcd_init_loop2
+
+  ld            b, 32
+  ; now set hl to the start of maths_op_b and go
+  ld            hl, maths_op_b
+
+maths_bin_to_bcd_loop:
+  push          bc
+  push          hl
+
+  ld            b, 9
+maths_bin_to_bcd_shift_loop:
+  ; shift 32 bits left one
+  ld            a, (hl)
+  rla
+  ld            (hl),a
+  inc           hl
+  djnz          maths_bin_to_bcd_shift_loop
+
+  pop           hl
+  pop           bc
+  push          bc
+  push          hl
+  ld            a, b
+  xor           1
+  jp            z, maths_bin_to_bcd_last_loop
+  ld            a, 4
+  add           a, l
+  jr            nc, maths_bin_to_bcd_shift_loop_cont
+  inc           h
+maths_bin_to_bcd_shift_loop_cont:
+  ld            l, a
+  ; hl now points at the first byte of BCD
+  ld            b, 5    ; 5 bytes to check
+
+maths_bin_to_bcd_add_loop:
+  ; check the 10 nibbles for overflow
+  ld            a, (hl)
+  and           $f
+  sub           5
+  jp            m, maths_bin_to_bcd_high_nibble
+
+  push          hl              ; so we can get back
+  push          bc
+
+  ld            a, 3
+  add           a, (hl)
+  ld            (hl), a
+
+maths_bin_to_bcd_carry_loop1:
+  jr            nc, maths_bin_to_bcd_exit_add1
+
+  inc           hl
+  dec           b
+  jr            z, maths_bin_to_bcd_exit_add1
+  ld            a, (hl)
+  add           a, 1
+  ld            (hl),a
+  jr            maths_bin_to_bcd_carry_loop1
+
+maths_bin_to_bcd_exit_add1:
+  pop           bc
+  pop           hl
+
+maths_bin_to_bcd_high_nibble:
+  ld            a, (hl)
+  and           $f0
+  sub           $50
+  jp            m, maths_bin_to_bcd_next_byte
+  push          hl              ; so we can get back
+  push          bc
+
+  ld            a, $30
+  add           a, (hl)
+  ld            (hl), a
+
+maths_bin_to_bcd_carry_loop2:
+  jr            nc, maths_bin_to_bcd_exit_add2
+
+  inc           hl
+  dec           b
+  jr            z, maths_bin_to_bcd_exit_add2
+  ld            a, (hl)
+  add           a, 1
+  ld            (hl), a
+  jr            maths_bin_to_bcd_carry_loop2
+
+maths_bin_to_bcd_exit_add2:
+  pop           bc
+  pop           hl
+
+maths_bin_to_bcd_next_byte:
+  inc           hl
+
+  djnz          maths_bin_to_bcd_add_loop
+
+maths_bin_to_bcd_last_loop:
+  pop           hl
+  pop           bc
+  djnz          maths_bin_to_bcd_loop
+
+  pop           ix
+  pop           bc
+
+  ret
+
+; == MATHS WORKING SPACE =======================================================
+
+;*******************************************************************************
+; maths_op_a - 32 bit operator for maths routines
+;*******************************************************************************
+maths_op_a:
+  ds            4       ; operator A - 32 bit
+
+;*******************************************************************************
+; maths_op_b - 32 bit operator for maths routines
+;*******************************************************************************
+maths_op_b:
+  ds            4       ; operator B - 32 bit
+
+;*******************************************************************************
+; maths_op_c - 64 bit result register for maths_routines
+;*******************************************************************************
+maths_op_c:
+  ds            8       ; operator C - 64 bit (for results of multiply etc.)
+
+;*******************************************************************************
+; maths_flags - flag register holds the flags from the last maths routine
+;*******************************************************************************
+;; Bit 0: Carry, set when an add/subtract overflows.
+;; Bit 1: Zero, set when the result of the operation was zero.
+;; See commands for details about what happens to these flags.
+maths_flags:
+  ds            1       ; a flags register for long operations
+
+MATHS_C:        equ     0       ; 32 bit op carry flag
+MATHS_Z:        equ     1       ; 32 bit op zero flag

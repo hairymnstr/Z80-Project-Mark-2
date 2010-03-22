@@ -1,0 +1,726 @@
+; sd_print_cid:
+;   ld            a, SD_CARD_CID
+;   call          bios_pic_write
+; 
+;   ; ack byte
+;   call          bios_pic_read
+;   ; manufacturer ID
+;   ld            hl, MID_msg
+;   call          gpu_str
+;   call          bios_pic_read
+;   ld            (gpu_variable), a
+;   ld            hl, gpu_variable
+;   ld            a, 2
+;   call          gpu_hex
+; 
+;   ld            a, $A
+;   out           (GPU_DATA), a           ; newline
+; 
+;   ld            hl, OID_msg
+;   call          gpu_str
+;   call          bios_pic_read
+;   out           (GPU_DATA), a           ; it's an ascii byte
+;   call          bios_pic_read
+;   out           (GPU_DATA), a
+; 
+;   ld            a, $A
+;   out           (GPU_DATA), a
+; 
+;   ld            hl, PNM_msg             ; product name, 5 bytes
+;   call          gpu_str
+; 
+;   call          bios_pic_read
+;   out           (GPU_DATA), a
+;   call          bios_pic_read
+;   out           (GPU_DATA), a
+;   call          bios_pic_read
+;   out           (GPU_DATA), a
+;   call          bios_pic_read
+;   out           (GPU_DATA), a
+;   call          bios_pic_read
+;   out           (GPU_DATA), a
+; 
+;   ld            a, $A
+;   out           (GPU_DATA), a
+; 
+;   ld            hl, PRV_msg             ; revision number
+;   call          gpu_str
+; 
+;   call          bios_pic_read
+;   ld            (gpu_variable), a
+;   ld            a, 2
+;   ld            hl, gpu_variable
+;   call          gpu_hex
+; 
+;   ld            a, $A
+;   out           (GPU_DATA), a
+; 
+;   ld            hl, PSN_msg             ; unique serial number
+;   call          gpu_str
+; 
+;   call          bios_pic_read           ; 32 bit number, do hex
+;   ld            (gpu_variable+3), a
+;   call          bios_pic_read
+;   ld            (gpu_variable+2), a
+;   call          bios_pic_read
+;   ld            (gpu_variable+1), a
+;   call          bios_pic_read
+;   ld            (gpu_variable), a
+; 
+;   ld            hl, gpu_variable
+;   ld            a, 8
+;   call          gpu_hex
+; 
+;   ld            a, $A
+;   out           (GPU_DATA), a
+; 
+;   ld            hl, MDT_msg             ; manufacture date
+;   call          gpu_str
+; 
+;   call          bios_pic_read
+;   ; upper 4 bits are undefined, lower 4 are going to be zero realisticly but
+;   ; represent the upper nibble of a year since 2000
+;   and           $f
+;   ld            c, a
+; 
+;   call          bios_pic_read
+;   ld            (gpu_variable), a       ; save lower byte, low nibble is month
+; 
+;   and           $f0                     ; mask low nibble of year
+;   or            c
+;   rlca
+;   rlca
+;   rlca
+;   rlca                                  ; nibbles swapped so year is right now
+;   ld            (gpu_variable+1), a
+;   ld            a, (gpu_variable)
+;   and           $f
+;   ld            (gpu_variable), a       ; mask low nibble
+; 
+;   ld            a, 1
+;   ld            b, 2
+;   ld            hl, gpu_variable+1
+; 
+;   call          gpu_dec
+; 
+;   ld            a, $20
+;   out           (GPU_DATA), a           ; put a space
+; 
+;   ld            a, 1
+;   ld            b, 2
+;   ld            hl, gpu_variable
+; 
+;   call          gpu_dec
+; 
+;   ld            a, $A
+;   out           (GPU_DATA), a
+; 
+;   ; no more data to print, one more byte of checksum though
+; 
+;   call          bios_pic_read
+; 
+;   ret
+
+; sd_print_csd:
+;   ; calculate actual disk size in MB, stored value is in 0.5KB so 11 shifts
+;   ; right will give the value = top 3 bytes shifted 3 bits
+;   ld            a, (sd_c_size+1)
+;   ld            (maths_op_a), a
+;   ld            a, (sd_c_size+2)
+;   ld            (maths_op_a+1), a
+;   ld            a, (sd_c_size+3)
+;   ld            (maths_op_a+2), a
+;   ld            a, 0
+;   ld            (maths_op_a+3), a
+; 
+;   ld            a, 3
+;   call          maths_asrn32            ; divide by 8 (8*256 = 2048)
+; 
+;   ld            hl, size_msg
+;   call          gpu_str
+; 
+;   ld            hl, maths_op_a
+;   ld            a, 3
+;   ld            b, 5                    ; max 32GB = 32000 MB
+;   call          gpu_dec
+; 
+;   ld            a, $A
+;   out           (GPU_DATA), a
+; 
+;   ret
+
+sd_csd:
+  ; the csd has some useful info, like size of card etc. need to read this at
+  ; start
+  ld            a, SD_CARD_CSD
+  call          bios_pic_write
+
+  call          bios_pic_read   ; the ack byte
+  ; first two bits indicate SD v1/v2 Low Capacity or if 01 High Capacity
+  call          bios_pic_read
+  bit           6, a
+  jp            nz, sd_hcsd_csd
+
+  ; low denisty
+  ; make sure the HCSD flag is clear
+  ld            a, (sd_flags)
+  and           ~HCSD_FLAG
+  ld            (sd_flags), a
+
+  call          bios_pic_read           ; access time (don't care)
+  call          bios_pic_read
+  call          bios_pic_read           ; transfer rate (don't care)
+  call          bios_pic_read           ; command class (don't care)
+  call          bios_pic_read           ; first 4 bits command class
+                                        ; second 4 max read block len
+  and           $f
+  ; this is an important fact about the card, save it
+  ld            (sd_block_len), a
+
+  call          bios_pic_read           ; some flags, don't really care
+                                        ; bottom 2 are top 2 bits of C_SIZE
+  and           $03
+  rlca
+  rlca
+  ld            c, a
+
+  call          bios_pic_read           ; middle 8 bits of C_SIZE
+  rlca
+  jr            nc, sd_csd_skip1
+  set           1, c
+sd_csd_skip1:
+  rlca
+  jr            nc, sd_csd_skip2
+  set           0, c
+sd_csd_skip2:
+  and           $7C                     ; zero bottom 2
+  ld            d, a                    ; save for a minute
+
+  call          bios_pic_read           ; last two bits of C_SIZE in to 2 bits
+                                        ; then 6 bits about power stuff
+
+  and           $C0
+  rlca
+  rlca
+  or            d                       ; now re-assembled whole byte
+                                        ; need mult too before we print, but
+                                        ; this needs saving
+  ld            (sd_c_size), a
+  ld            a, c
+  ld            (sd_c_size+1), a
+
+  call          bios_pic_read           ; this one is 6 bytes of garbage then
+                                        ; top 2 bytes of 3 byte size multiplier
+  and           $3
+  rlca
+  ld            c,a
+
+  call          bios_pic_read           ; top bit is last of multiplier others
+                                        ; are junk
+  and           $80
+  jr            z, sd_csd_skip3
+  set           0, c
+
+sd_csd_skip3:
+  ld            a, c
+  add           a, 2                     ; size_mult is 2-9 encoded as 0-7
+  ld            (sd_size_mult), a
+
+  ld            c, a
+
+  ld            a, (sd_c_size)
+  ld            (maths_op_a), a
+  ld            a, (sd_c_size+1)
+  ld            (maths_op_a+1), a
+
+  ld            a, 0
+  ld            (maths_op_a+2), a
+  ld            (maths_op_a+3), a
+
+  ld            (maths_op_b+3), a
+  ld            (maths_op_b+2), a
+  ld            (maths_op_b+1), a
+  ld            a, 1
+  ld            (maths_op_b), a
+
+  call          maths_add32             ; op_a now has c_size+1
+
+  ld            a, (sd_block_len)       ; a now has sd_block_len
+  add           a, c                    ; a = sd_block_len + sd_size_mult
+  sub           $9                      ; minimum a could have been was 11
+                                        ; subtract 9 and the shift will result
+                                        ; in the number of 512 byte sectors
+  call          maths_asln32            ; do the shift/multiply
+
+  ; now save the number of 512 byte sectors in sd_c_size
+  ld            a, (maths_op_a)
+  ld            (sd_c_size), a
+  ld            a, (maths_op_a+1)
+  ld            (sd_c_size+1), a
+  ld            a, (maths_op_a+2)
+  ld            (sd_c_size+2), a        ; max size is 22 bits for 2GB, just zero
+  ld            a, 0
+  ld            (sd_c_size+3), a        ; top byte
+
+  call          bios_pic_read           ; dump the last 5 bytes
+  call          bios_pic_read
+  call          bios_pic_read
+  call          bios_pic_read
+  call          bios_pic_read
+  ret
+
+sd_hcsd_csd:
+  ; the size field is significantly simpler (larger and simpler) in HCSD cards
+  ; csd_structure already read
+  ; save the HC flag
+  ld            a, (sd_flags)
+  or            HCSD_FLAG
+  ld            (sd_flags), a
+  call          bios_pic_read           ;TAAC
+  call          bios_pic_read           ;NSAC
+  call          bios_pic_read           ;TRAN_SPEED
+  call          bios_pic_read           ;CCC upper 8
+  call          bios_pic_read           ;CCC lower 4 and bl_len, always 9
+  and           $f
+  ld            (sd_block_len), a
+  call          bios_pic_read           ;4 flags, 4 zeros
+  call          bios_pic_read           ;2 zeros then upper 6 of C_SIZE
+  and           $3f
+  ld            (maths_op_a+2), a
+  call          bios_pic_read
+  ld            (maths_op_a+1), a
+  call          bios_pic_read
+  ld            (maths_op_a), a          ; 22 bit c size for hcsd
+
+  ; c_size for hcsd is 22 bit and multiplier is 512K blocks.  Want answer in
+  ; 512 byte blocks to match top addressable block
+  ld            a, 0
+  ld            (maths_op_a+3), a
+  ld            (maths_op_b+3), a
+  ld            (maths_op_b+2), a
+  ld            (maths_op_b+1), a
+  ld            a, 1                    ; c_size needs to be incremented
+  ld            (maths_op_b), a
+
+  call          maths_add32
+
+  ld            a, $2                   ; 10 shifts = *1024 = 512byte blocks
+  call          maths_asln32            ; but if we do 2 shifts and copy 1 byte
+                                        ; offset it's quicker
+
+  ; now save the number of blocks
+  ld            a, 0
+  ld            (sd_c_size), a
+  ld            a, (maths_op_a)
+  ld            (sd_c_size+1), a
+  ld            a, (maths_op_a+1)
+  ld            (sd_c_size+2), a
+  ld            a, (maths_op_a+2)
+  ld            (sd_c_size+3), a
+
+  call          bios_pic_read           ; stuff
+  call          bios_pic_read           ; stuff
+  call          bios_pic_read           ; stuff
+  call          bios_pic_read           ; stuff
+  call          bios_pic_read           ; stuff
+  call          bios_pic_read           ; checksum
+
+  ret
+
+sd_read_block:
+  push          af
+  push          bc
+  push          hl
+  ; read a block from SD
+  ; block address already in sd_block, hl points at 512 byte space
+
+  ld            hl, sd_block
+  ; if card is not HCSD need to translate to a byte address
+  ld            a, (sd_flags)
+  and           HCSD_FLAG
+  jr            nz, sd_read_block_go
+
+  xor           a               ; zero accumulator
+  ld            (sd_byte), a    ; zero lowest byte of byte address
+  
+  scf                           ; set carry flag
+  ccf                           ; complement carry flag
+  ld            a, (sd_block)
+  rla                           ; shift low byte by 1 (x2)
+  ld            (sd_byte+1), a  ; save 1 byte higher (x256) total x512
+  ld            a, (sd_block+1)
+  rla
+  ld            (sd_byte+2), a
+  ld            a, (sd_block+2)
+  rla
+  ld            (sd_byte+3), a
+  ld            hl, sd_byte
+
+sd_read_block_go:
+  ld            a, SD_CARD_READ_BLOCK
+  call          bios_pic_write
+
+  ld            b, 4
+sd_read_block_loop:
+  ld            a, (hl)
+  call          bios_pic_write
+  inc           hl
+  djnz          sd_read_block_loop
+
+  call          bios_pic_read
+  ld            (sd_error), a           ; save status byte
+
+  ld            bc, $0200               ; 512 data
+  pop           hl                      ; got a pointer to the chosen destination
+  ;push          hl                      ; so we can pop again later
+  call          sd_get_bytes
+
+  ; two crc bytes we're ignoring, need to clear the buffer though
+  call          bios_pic_read
+  call          bios_pic_read
+
+;   ld            hl, sd_error
+  ld            a, (sd_error)
+  cp            'O'
+  jr            z, sd_read_block_okay
+  ; read error, set carry on exit
+  ;pop           hl
+  pop           bc
+  pop           af
+  scf
+  ret
+
+sd_read_block_okay:
+  ; read worked, clear carry flag
+  ;pop           hl
+  pop           bc
+  pop           af
+  scf
+  ccf
+  ret
+
+sd_print_block:
+  ; prints a sector as a 32 col by 16 row hex digit
+
+  ld            hl, loadingmsg
+  call          gpu_str
+
+  ld            hl, sd_block
+  ld            a, 8
+  call          gpu_hex
+
+  ld            a, $A
+  out           (GPU_DATA), a           ; make sure we're on a new line
+
+  ld            hl, disk_buf
+  ld            a, (sd_error)
+  cp            'E'
+  jp            z, sd_report_error
+  cp            'T'
+  jp            z, sd_report_timeout
+
+  ; must be okay, dump 512 bytes
+  ld            bc, $200
+sd_print_block_loop:
+  ld            a, 2
+  call          gpu_hex
+  ld            a, $20
+  out           (GPU_DATA), a
+  inc           hl
+  dec           bc
+  ld            a, $1F
+  and           c
+  jr            nz, sd_print_block_no_nl
+  ld            a, $A
+  out           (GPU_DATA), a
+sd_print_block_no_nl:
+  xor           a
+  xor           b
+  jr            nz, sd_print_block_loop
+  xor           c
+  jr            nz, sd_print_block_loop
+  ret
+
+sd_get_bytes:
+  ; bc contain a count of the bytes needed
+  ;ld            hl, disk_buf
+  ; hl contains pointer to destination
+sd_get_bytes_loop:
+  call          bios_pic_read
+  ld            (hl),a
+  inc           hl
+  dec           bc
+  ; need to check $7FFF limit on hl
+  push          hl                      ; save the current value
+  ld            de, $8000               ; sets carry if hl < $8000
+  xor           a
+  sbc           hl, de
+  pop           hl
+  jr            nc, sd_get_bytes_dump_test  ; if not carry, get the rest of the
+                                        ; bytes but don't save them
+  ; test if bc == $0000
+  xor           b
+  jr            nz, sd_get_bytes_loop
+  xor           c
+  jr            nz, sd_get_bytes_loop
+  ret
+
+sd_get_bytes_dump:
+  call          bios_pic_read
+  dec           bc
+
+sd_get_bytes_dump_test:
+  ; get the rest of the bytes but dump them
+  xor           a
+  xor           b
+  jr            nz, sd_get_bytes_dump
+  xor           c
+  jr            nz, sd_get_bytes_dump
+  ret
+
+sd_report_error:
+  ld            hl, error_msg
+  call          gpu_str
+  ld            hl, disk_buf+1
+  ld            a, 2
+  call          gpu_hex
+  ld            hl, error_msg2
+  call          gpu_str
+  ld            hl, disk_buf+2
+  ld            a, 2
+  call          gpu_hex
+  ld            a, $A
+  out           (GPU_DATA), a
+  ret
+
+sd_report_timeout:
+  ld            hl, timeout_msg
+  call          gpu_str
+  ld            hl, disk_buf+1
+  ld            a, 2
+  call          gpu_hex
+  ld            hl, timeout_msg2
+  call          gpu_str
+  ld            hl, disk_buf+2
+  ld            a, 2
+  call          gpu_hex
+  ld            a, $A
+  out           (GPU_DATA), a
+  ret
+
+sd_report_unknown:
+  ld            hl, unknown_err_msg
+  call          gpu_str
+  ret
+
+; dir:
+;   ; print a directory listing using DOS filenames
+;   ld            ix, disk_buf
+;   
+; dir_list:
+;   ; first character is special
+;   push          ix
+;   pop           hl              ; copy to hl for some ops
+;   ld            a, (hl)
+;   xor           $00
+;   ret           Z               ; if first char is zero no more entries
+;   xor           $E5
+;   jr            z, next_entry   ; E5 is a deleted file
+;   ; other entries are just text
+;   ld            a, (ix+$B)
+;   cp            $0F
+;   jr            z, next_entry           ; test for LFN
+; valid_entry:
+;   ; it's a real filename not LFN entry
+;   ; print the name
+;   ld            b, 8
+; name_loop:
+;   ld            a, (hl)
+;   out           (GPU_DATA), a
+;   inc           hl
+;   djnz          name_loop
+; 
+;   ld            a, '.'
+;   out           (GPU_DATA), a
+; 
+;   ld            b, 3
+; ext_loop:
+;   ld            a, (hl)
+;   out           (GPU_DATA), a
+;   inc           hl
+;   djnz          ext_loop
+; 
+;   ld            a, ' '
+;   out           (GPU_DATA), a
+; 
+;   ld            de, $0011
+;   add           hl, de
+; 
+;   ld            b, 10
+;   ld            a, 4
+;   call          gpu_dec
+;   ld            a, $A
+;   out           (GPU_DATA), a
+; 
+; next_entry:
+;   ld            de, $0020
+;   add           ix, de
+; 
+;   push          ix
+;   pop           hl
+;   ld            de, disk_buf+$200
+;   scf
+;   ccf
+;   sbc           hl, de
+;   jr            nz, dir_list
+; 
+;   ; got to the end of the block, get another
+; ;   ld            a, (sd_block)
+; ;   ld            (maths_op_a), a
+; ;   ld            a, (sd_block+1)
+; ;   ld            (maths_op_a+1), a
+; ;   ld            a, (sd_block+2)
+; ;   ld            (maths_op_a+2), a
+; ;   ld            a, (sd_block+3)
+; ;   ld            (maths_op_a+3), a
+; ; 
+; ;   ld            a, 1
+; ;   ld            (maths_op_b), a
+; ;   xor           a
+; ;   ld            (maths_op_b+1), a
+; ;   ld            (maths_op_b+2), a
+; ;   ld            (maths_op_b+3), a
+; ; 
+; ;   call          maths_add32
+; ; 
+; ;   ld            a, (maths_op_a)
+; ;   ld            (sd_block), a
+; ;   ld            a, (maths_op_a+1)
+; ;   ld            (sd_block+1), a
+; ;   ld            a, (maths_op_a+2)
+; ;   ld            (sd_block+2), a
+; ;   ld            a, (maths_op_a+3)
+; ;   ld            (sd_block+3), a
+; ; 
+; ;   ; ought to check for end of cluster here
+; ;   call          sd_read_block
+;   call          fat_next_block
+; 
+;   ; need to check for success
+;   jp            nc, dir
+; 
+;   ; some sort of disk error, or end of directory
+;   ld            a, (sd_error)
+;   cp            0
+;   ret           z                       ; if it was zero, just got to the end
+;   cp            SD_ERROR_TIMEOUT
+;   jp            z, sd_report_timeout
+;   cp            SD_ERROR_DISKERR
+;   jp            z, sd_report_error
+;   jp            sd_report_unknown
+
+; MID_msg:
+;   dm    "Manufacturer ID:  "
+;   db    0
+; 
+; OID_msg:
+;   dm    "OEM ID:           "
+;   db    0
+; 
+; PNM_msg:
+;   dm    "Product Name:     "
+;   db    0
+; 
+; PRV_msg:
+;   dm    "Product Revision: "
+;   db    0
+; 
+; PSN_msg:
+;   dm    "Product Serial:   "
+;   db    0
+; 
+; MDT_msg:
+;   dm    "Manufacture Date: 20"
+;   db    0
+; 
+; size_msg:
+;   dm    "Disk Size (MB): "
+;   db    0
+
+error_msg:
+  dm    "Disk command error, Command "
+  db    0
+
+error_msg2:
+  dm    ", Response "
+  db    0
+
+timeout_msg:
+  dm    "Disk access timeout, Command "
+  db    0
+
+timeout_msg2:
+  dm    ", Last Response "
+  db    0
+
+unknown_err_msg:
+  dm    "Unknown disk error\n"
+  db    0
+
+loadingmsg:
+  dm    "Loading block "
+  db    0
+
+; debugstr1:
+;   dm    "calling... "
+;   db    0
+; debugstr2:
+;   dm    "returned"
+;   db    0
+sd_flags:
+  ds    1
+HCSD_FLAG:      equ     $01
+
+sd_error:
+  ds    1
+SD_ERROR_TIMEOUT:       equ     'T'
+SD_ERROR_DISKERR:       equ     'E'
+
+sd_c_size:
+  ds    3
+
+sd_size_mult:
+  ds    1
+
+sd_block_len:
+  ds    1
+
+sd_block:
+  ds    4
+
+sd_byte:
+  ds    4
+
+; sd_cluster_size:
+;   ds    1
+; 
+; sd_reserved_sec:
+;   ds    2
+; 
+; sd_number_of_fats:
+;   ds    1
+; 
+; sd_sector0:
+;   ds    4
+; 
+; sd_sec_per_fat:
+;   ds    4
+; 
+; sd_active_fat:
+;   ds    1
+; 
+; sd_root_entries:
+;   ds    2
+
+; disk_buf:
+;   ds    512

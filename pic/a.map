@@ -1,0 +1,35 @@
+gplink-0.13.6 alpha
+Map File - Created 9-20-2009  16:39:35
+ 
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   00000000    program   0x0000a4
+                  .config       code   0x300000    program   0x00000e
+                   .udata      udata   0x000080       data   0x000006
+ 
+                              Program Memory Usage
+                               Start         End
+                           ---------   ---------
+                            0x300000    0x30000d
+                            00000000    0x0000a3
+ 
+                            89 program addresses used
+ 
+                              Symbols
+                     Name    Address   Location    Storage File
+                ---------  ---------  ---------  --------- ---------
+                    count   0x000080       data     static debug_kernel.asm
+                  LO_ADDR   0x000083       data     static debug_kernel.asm
+                  HI_ADDR   0x000084       data     static debug_kernel.asm
+                     DREG   0x000085       data     static debug_kernel.asm
+                     init   0x000004    program     static debug_kernel.asm
+                     main   0x000012    program     static debug_kernel.asm
+               set_master   0x000030    program     static debug_kernel.asm
+                  io_read   0x000044    program     static debug_kernel.asm
+        io_read_wait_loop   0x000058    program     static debug_kernel.asm
+                 io_write   0x000066    program     static debug_kernel.asm
+       io_write_wait_loop   0x00007e    program     static debug_kernel.asm
+                    delay   0x000088    program     static debug_kernel.asm
+               delay_loop   0x000090    program     static debug_kernel.asm
+ 

@@ -1,0 +1,569 @@
+This is pdfTeXk, Version 3.141592-1.40.3 (Web2C 7.5.6) (format=pdflatex 2009.12.10)  20 FEB 2010 18:45
+entering extended mode
+ %&-line parsing enabled.
+**debug_kernel.tex
+(./debug_kernel.tex
+LaTeX2e <2005/12/01>
+Babel <v3.8h> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, loaded.
+(/usr/share/texmf-texlive/tex/latex/base/book.cls
+Document Class: book 2005/09/16 v1.4f Standard LaTeX document class
+(/usr/share/texmf-texlive/tex/latex/base/bk10.clo
+File: bk10.clo 2005/09/16 v1.4f Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@chapter=\count80
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@subparagraph=\count85
+\c@figure=\count86
+\c@table=\count87
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/share/texmf-texlive/tex/latex/graphics/graphicx.sty
+Package: graphicx 1999/02/16 v1.0f Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf-texlive/tex/latex/graphics/keyval.sty
+Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+(/usr/share/texmf-texlive/tex/latex/graphics/graphics.sty
+Package: graphics 2006/02/20 v1.0o Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf-texlive/tex/latex/graphics/trig.sty
+Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
+)
+(/etc/texmf/tex/latex/config/graphics.cfg
+File: graphics.cfg 2007/01/18 v1.5 graphics configuration of teTeX/TeXLive
+)
+Package graphics Info: Driver file: pdftex.def on input line 90.
+
+(/usr/share/texmf-texlive/tex/latex/pdftex-def/pdftex.def
+File: pdftex.def 2007/01/08 v0.04d Graphics/color for pdfTeX
+\Gread@gobject=\count88
+))
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
+)
+(/usr/share/texmf-texlive/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2007/02/07 v6.75r Hypertext links for LaTeX
+\@linkdim=\dimen105
+\Hy@linkcounter=\count89
+\Hy@pagecounter=\count90
+
+(/usr/share/texmf-texlive/tex/latex/hyperref/pd1enc.def
+File: pd1enc.def 2007/02/07 v6.75r Hyperref: PDFDocEncoding definition (HO)
+)
+(/etc/texmf/tex/latex/config/hyperref.cfg
+File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive
+)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/kvoptions.sty
+Package: kvoptions 2006/08/22 v2.4 Connects package keyval with LaTeX options (
+HO)
+)
+Package hyperref Info: Option `bookmarks' set `true' on input line 2238.
+Package hyperref Info: Option `breaklinks' set `true' on input line 2238.
+Package hyperref Info: Option `colorlinks' set `true' on input line 2238.
+Package hyperref Info: Option `hypertexnames' set `false' on input line 2238.
+Package hyperref Info: Hyper figures OFF on input line 2288.
+Package hyperref Info: Link nesting OFF on input line 2293.
+Package hyperref Info: Hyper index ON on input line 2296.
+Package hyperref Info: Plain pages OFF on input line 2303.
+Package hyperref Info: Backreferencing OFF on input line 2308.
+
+Implicit mode ON; LaTeX internals redefined
+Package hyperref Info: Bookmarks ON on input line 2444.
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/url.sty
+\Urlmuskip=\muskip10
+Package: url 2005/06/27  ver 3.2  Verb mode for urls, etc.
+)
+LaTeX Info: Redefining \url on input line 2599.
+\Fld@menulength=\count91
+\Field@Width=\dimen106
+\Fld@charsize=\dimen107
+\Choice@toks=\toks15
+\Field@toks=\toks16
+Package hyperref Info: Hyper figures OFF on input line 3102.
+Package hyperref Info: Link nesting OFF on input line 3107.
+Package hyperref Info: Hyper index ON on input line 3110.
+Package hyperref Info: backreferencing OFF on input line 3117.
+Package hyperref Info: Link coloring ON on input line 3120.
+\Hy@abspage=\count92
+\c@Item=\count93
+\c@Hfootnote=\count94
+)
+*hyperref using driver hpdftex*
+(/usr/share/texmf-texlive/tex/latex/hyperref/hpdftex.def
+File: hpdftex.def 2007/02/07 v6.75r Hyperref driver for pdfTeX
+\Fld@listcount=\count95
+)
+(/usr/share/texmf-texlive/tex/latex/fancyhdr/fancyhdr.sty
+\fancy@headwidth=\skip43
+\f@ncyO@elh=\skip44
+\f@ncyO@erh=\skip45
+\f@ncyO@olh=\skip46
+\f@ncyO@orh=\skip47
+\f@ncyO@elf=\skip48
+\f@ncyO@erf=\skip49
+\f@ncyO@olf=\skip50
+\f@ncyO@orf=\skip51
+)
+(/usr/share/texmf-texlive/tex/latex/tools/tabularx.sty
+Package: tabularx 1999/01/07 v2.07 `tabularx' package (DPC)
+
+(/usr/share/texmf-texlive/tex/latex/tools/array.sty
+Package: array 2005/08/23 v2.4b Tabular extension package (FMi)
+\col@sep=\dimen108
+\extrarowheight=\dimen109
+\NC@list=\toks17
+\extratabsurround=\skip52
+\backup@length=\skip53
+)
+\TX@col@width=\dimen110
+\TX@old@table=\dimen111
+\TX@old@col=\dimen112
+\TX@target=\dimen113
+\TX@delta=\dimen114
+\TX@cols=\count96
+\TX@ftn=\toks18
+) (./debug_kernel.aux)
+\openout1 = `debug_kernel.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 38.
+LaTeX Font Info:    ... okay on input line 38.
+
+(/usr/share/texmf/tex/context/base/supp-pdf.tex
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count97
+\scratchdimen=\dimen115
+\scratchbox=\box26
+\nofMPsegments=\count98
+\nofMParguments=\count99
+\everyMPshowfont=\toks19
+\MPscratchCnt=\count100
+\MPscratchDim=\dimen116
+\MPnumerator=\count101
+\everyMPtoPDFconversion=\toks20
+) (/usr/share/texmf-texlive/tex/latex/graphics/color.sty
+Package: color 2005/11/14 v1.0j Standard LaTeX Color (DPC)
+
+(/etc/texmf/tex/latex/config/color.cfg
+File: color.cfg 2007/01/18 v1.5 color configuration of teTeX/TeXLive
+)
+Package color Info: Driver file: pdftex.def on input line 130.
+)
+Package hyperref Info: Link coloring ON on input line 38.
+
+(/usr/share/texmf-texlive/tex/latex/hyperref/nameref.sty
+Package: nameref 2006/12/27 v2.28 Cross-referencing by name of section
+
+(/usr/share/texmf-texlive/tex/latex/oberdiek/refcount.sty
+Package: refcount 2006/02/20 v3.0 Data extraction from references (HO)
+)
+\c@section@level=\count102
+)
+LaTeX Info: Redefining \ref on input line 38.
+LaTeX Info: Redefining \pageref on input line 38.
+ (./debug_kernel.out) (./debug_kernel.out)
+\@outlinefile=\write3
+\openout3 = `debug_kernel.out'.
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 41.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 41.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 41.
+ [1
+
+
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+[2
+
+] (./debug_kernel.toc
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 1.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 1.
+ [3])
+\tf@toc=\write4
+\openout4 = `debug_kernel.toc'.
+
+ [4]
+Underfull \hbox (badness 10000) in paragraph at lines 46--62
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 46--62
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 46--62
+
+ []
+
+[5] [6
+
+]
+Chapter 1.
+
+Underfull \hbox (badness 4378) in paragraph at lines 82--83
+[]|\OT1/cmr/m/n/10 Keyboard port, FIFO on
+ []
+
+
+Underfull \hbox (badness 4316) in paragraph at lines 82--83
+\OT1/cmr/m/n/10 read, ac-cepts sin-gle com-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 85--86
+[]|\OT1/cmr/m/n/10 Peripheral in-ter-rupt flags,
+ []
+
+[7] <noteicon.pdf, id=414, 57.816pt x 57.816pt>
+File: noteicon.pdf Graphic file (type pdf)
+ <use noteicon.pdf>
+Underfull \vbox (badness 1038) has occurred while \output is active []
+
+ [8]
+Overfull \hbox (4.22896pt too wide) in paragraph at lines 209--209
+[]|\OT1/cmr/m/n/10 USB[]RXF| 
+ []
+
+
+Overfull \hbox (4.36784pt too wide) in paragraph at lines 209--209
+[]|\OT1/cmr/m/n/10 USB[]TXE| 
+ []
+
+
+Overfull \hbox (3.18726pt too wide) in paragraph at lines 209--209
+[]|\OT1/cmr/m/n/10 GPU[]INT| 
+ []
+
+
+Overfull \hbox (27.7012pt too wide) in paragraph at lines 209--209
+[]|\OT1/cmr/m/n/10 KEY[]DETECT| 
+ []
+
+
+Overfull \hbox (7.00671pt too wide) in paragraph at lines 209--209
+[]|\OT1/cmr/m/n/10 KEY[]RDY| 
+ []
+
+[9 <./noteicon.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./noteicon.pdf): PDF inclusion: Page Gr
+oup detected which pdfTeX can't handle. Ignoring it.
+>] [10]
+Chapter 2.
+<uart_jumpers.pdf, id=429, 337.26pt x 262.58101pt>
+File: uart_jumpers.pdf Graphic file (type pdf)
+ <use uart_jumpers.pdf>
+<jpbr1.pdf, id=432, 74.679pt x 100.375pt>
+File: jpbr1.pdf Graphic file (type pdf)
+ <use jpbr1.pdf>
+<jpbr2.pdf, id=433, 74.679pt x 100.375pt>
+File: jpbr2.pdf Graphic file (type pdf)
+ <use jpbr2.pdf>
+<jpbr3.pdf, id=434, 74.679pt x 100.375pt>
+File: jpbr3.pdf Graphic file (type pdf)
+ <use jpbr3.pdf>
+<jpbr4.pdf, id=435, 74.679pt x 100.375pt>
+File: jpbr4.pdf Graphic file (type pdf)
+ <use jpbr4.pdf>
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[11
+
+ <./uart_jumpers.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./uart_jumpers.pdf): PDF inclusion: Pag
+e Group detected which pdfTeX can't handle. Ignoring it.
+>] <jpst_np.pdf, id=453, 85.921pt x 142.93399pt>
+File: jpst_np.pdf Graphic file (type pdf)
+ <use jpst_np.pdf>
+<jpst_ep.pdf, id=454, 85.921pt x 142.93399pt>
+File: jpst_ep.pdf Graphic file (type pdf)
+ <use jpst_ep.pdf>
+<jpst_op.pdf, id=455, 85.921pt x 142.93399pt>
+File: jpst_op.pdf Graphic file (type pdf)
+ <use jpst_op.pdf>
+<jpst_1sb.pdf, id=456, 85.921pt x 142.93399pt>
+File: jpst_1sb.pdf Graphic file (type pdf)
+ <use jpst_1sb.pdf>
+<jpst_2sb.pdf, id=457, 85.921pt x 142.93399pt>
+File: jpst_2sb.pdf Graphic file (type pdf)
+ <use jpst_2sb.pdf>
+<jpst_5b.pdf, id=458, 85.921pt x 142.93399pt>
+File: jpst_5b.pdf Graphic file (type pdf)
+ <use jpst_5b.pdf>
+<jpst_6b.pdf, id=459, 85.921pt x 142.93399pt>
+File: jpst_6b.pdf Graphic file (type pdf)
+ <use jpst_6b.pdf>
+<jpst_7b.pdf, id=460, 85.921pt x 142.93399pt>
+File: jpst_7b.pdf Graphic file (type pdf)
+ <use jpst_7b.pdf>
+<jpst_8b.pdf, id=461, 85.921pt x 142.93399pt>
+File: jpst_8b.pdf Graphic file (type pdf)
+ <use jpst_8b.pdf>
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[12 <./jpbr1.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpbr1.pdf): PDF inclusion: Page Group
+ detected which pdfTeX can't handle. Ignoring it.
+> <./jpbr2.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpbr2.pdf): PDF inclusion: Page Group
+ detected which pdfTeX can't handle. Ignoring it.
+> <./jpbr3.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpbr3.pdf): PDF inclusion: Page Group
+ detected which pdfTeX can't handle. Ignoring it.
+> <./jpbr4.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpbr4.pdf): PDF inclusion: Page Group
+ detected which pdfTeX can't handle. Ignoring it.
+>] [13 <./jpst_np.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpst_np.pdf): PDF inclusion: Page Gro
+up detected which pdfTeX can't handle. Ignoring it.
+> <./jpst_ep.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpst_ep.pdf): PDF inclusion: Page Gro
+up detected which pdfTeX can't handle. Ignoring it.
+> <./jpst_op.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpst_op.pdf): PDF inclusion: Page Gro
+up detected which pdfTeX can't handle. Ignoring it.
+> <./jpst_1sb.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpst_1sb.pdf): PDF inclusion: Page Gr
+oup detected which pdfTeX can't handle. Ignoring it.
+> <./jpst_2sb.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpst_2sb.pdf): PDF inclusion: Page Gr
+oup detected which pdfTeX can't handle. Ignoring it.
+> <./jpst_5b.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpst_5b.pdf): PDF inclusion: Page Gro
+up detected which pdfTeX can't handle. Ignoring it.
+> <./jpst_6b.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpst_6b.pdf): PDF inclusion: Page Gro
+up detected which pdfTeX can't handle. Ignoring it.
+> <./jpst_7b.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpst_7b.pdf): PDF inclusion: Page Gro
+up detected which pdfTeX can't handle. Ignoring it.
+> <./jpst_8b.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./jpst_8b.pdf): PDF inclusion: Page Gro
+up detected which pdfTeX can't handle. Ignoring it.
+>] [14
+
+]
+Chapter 3.
+[15] [16] [17] [18
+
+]
+Chapter 4.
+<pic_pinout.pdf, id=614, 282.42737pt x 166.41672pt>
+File: pic_pinout.pdf Graphic file (type pdf)
+ <use pic_pinout.pdf>
+[19 <./pic_pinout.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./pic_pinout.pdf): PDF inclusion: Page 
+Group detected which pdfTeX can't handle. Ignoring it.
+>] [20
+
+]
+Chapter 5.
+[21]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [22]
+Underfull \vbox (badness 2617) has occurred while \output is active []
+
+ [23]
+[24]
+Chapter 6.
+[25
+
+] [26
+
+]
+Chapter 7.
+
+Underfull \hbox (badness 1033) in paragraph at lines 537--538
+[]|\OT1/cmr/m/n/10 An XOR check-sum of the re-sponse
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [27]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [28]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [29]
+Underfull \hbox (badness 8019) in paragraph at lines 667--668
+[]|\OT1/cmr/m/n/10 The check-sum cal-cu-
+ []
+
+
+Underfull \hbox (badness 2426) in paragraph at lines 667--668
+\OT1/cmr/m/n/10 lated by the PIC (1
+ []
+
+
+Underfull \hbox (badness 1163) in paragraph at lines 673--673
+[]|\OT1/cmr/m/n/10 Wrong num-ber of pa-
+ []
+
+
+Underfull \hbox (badness 1783) in paragraph at lines 677--677
+[]|\OT1/cmr/m/n/10 The start ad-dress for
+ []
+
+
+Underfull \hbox (badness 4467) in paragraph at lines 677--677
+\OT1/cmr/m/n/10 within a valid range
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 683--684
+[]|\OT1/cmr/m/n/10 The un-known com-
+ []
+
+[30]
+Underfull \vbox (badness 4291) has occurred while \output is active []
+
+ [31]
+[32]
+Chapter 8.
+(./z80_functions.tex
+LaTeX Font Info:    Try loading font information for OML+cmr on input line 17.
+ (/usr/share/texmf-texlive/tex/latex/base/omlcmr.fd
+File: omlcmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OML/cmr/m/n' in size <10> not available
+(Font)              Font shape `OML/cmm/m/it' tried instead on input line 17.
+
+[33
+
+]
+Underfull \hbox (badness 1354) in paragraph at lines 50--51
+[]|\OT1/cmr/m/n/10 bq4845 RTC driver for the Mark 2 Z80
+ []
+
+
+Overfull \hbox (428.50226pt too wide) in paragraph at lines 47--56
+[] 
+ []
+
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [34]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [35]
+[36]
+Overfull \hbox (399.25891pt too wide) in paragraph at lines 127--131
+[] 
+ []
+
+[37] [38]
+Underfull \hbox (badness 1354) in paragraph at lines 211--212
+[]|\OT1/cmr/m/n/10 bq4845 RTC driver for the Mark 2 Z80
+ []
+
+
+Underfull \vbox (badness 2671) has occurred while \output is active []
+
+ [39])
+[40] (./debug_kernel.aux) ) 
+Here is how much of TeX's memory you used:
+ 3396 strings out of 95086
+ 46086 string characters out of 1183254
+ 108092 words of memory out of 1500000
+ 6370 multiletter control sequences out of 10000+50000
+ 9974 words of font info for 35 fonts, out of 1200000 for 2000
+ 28 hyphenation exceptions out of 8191
+ 25i,12n,43p,1619b,367s stack positions out of 5000i,500n,6000p,200000b,5000s
+pdfTeX warning (dest): name{subsection.111} has been
+ referenced but does not exist, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.109} has been referenced but does not ex
+ist, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.108} has been referenced but does not ex
+ist, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.106} has been referenced but does not ex
+ist, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.105} has been referenced but does not ex
+ist, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.103} has been referenced but does not ex
+ist, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.102} has been referenced but does not ex
+ist, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.100} has been referenced but does not ex
+ist, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.99} has been referenced but does not exi
+st, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.97} has been referenced but does not exi
+st, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.96} has been referenced but does not exi
+st, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.94} has been referenced but does not exi
+st, replaced by a fixed one
+
+pdfTeX warning (dest): name{subsection.93} has been referenced but does not exi
+st, replaced by a fixed one
+
+</usr/share/texmf-texlive/fonts/type1/bluesky/cm/cmbx10.pfb></usr/share/texmf-t
+exlive/fonts/type1/bluesky/cm/cmbx12.pfb></usr/share/texmf-texlive/fonts/type1/
+bluesky/cm/cmmi10.pfb></usr/share/texmf-texlive/fonts/type1/bluesky/cm/cmr10.pf
+b></usr/share/texmf-texlive/fonts/type1/bluesky/cm/cmr12.pfb></usr/share/texmf-
+texlive/fonts/type1/bluesky/cm/cmr17.pfb></usr/share/texmf-texlive/fonts/type1/
+bluesky/cm/cmsl10.pfb></usr/share/texmf-texlive/fonts/type1/bluesky/cm/cmti10.p
+fb></usr/share/texmf-texlive/fonts/type1/bluesky/cm/cmtt10.pfb>
+Output written on debug_kernel.pdf (40 pages, 312254 bytes).
+PDF statistics:
+ 835 PDF objects out of 1000 (max. 8388607)
+ 175 named destinations out of 1000 (max. 131072)
+ 681 words of extra memory for PDF output out of 10000 (max. 10000000)
+

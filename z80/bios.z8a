@@ -1,0 +1,445 @@
+;-------------------------------------------------------------------------------
+;|                                                                             |
+;| bios.z8a - A basic 8K BIOS image and bootloader for the Mark 2 Z80 project  |
+;| File Version: 1.0                                                           |
+;| hairymnstr@gmail.com                                                        |
+;|                                                                             |
+;| Copyright (C) 2010  Nathan Dumont                                           |
+;|                                                                             |
+;| This program is free software: you can redistribute it and/or modify        |
+;| it under the terms of the GNU General Public License as published by        |
+;| the Free Software Foundation, either version 3 of the License, or           |
+;| (at your option) any later version.                                         |
+;|                                                                             |
+;| This program is distributed in the hope that it will be useful,             |
+;| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+;| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+;| GNU General Public License for more details.                                |
+;|                                                                             |
+;| You should have received a copy of the GNU General Public License           |
+;| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+;|                                                                             |
+;-------------------------------------------------------------------------------
+
+include 'statics.z8a'
+include 'gpu_commands.z8a'
+include 'kb_commands.z8a'
+include 'scancodes.z8a'
+include 'sd_commands.z8a'
+
+org 0
+seek 0
+    jp  boot_start
+
+org 0x0038
+seek 0x0038
+    ; interrupt handler
+    push        af
+    push        bc
+    push        de
+    push        hl
+
+    ; now figure out who did it
+    in  a, (PIF)                ; load the periferal flag register
+    bit CKIF, a                 ; test, if zero there's an interrupt
+    jp  z, clock_int            ; clock caused an interupt
+    bit KBIF, a
+    jp  z, keyboard_int         ; keyboard interrupt
+;     bit SDIF, a
+;     jp  z, sd_int
+;     bit         USBIF, a
+;     call        usb_int
+
+    jp          exit_int
+
+keyboard_int:
+    in  a, (KEY_DATA)
+    ld          (last_key), a
+    ld  (gpu_variable), a
+    ld          hl, gpu_variable
+    ld          a, 2
+    call        gpu_hex
+    ld          a, 0x20
+    out (GPU_DATA), a
+    jp  exit_int
+
+clock_int:
+    call        rtc_int
+
+    jp          exit_int
+
+; sd_int:
+;     in          a, (SD_DATA)
+;     ld          (gpu_variable), a
+;     ld          hl, gpu_variable
+;     ld          a, 2
+;     call        gpu_hex
+;     ld          a, ' '
+;     out         (GPU_DATA), a
+;     jp          exit_int
+
+exit_int:
+    pop hl
+    pop de
+    pop bc
+    pop af
+    ei
+    reti
+
+eoi:
+; == end of interrupt code =====================================================
+
+seek    $100
+org     $8000
+
+; ==============================================================================
+;
+;  STATIC MEMORY LOCATIONS
+;
+; ==============================================================================
+
+;*******************************************************************************
+; ram_top - A pointer to the last byte in RAM
+;*******************************************************************************
+
+;; On boot the system runs a check through all memory addresses until it finds a
+;; location where RAM is present.  This allows the system to be used with a less
+;; than full memory address space.\\
+;;
+;; Access: Read-only
+
+ram_top:        defs    4       ; 4-byte pointer to last memory location
+
+;*******************************************************************************
+; system_clock - The speed of the Z80 clock
+;*******************************************************************************
+
+;; On boot the clock speed is selected by a BIOS parameter held in the
+;; supervisor PIC's EEPROM memory.  During the boot process this setting is 
+;; queried and saved to memory.  This can be used in timing critical
+;; applications, or to compensate for various clock speeds.  The actual
+;; frequency in Hz can be looked up in system_clock_speeds.\\
+;;
+;; 0: 250 kHz\
+;; 1: 2.5 MHz\
+;; 2: 3.33 MHz\
+;; 3: 5.0 MHz\\
+;;
+;; Access: Read-only
+system_clock:   defb    $3
+
+;*******************************************************************************
+; system_clock_speeds - Lookup table to convert clock setting to Hz
+;*******************************************************************************
+
+;; This table contains one entry per possible clock setting (as stored in
+;; system_clock).  The value of the clock speed in Hz for each setting is stored
+;; here as a 32bit integer.\\
+;;
+;; Access: Read-only
+
+system_clock_speeds:
+                ; speed in Hz           setting         frequency decimal
+  defb          $90, $D0, $03, $00      ; 0             0.25  MHz
+  defb          $A0, $25, $26, $00      ; 1             2.5   MHz
+  defb          $D5, $DC, $32, $00      ; 2             3.333 MHz
+  defb          $40, $4B, $4C, $00      ; 3             5.0   MHz
+
+;*******************************************************************************
+; system_boot_order - The order in which devices are searched for a boot image
+;*******************************************************************************
+
+;; On boot this is read from the PIC's internal EEPROM memory and stored here.
+;; This setting is used by the bootloader to decide what order to search for a
+;; valid operating system boot image to load.  This is a numerical value, the
+;; meaning of various values is described below.
+;;
+;; 0: Boot from SD card only\
+;; 1: Boot from USB device only\
+;; 2: Boot from SD as first choice, or USB if that fails\
+;; 3: Boot from USB as first choice, or SD if that fails\
+;;
+;; Access: Read-only (except in BIOS setup)
+system_boot_order:      defb    $00
+
+BOOT_SD:                equ     $00
+BOOT_USB:               equ     $01
+BOOT_SD_USB:            equ     $02
+BOOT_USB_SD:            equ     $03
+
+;*******************************************************************************
+; system_filesystem - indicates the filesystem type if boot was from SD card
+;*******************************************************************************
+
+;; The BIOS supports both FAT16 and FAT32 as boot filesystems, this field
+;; records the filesystem type to know which routines to use.
+;;
+;; $06: FAT16\
+;; $0B: FAT32\\
+;;
+;; Access: Read-only
+
+system_filesystem:      defb    $00
+
+;*******************************************************************************
+; system_boot_device - Set by the BIOS bootloader to indicate where the boot
+;                      image in use was found
+;*******************************************************************************
+
+;; On boot, the bootloader stores a number here depending on the source of the
+;; boot image loaded.
+;;
+;; 0: No boot image found, (usually means the system is still in BIOS mode)\
+;; 1: SD Card\
+;; 2: USB device\\
+;;
+;; Access: Read-only
+system_boot_device:     defb $00
+
+;*******************************************************************************
+; system_boot_file - Set by the bootloader to the path to the currently running
+;                    program file loaded at boot
+;*******************************************************************************
+
+;; On boot, the system loads a file from the root directory of the first boot
+;; device (or subsequent if that fails based on BIOS settings) with the
+;; extension .z8b (Z80 boot image).  The actual file name loaded is listed here
+;; as an 8.3 dos-style filename in a null terminated string.  The filename is
+;; automatically padded on the right with spaces to fill 8 characters.  The last
+;; four characters should always be ".Z8B".\\
+;;
+;; Access: Read-only
+; system_boot_file:
+        ;01234567.123
+;   defm  "            "
+;   defb  0
+
+;*******************************************************************************
+; system_interrupts - A holding store for the current interrupt enabled state
+;*******************************************************************************
+
+;; The Peripheral Interrupt Enable (PIE) register is write-only, so to allow
+;; different pieces of software to enable interrupts without affecting others
+;; the current setting is stored here by all users who alter the interrupt
+;; register state.
+system_interrupts:      defs    1
+
+;*******************************************************************************
+; stack - The bottom of (highest address used by) the stack
+;*******************************************************************************
+
+;; The stack pointer is set to this location at boot and it grows downwards.  At
+;; boot the bootup routines are stored between $1000 and $17FF, so the stack is
+;; limited to the 2K region above this.  Once the bootloader has loaded an
+;; operating system, execution moves above the stack and it can extend down to
+;; the top of the variables area at $1000 (now giving it a full 4K of room).
+
+stack:          equ     $9FFF
+disk_buf:       equ     $7E00
+
+;===============================================================================
+;  bios_error_exit - called on a fatal error after GPU is ready
+;===============================================================================
+
+;; This function is called by BIOS functions on errors, but only after the GPU
+;; has been started.  When called *HL* contains a pointer to a string with some
+;; information about the error, this is printed then the system is halted.
+
+bios_error_exit:
+  call          gpu_str         ; hl already contains a pointer to a message
+  di
+  halt                          ; nothing more we can do
+
+;===============================================================================
+; bios_set_interrupts - set PIE and the local copy of interrupt flags
+;===============================================================================
+
+;; Because the Peripheral Interrupt Enable register is write-only, a copy of the
+;; current flag settings is stored in memory, by using this function both of the
+;; locations are kept up to date.  This is thread-safe as it blocks interrupts
+;; to ensure both locations are kept in sync so it is safe to alter the
+;; system_interrupts value in memory from interrupts, don't call directly as it
+;; enables interrupts.  The value to set is in *A*.
+
+bios_set_interrupts:
+  di
+  ld            (system_interrupts), a
+  out           (PIE), a
+  ei
+  ret
+
+;===============================================================================
+; bios_enable_int - enable the interrupt indicated by register A
+;===============================================================================
+
+;; Register A contains a bit mask with a 1 in every interrupt to enable.  This
+;; is carried out and the updated value recorded in system_interrupts.  The
+;; interrupt enable is set at the end so don't call from interrupts.
+
+bios_enable_int:
+  di
+  push          bc
+  cpl                                   ; invert bit mask
+  ld            b, a
+  ld            a, (system_interrupts)
+  and           b                       ; apply mask
+  ld            (system_interrupts), a
+  out           (PIE), a
+  pop           bc
+  ei
+  ret
+
+;===============================================================================
+; bios_disable_int - disable interrupts flagged in byte in A
+;===============================================================================
+
+bios_disable_int:
+  di
+  push          bc
+  ld            b, a
+  ld            a, (system_interrupts)
+  or            b
+  ld            (system_interrupts), a
+  out           (PIE), a
+  pop           bc
+  ei
+  ret
+  
+;===============================================================================
+; bios_save_var - saves a byte of data to non-volatile bios memory
+;===============================================================================
+
+;; The contents of *A* are saved to the non-volatile BIOS setting storage in
+;; one of 256 locations as indicated by the contents of *B*.
+
+bios_save_var:
+  push          af
+  ld            a, BIOS_WRITE_VAR_CMD
+  call          bios_pic_write          ; actually this command writes to the
+                                        ; PIC's internal EEPROM but same address
+  ld            a, b
+  call          bios_pic_write          ; send address byte
+
+  pop           af
+  call          bios_pic_write          ; send data byte
+
+  ret
+
+;===============================================================================
+; bios_load_var - loads a byte from non-volatile BIOS memory
+;===============================================================================
+
+;; *A* is loaded with a byte fetched from location *B* from EEPROM memory.
+
+bios_load_var:
+  ld            a, BIOS_READ_VAR_CMD
+  call          bios_pic_write
+  ld            a, b
+  call          bios_pic_write
+  call          bios_pic_read
+  ret
+
+
+bios_pic_read:
+  push          bc
+  ld            a, (system_counter)
+  add           a, 2
+  ld            b, a
+bios_pic_read_loop:
+  ld            a, (system_counter)
+  xor           b
+  jr            z, bios_pic_read_timeout
+  in            a, (STATUS)
+  bit           SD_RXF, a
+  jr            nz, bios_pic_read_loop
+
+  pop           bc
+  in            a, (SD_DATA)
+  ret
+
+bios_pic_read_timeout:
+  push          hl
+  ld            hl, read_timeout_msg
+  call          gpu_str
+  pop           hl
+  pop           bc
+  ret
+
+bios_pic_write:
+  push          af
+bios_pic_write_wait:
+  in            a, (STATUS)
+  bit           SD_TXE, a
+  jr            nz, bios_pic_write_wait
+
+  pop           af
+  out           (SD_DATA), a
+  ret
+;===============================================================================
+; bios_reset - ask the PIC to do a full system reset
+;===============================================================================
+
+;; In some cases it is useful to be able to reboot (after setting BIOS
+;; parameters for example.)  In these cases it's important that all the support
+;; circuits get reset as well to enable proper boot, issuing a command to the
+;; supervisor PIC can tell it to do a full system-reset.
+
+bios_reset:
+  ld            a, BIOS_RESET_CMD
+  call          bios_pic_write
+
+  di            ; otherwise they'll wake us from halt
+  halt          ; this probably won't get executed as the PIC will have reset
+                ; the system already.
+
+; main:
+;     
+;     ld  b,$FF
+;     ld  c,$FF
+;     ld  d,$20           ; should give about 10 seconds
+;     ld  a,(DEBUG_COUNT)
+;     xor $01
+;     out (1),a
+;     ld  (DEBUG_COUNT),a
+; 
+; loop:
+; 
+;     djnz        loop
+;     dec         c
+;     jr          nz, loop
+;     dec         d
+;     jr          nz, loop
+;         
+;     jp          main
+
+include 'gpu.z8a'
+include 'uart.z8a'
+include 'rtc.z8a'
+include 'maths.z8a'
+include 'sd.z8a'
+include 'fat.z8a'
+include 'usb.z8a'
+include 'boot.z8a'
+include 'menu.z8a'
+
+; reserve some variables
+; DEBUG_COUNT:
+;     ds  1
+
+; GPU_FLAGS:
+;     ds  1
+
+; TEMP:
+;     ds  1
+
+; temp:
+;     ds 1
+
+last_key:
+    ds 1
+
+read_timeout_msg:
+  dm    "read timed out\n"
+  db    0
+
+top_of_program: equ     $

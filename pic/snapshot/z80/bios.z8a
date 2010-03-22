@@ -1,0 +1,60 @@
+include 'statics.z8a'
+
+org 0000
+
+    ld  hl,$7fff
+    ld  sp,hl           ;set the stack pointer to top of the 32k ram chip
+
+    ; initialise the UART, need to make sure reset gets pulsed
+    ld  a,$80
+    out (DEBUG),a
+    ld  a,$00         ; time taken to load A is sufficient delay up to 40MHz+
+    out (DEBUG),a
+    
+
+    ld  a,$10
+main:
+    
+    ld  b,$FF
+    ld  c,$FF
+    ld  a,(DEBUG_COUNT)
+    xor $01
+    out (1),a
+    ld  (DEBUG_COUNT),a
+    
+    ld  d,'a'
+    call        uart_write
+
+loop:
+
+    djnz        loop
+    dec         c
+    jr          nz, loop
+    
+    jp          main
+
+
+;*******************************************************************************
+;*                                                                             *
+;*  uart_write:  Writes the contents of register D to the UART, this will      *
+;*               wait if the transmit buffer is full.                          *
+;*                                                                             *
+;*******************************************************************************
+uart_write:
+    ; read the UART status register
+    in  a,(RCSTA)
+
+    ; test TBRE, only write if high
+    and TBRE
+    jr  Z,uart_write
+
+    ; transmit buffer is not full so write the byte and return
+    ld  c,TXREG
+    out (c),d
+
+    ret
+
+
+; reserve some variables
+DEBUG_COUNT:
+    ds  1

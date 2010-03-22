@@ -1,0 +1,152 @@
+''***************************************************************************************
+''*                                                                                     *
+''*  Z80 BUS DRIVER                                                                     *
+''*                                                                                     *
+''***************************************************************************************
+VAR
+
+  long cog
+
+PUB start(tempvar) : success
+
+  stop
+  success := cog := cognew(@init, tempvar) + 1
+
+PUB stop
+
+  if cog
+    cogstop(cog~ - 1)
+
+DAT
+
+        org
+
+init    mov             dira, start_dirs
+        mov             outa, start_levels
+
+main    waitpne         trigger_mask, trigger_mask
+        ' one of the select pins is not 1
+        ' set wait high (enables the pull down transistor
+        or              outa, wait_pin
+
+        ' now decide which pin triggered the event
+        test            wr_command_pin, ina     wz
+if_z    jmp             #wr_command
+        test            wr_data_pin, ina        wz
+if_z    jmp             #wr_data
+        test            rd_command_pin, ina     wz
+if_z    jmp             #rd_command
+        test            rd_data_pin, ina        wz
+if_z    jmp             #rd_data
+
+        ' something went wrong, a power on glitch or something
+        ' make sure wait is low and go back to main
+        andn            outa, wait_pin
+        jmp             #main
+
+wr_command
+        ' the Z80 is writing a command to us so we need to read
+        ' set the buffer to inwards
+        or              outa, dir_pin
+        ' set the buffer to drive
+        andn            outa, buffer_enable_pin
+        nop
+        ' read the value
+        mov             rxreg, ina
+        ' mask to 8 bits
+        and             rxreg, #$ff
+        ' flag as a command
+        or              rxreg, cmd_full_flags
+        ' check the next fifo location is empty
+        mov             fifo_ad, par
+'        add             fifo_ad, #4
+        add             fifo_ad, fifo
+        ' clear the wait line
+        andn            outa, wait_pin
+'        rdword          temp, fifo_ad
+'        test            temp, full_flag         wz
+'if_nz   jmp             #fifo_full
+        ' put it in hub ram
+        wrword          rxreg, fifo_ad
+        ' stop the buffer driving
+        or              outa, buffer_enable_pin
+        ' increment the fifo pointer
+        add             fifo, #2
+        and             fifo, #$ff              ' modulo 128 word fifo
+        ' return to main
+        jmp             #main
+
+wr_data
+        ' the Z80 is writing a data byte
+        ' for now release the wait line and ignore
+        or              outa, dir_pin
+        andn            outa, buffer_enable_pin
+        nop
+        ' read the value
+        mov             rxreg, ina
+        and             rxreg, #$ff
+        or              rxreg, data_full_flags
+        mov             fifo_ad, par
+'        add             fifo_ad, #4
+        add             fifo_ad, fifo
+'        rdword          temp, fifo_ad
+'        test            temp, full_flag         wz
+'if_nz   jmp             #fifo_full
+        andn            outa, wait_pin
+        wrword          rxreg, fifo_ad
+        or              outa, buffer_enable_pin
+        add             fifo, #2
+        and             fifo, #$ff
+        jmp             #main
+
+rd_command
+        ' the Z80 wants to read the command status
+        ' for now release wait and ignore
+        andn            outa, wait_pin
+        jmp             #main
+
+rd_data
+        ' the Z80 wants to read the value at the text cursor
+        ' for now release wait and ignore
+        andn            outa, wait_pin
+        jmp             #main
+
+'fifo_full
+        ' the internal data and command fifo is full, dump this data
+        ' make a note in status register
+        ' probably ought to lock the status register
+'        rdlong          temp, par
+'        or              temp, overflow_flag
+'        wrlong          temp, par
+        ' also need to release the bus
+'        or              outa, buffer_enable_pin
+'        andn            dira, wait_pin
+'        jmp             #main
+
+' Initialised data
+
+wait_pin                long    %1000_0000__0000_0000
+rd_command_pin          long    %1__0000_0000__0000_0000__0000_0000
+wr_command_pin          long    %10__0000_0000__0000_0000__0000_0000
+rd_data_pin             long    %100__0000_0000__0000_0000__0000_0000
+wr_data_pin             long    %1000__0000_0000__0000_0000__0000_0000
+dir_pin                 long    %10__0000_0000
+buffer_enable_pin       long    %1__0000_0000
+
+trigger_mask            long    $f000000
+
+start_dirs              long    %0000_0000__0000_0000__1000_1011__0000_0000
+start_levels            long    %0000_0000__0000_0000__0000_1011__0000_0000
+
+full_flag               long    %1000_0000__0000_0000
+cmd_full_flags          long    %1100_0000__0000_0000
+data_full_flags         long    %1010_0000__0000_0000
+
+overflow_flag           long    $1
+fifo                    long    $0
+' Uninitialised data
+
+rxreg                   res     1
+fifo_ad                 res     1
+temp                    res     1
+sreg                    res     1

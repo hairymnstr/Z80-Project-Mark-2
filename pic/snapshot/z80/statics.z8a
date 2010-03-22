@@ -1,0 +1,30 @@
+DEBUG: equ 1
+RCSTA: equ 1
+TXREG: equ 0
+RCREG: equ 0
+SDWR: equ 2
+SDRD: equ 2
+
+SECREG: equ 0x10
+SECALM: equ 0x11
+MINREG: equ 0x12
+MINALM: equ 0x13
+HRSREG: equ 0x14
+HRSALM: equ 0x15
+DAYREG: equ 0x16
+DAYALM: equ 0x17
+DOWREG: equ 0x18
+MONREG: equ 0x19
+YRREG: equ 0x1A
+PRGREG: equ 0x1B
+INTCON: equ 0x1C
+FLGREG: equ 0x1D
+CTRLREG: equ 0x1E
+
+; RCSTA bits
+DR:     equ 0x01
+OE:     equ 0x02
+FE:     equ 0x04
+PE:     equ 0x08
+TBRE:   equ 0x10
+TRE:    equ 0x20

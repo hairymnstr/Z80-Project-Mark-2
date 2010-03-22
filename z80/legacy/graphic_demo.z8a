@@ -1,0 +1,420 @@
+; echo a byte from UART on interrupt
+
+include 'statics.z8a'
+include 'gpu_commands.z8a'
+
+org 0
+    jp  init
+
+org 0x0038
+seek 0x0038
+    ; interrupt handler
+    push        af
+    push        bc
+    push        de
+    push        hl
+
+    ; now figure out who did it
+    in  a, (PIF)                ; load the periferal flag register
+    bit CKIF, a                 ; test, if zero there's an interrupt
+    jp  z, clock_int            ; clock caused an interupt
+    bit KBIF, a
+    jp  z, keyboard_int         ; keyboard interrupt
+    bit UARTIF, a
+    jp  z, uart_int             ; UART receive interrupt
+    
+    ; result was zero, not that interrupt source.
+    ; something's gone wrong here, light up a signal and HALT
+
+    ld  a,b
+    out (DEBUG),a
+    halt
+
+uart_int:
+    ; uart has generated an interrupt read the RCREG to clear it
+    ; see if there was an error first
+    in  a,(RCSTA)
+    and OE | PE | FE
+    jr  nz, uart_int_error
+
+    ; no error flags, so just echo the byte
+    in  a,(RCREG)
+    ld  d,a
+    call        uart_write
+
+    ; all done, exit interrupt
+    jp  exit_int
+
+uart_int_error:
+    ld  d,$06   ; NAK symbol
+    call        uart_write
+    in  a,(RCREG)
+    ld  d,a     ; Send the erroneous byte for debugging
+    call        uart_write
+
+    ; all done, exit the interrupt
+    jp  exit_int
+
+keyboard_int:
+    ;ld  a, 0
+    ;ld  (gpu_variable + 1), a
+    in  a, (KEY_DATA)
+    ;ld  (gpu_variable), a
+    ;call        gpu_hex
+    out (GPU_DATA), a
+    jp  exit_int                ; nothing there yet!
+
+clock_int:
+    jp  exit_int                ; shouldn't be doing anything yet
+
+exit_int:
+    pop hl
+    pop de
+    pop bc
+    pop af
+    ei
+    reti
+
+; == end of interrupt code =====================================================
+
+init:
+    ld  hl,$7fff
+    ld  sp,hl           ;set the stack pointer to top of the 32k ram chip
+
+    ; initialise the UART, need to make sure reset gets pulsed
+    ld  a,$80
+    out (DEBUG),a
+    ld  a,$00         ; time taken to load A is sufficient delay up to 40MHz+
+    out (DEBUG),a
+
+    ; need to wait ~150uS for UART to settle down
+    ; @5MHz 150uS = 750 clock cycles
+    ; djnz takes 13 cycles when b != 0, 8 when b == 0
+    ; hence 59 * 13 + 8 = 775 so B = 60 is sufficient to delay at up to 5MHz
+    ld  b, 60d
+
+    djnz        $
+    
+    ; configure interrupts
+    ld  a, CKIE | UARTIE | KBIE | GPUIE | IE4 | IE5 | IE6 | IE7 ;disable all
+    out (PIE), a
+
+    ; set interrupt mode to single vector (mode 1)
+    im 1
+
+    ; enable interrupts
+    ;ei
+
+    ld a, $02
+    ld (DEBUG_COUNT),a
+
+    ; now wait for the GPU to be running
+wait_gpu:
+    in          a, (STATUS)
+    bit         GPU_RDY, a
+    jr          nz, wait_gpu
+
+    ; send a reset since this is the first time we've seen it this boot
+    call        gpu_init
+
+    ; now the gpu is working enable keyboard interrupts
+    ld          a, CKIE | UARTIE | GPUIE | IE4 | IE5 | IE6 |IE7
+    out         (PIE), a
+
+    ei
+;     ; now say hello
+;     ld          bc, msg
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+; 
+;     ; let's test the hex printing routine next
+;     ld          hl, (number)
+;     ld          (gpu_variable), hl
+;     call        gpu_hex
+; 
+;     ; time for newlines and pretty colours
+;     ld          a, $D                   ; first try a CR
+;     out         (GPU_DATA), a
+; 
+;     ld          a, GPU_RED
+;     call        gpu_set_colour
+;     ld          bc, red_word
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     ld          a, $A                   ; now we'll use LF
+;     out         (GPU_DATA), a
+; 
+;     ld          a, GPU_BLUE
+;     call        gpu_set_colour
+;     ld          bc, blue_word
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     ld          a, $A
+;     out         (GPU_DATA), a
+; 
+;     ld          a, GPU_GREEN
+;     call        gpu_set_colour
+;     ld          bc, green_word
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     ld          a, $A
+;     out         (GPU_DATA), a
+; 
+;     ld          a, GPU_YELLOW
+;     call        gpu_set_colour
+;     ld          bc, yellow_word
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     ld          a, $A
+;     out         (GPU_DATA), a
+; 
+;     ld          a, GPU_CYAN
+;     call        gpu_set_colour
+;     ld          bc, cyan_word
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     ld          a, $A
+;     out         (GPU_DATA), a
+; 
+;     ld          a, GPU_MAGENTA
+;     call        gpu_set_colour
+;     ld          bc, magenta_word
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     ld          a, $A
+;     out         (GPU_DATA), a
+; 
+;     ld          a, GPU_BLACK
+;     call        gpu_set_colour
+;     ld          bc, black_word
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     ld          a, $A
+;     out         (GPU_DATA), a
+; 
+;     ; set back to normal
+;     ld          a, GPU_WHITE
+;     call        gpu_set_colour
+    
+main:
+    
+    ld  b,$FF
+    ld  c,$FF
+    ld  d,$20           ; should give about 10 seconds
+    ld  a,(DEBUG_COUNT)
+    xor $01
+    out (1),a
+    ld  (DEBUG_COUNT),a
+
+loop:
+
+    djnz        loop
+    dec         c
+    jr          nz, loop
+    dec         d
+    jr          nz, loop
+
+    ; now do funky stuff
+;     ld          a,(TEMP)
+;     bit         3,a
+;     jr          nz, main                ; if we're past 7 then don't do any more
+;     sla         a
+;     sla         a
+; 
+;     ld          hl,jump_table
+;     add         a,l
+; 
+;     jr          nc, do_jump
+;     inc         h
+; do_jump:
+;     ld          l,a
+;     jp          (hl)
+; 
+; jump_table:
+;     jp          step_one
+;     nop
+;     jp          step_two
+;     nop
+;     jp          step_three
+;     nop
+;     jp          step_four
+;     nop
+;     jp          step_five
+;     nop
+;     jp          step_six
+;     nop
+;     jp          step_seven
+;     nop
+;     jp          step_eight
+;     nop
+;     
+; step_one:
+;     ; announce the intention to change the VGA display to a new one
+;     ld          bc, switch_vga_message
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     jp          fancy_exit
+; 
+; step_two:
+;     ; now tell the GPU to assign the vga to screen2
+;     ld          a, 1
+;     call        gpu_set_vga
+;     ; set screen2 as active as well
+;     call        gpu_set_active
+;     jp          fancy_exit
+; 
+; step_three:
+;     ; now send a message to the new screen
+;     ld          bc, now_on_2_msg
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     jp          fancy_exit
+; 
+; step_four:
+;     ; announce the intention to swap with the tv
+;     ld          bc, now_swapping_msg
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     jp          fancy_exit
+; 
+; step_five:
+;     ; now swapping tv and vga
+;     ld          a, 1
+;     call        gpu_set_tv
+;     xor         a
+;     call        gpu_set_vga
+;     jp          fancy_exit
+; 
+; step_six:
+;     ; now send message to tv
+;     ld          bc, over_here_msg
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     jp          fancy_exit
+; 
+; step_seven:
+;     ; say reverting to mirrored on both screens
+;     ld          bc, reverting_msg
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     xor         a
+;     call        gpu_set_active
+;     ld          bc, reverting_msg
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     jp          fancy_exit
+; 
+; step_eight:
+;     ; switch the TV back to screen 1 and say all together again
+;     xor         a
+;     call        gpu_set_tv
+;     ld          bc, all_done_msg
+;     ld          (gpu_variable), bc
+;     call        gpu_str
+;     jp          fancy_exit
+; 
+; fancy_exit:
+;     ld          a,(TEMP)
+;     inc         a
+;     ld          (TEMP),a
+        
+    jp          main
+
+
+;*******************************************************************************
+;*                                                                             *
+;*  uart_write:  Writes the contents of register D to the UART, this will      *
+;*               wait if the transmit buffer is full.                          *
+;*                                                                             *
+;*******************************************************************************
+uart_write:
+    ; read the UART status register
+    in  a,(RCSTA)
+
+    ; test TBRE, only write if high
+    and TBRE
+    jr  Z,uart_write
+
+    ; transmit buffer is not full so write the byte and return
+    ld  c,TXREG
+    out (c),d
+
+    ret
+
+include 'gpu_functions.z8a'
+
+; reserve some variables
+DEBUG_COUNT:
+    ds  1
+
+GPU_FLAGS:
+    ds  1
+
+TEMP:
+    ds  1
+
+msg:
+  defm  'Hello World!'
+  defb  0
+
+red_word:
+  defm  'Red'
+  defb  0
+
+blue_word:
+  defm  'Blue'
+  defb  0
+
+green_word:
+  defm  'Green'
+  defb  0
+
+yellow_word:
+  defm  'Yellow'
+  defb  0
+
+cyan_word:
+  defm  'Cyan'
+  defb  0
+
+magenta_word:
+  defm  'Magenta'
+  defb  0
+
+black_word:
+  defm  'Black'
+  defb  0
+
+number:
+  defb  $A5
+  defb  $EB
+
+switch_vga_message:
+  defm  'going to switch vga to a new virtual screen'
+  defb  10
+  defb  0
+
+now_on_2_msg:
+  defm  'VGA now on virtual screen2, tv still on screen1'
+  defb  10
+  defb  0
+
+now_swapping_msg:
+  defm  'going to swap display with tv'
+  defb  10
+  defb  0
+
+over_here_msg:
+  defm  'Hey, over here now.'
+  defb  10
+  defb  0
+
+reverting_msg:
+  defm  '!!! Reverting to mirrored !!!'
+  defb  10
+  defb  0
+
+all_done_msg:
+  defm  'All done, back to normal.'
+  defb  10
+  defb  0

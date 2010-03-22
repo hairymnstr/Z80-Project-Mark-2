@@ -1,0 +1,953 @@
+gplink-0.13.7 beta
+Copyright (c) 1998-2005 gputils project
+Listing File Generated: 2-16-2010  22:07:25
+ 
+ 
+Address  Value    Disassembly              Source
+-------  -----    -----------              ------
+                                           ;==============================================================================
+                                           ;    main.asm
+                                           ;==============================================================================
+                                           
+                                           ;------------------------------------------------------------------------------
+                                           ;
+                                           ; PS/2 Keyboard driver and buffer firmware
+                                           ; File Version 1.0 - 5 Feb 2010
+                                           ; hairymnstr@gmail.com
+                                           ;
+                                           ; Copyright (C) 2010  Nathan Dumont
+                                           ;
+                                           ; This program is free software: you can redistribute it and/or modify
+                                           ; it under the terms of the GNU General Public License as published by
+                                           ; the Free Software Foundation, either version 3 of the License, or
+                                           ; (at your option) any later version.
+                                           ;
+                                           ; This program is distributed in the hope that it will be useful,
+                                           ; but WITHOUT ANY WARRANTY; without even the implied warranty of
+                                           ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+                                           ; GNU General Public License for more details.
+                                           ;
+                                           ; You should have received a copy of the GNU General Public License
+                                           ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+                                           ;
+                                           ;
+                                           ;------------------------------------------------------------------------------
+                                           
+                                           list p=18f4520
+                                           include <p18f4520.inc>
+                                                   LIST
+                                           
+                                           ;==========================================================================
+                                           ;  MPASM PIC18F4520 processor include
+                                           ; 
+                                           ;  (c) Copyright 1999-2007 Microchip Technology, All rights reserved
+                                           ;==========================================================================
+                                           
+                                                   NOLIST
+                                           include scancodes.inc
+                                           CC_0		equ 0x00
+                                           CC_1		equ 0x01
+                                           CC_2		equ 0x02
+                                           CC_3		equ 0x03
+                                           CC_4		equ 0x04
+                                           CC_5		equ 0x05
+                                           CC_6		equ 0x06
+                                           CC_7		equ 0x07
+                                           CC_8		equ 0x08
+                                           CC_9		equ 0x09
+                                           CC_A		equ 0x0A
+                                           CC_B		equ 0x0B
+                                           CC_C		equ 0x0C
+                                           CC_D		equ 0x0D
+                                           CC_E		equ 0x0E
+                                           CC_F		equ 0x0F
+                                           CC_G		equ 0x10
+                                           CC_H		equ 0x11
+                                           CC_I		equ 0x12
+                                           CC_J		equ 0x13
+                                           CC_K		equ 0x14
+                                           CC_L		equ 0x15
+                                           CC_M		equ 0x16
+                                           CC_N		equ 0x17
+                                           CC_O		equ 0x18
+                                           CC_P		equ 0x19
+                                           CC_Q		equ 0x1A
+                                           CC_R		equ 0x1B
+                                           CC_S		equ 0x1C
+                                           CC_T		equ 0x1D
+                                           CC_U		equ 0x1E
+                                           CC_V		equ 0x1F
+                                           CC_W		equ 0x20
+                                           CC_X		equ 0x21
+                                           CC_Y		equ 0x22
+                                           CC_Z		equ 0x23
+                                           CC_LQ		equ 0x24	;`
+                                           CC_DSH		equ 0x25        ;-
+                                           CC_EQ		equ 0x26	;=
+                                           CC_LSB		equ 0x27        ;[
+                                           CC_RSB		equ 0x28        ;]
+                                           CC_AP		equ 0x29	;'
+                                           CC_CM		equ 0x2A	;,
+                                           CC_FS		equ 0x2B	;.
+                                           CC_WS		equ 0x2C	;\
+                                           CC_US		equ 0x2D	;/
+                                           CC_SC		equ 0x2E	;;
+                                           CC_SP		equ 0x2F	;SPACE
+                                           CC_TAB		equ 0x30	;TAB
+                                           CC_ENTER	equ 0x31	;ENTER
+                                           CC_DEL		equ 0x32	;DELETE
+                                           CC_BKSP		equ 0x33	;BACKSPACE
+                                           
+                                           CC_ESC		equ 0x80	;ESCAPE
+                                           CC_F1		equ 0x81
+                                           CC_F2		equ 0x82
+                                           CC_F3		equ 0x83
+                                           CC_F4		equ 0x84
+                                           CC_F5		equ 0x85
+                                           CC_F6		equ 0x86
+                                           CC_F7		equ 0x87
+                                           CC_F8		equ 0x88
+                                           CC_F9		equ 0x89
+                                           CC_F10		equ 0x8A
+                                           CC_F11		equ 0x8B
+                                           CC_F12		equ 0x8C
+                                           CC_PRINT	equ 0x8D
+                                           CC_SCROLL	equ 0x8E
+                                           CC_PAUSE	equ 0x8F
+                                           CC_NUM		equ 0x90
+                                           CC_CAPS		equ 0x91
+                                           CC_LSHIFT       equ 0x92
+                                           CC_RSHIFT       equ 0x93
+                                           CC_CTRL		equ 0x94
+                                           CC_ALT		equ 0x95
+                                           CC_GUIL		equ 0x96
+                                           CC_GUIR		equ 0x97
+                                           CC_APPS		equ 0x98
+                                           
+                                           CC_KP0		equ 0xC0
+                                           CC_KP1		equ 0xC1
+                                           CC_KP2		equ 0xC2
+                                           CC_KP3		equ 0xC3
+                                           CC_KP4		equ 0xC4
+                                           CC_KP5		equ 0xC5
+                                           CC_KP6		equ 0xC6
+                                           CC_KP7		equ 0xC7
+                                           CC_KP8		equ 0xC8
+                                           CC_KP9		equ 0xC9
+                                           CC_KPD		equ 0xCA	;.
+                                           CC_KPS		equ 0xCB	;*
+                                           CC_KPP		equ 0xCC	;+
+                                           CC_KPM		equ 0xCD	;-
+                                           include <portpins.inc>
+                                           ;== PORT Definitions ==========================================================
+                                           
+                                           ;-- PORT A --------------------------------------------------------------------
+                                           
+                                           P_READY         EQU     0
+                                           P_FOUND         EQU     1
+                                           P_INT           EQU     5
+                                           
+                                           PORTADEF        EQU     b'00100000'
+                                           PORTADIR        EQU     b'11011100'
+                                           
+                                           ;-- PORT B --------------------------------------------------------------------
+                                           
+                                           PORTBDEF        EQU     b'00000000'
+                                           PORTBDIR        EQU     b'01111111'
+                                           
+                                           ;-- PORT C --------------------------------------------------------------------
+                                           
+                                           P_TX            EQU     6
+                                           P_RX            EQU     7
+                                           
+                                           PORTCDEF        EQU     b'00000000'
+                                           PORTCDIR        EQU     b'11111111'
+                                           
+                                           ;-- PORT E --------------------------------------------------------------------
+                                           
+                                           P_RD            EQU     0
+                                           P_WR            EQU     1
+                                           P_CS            EQU     2
+                                           
+                                           PORTEDIR        EQU     b'00010111'
+                                           PORTEDEF        EQU     b'00000000'
+                                           
+                                           ;-- ADC PINS -------------------------------------------------------------------
+                                           
+                                           ADCONDEF        EQU     b'00001111'
+                                           
+                                           errorlevel -302
+                                           errorlevel -205
+                                           
+                                           CONFIG OSC = HSPLL
+                                           CONFIG FCMEN = ON, IESO = OFF, PWRT = ON, BOREN = OFF, BORV = 0
+                                           CONFIG WDT = OFF, WDTPS = 1, MCLRE = ON, LPT1OSC = OFF
+                                           CONFIG PBADEN = OFF, CCP2MX = PORTC, STVREN = ON, LVP = OFF
+                                           CONFIG XINST = OFF, DEBUG = OFF, CP0 = OFF, CP1 = OFF, CP2 = OFF, CP3 = OFF
+                                           CONFIG CPB = OFF, CPD = OFF, WRT0 = OFF, WRT1 = OFF, WRT2 = OFF, WRT3 = OFF
+                                           CONFIG WRTB = OFF, WRTC = OFF, WRTD = OFF, EBTR0 = OFF, EBTR1 = OFF
+                                           CONFIG EBTR2 = OFF, EBTR3 = OFF, EBTRB = OFF
+                                           
+                                           UDATA
+                                           
+                                           count           res     3
+                                           bit_count       res     1
+                                           rxreg           res     1
+                                           txreg           res     1
+                                           translate_mode  res     1
+                                           
+                                           TRANSLATE_ASCII equ     0x01
+                                           
+                                           flags           res     1
+                                           
+                                           scroll_flag     equ     0
+                                           num_flag        equ     1
+                                           caps_flag       equ     2
+                                           shift_flag      equ     3
+                                           release_flag    equ     4
+                                           talking_flag    equ     5
+                                           send_failed_flag equ    6
+                                           update_leds_flag equ    7
+                                           
+                                           parity          res     1
+                                           
+                                           parity_flag     equ     0
+                                           
+                                           org 0x00
+000000   ef90     goto	0x120                   goto        init
+000002   f000
+                                           
+                                           org 0x08
+                                           interrupt
+000008   be9e     btfsc	0x9e, 0x7, 0         btfsc         PIR1, PSPIF
+00000a   ef0c     goto	0x18                  goto          psp_rd_int
+00000c   f000
+00000e   b4f2     btfsc	0xf2, 0x2, 0         btfsc         INTCON, TMR0IF
+000010   ef18     goto	0x30                  goto          timeout
+000012   f000
+000014   ef3c     goto	0x78                  goto          edge_event
+000016   f000
+                                           
+                                           psp_rd_int
+                                             ; a byte has been read by the Z80
+                                             ; see if there is a new byte and load that into the buffer
+                                             ; first clear the interrupt so that the Z80 doesn't come back immediately
+000018   8a89     bsf	0x89, 0x5, 0           bsf           LATA, P_INT
+                                           
+00001a   9e9e     bcf	0x9e, 0x7, 0           bcf           PIR1, PSPIF             ; clear the interrupt flag
+00001c   50e9     movf	0xe9, 0, 0            movf          FSR0L,w
+00001e   18e1     xorwf	0xe1, 0, 0           xorwf         FSR1L,w
+000020   e07e     bz	0x11e                   bz            exit_interrupt          ; if low bytes of fifo write and read
+                                                                                   ; match, there's no new data
+                                             ; if not then there's more data for the Z80
+000022   50e6     movf	0xe6, 0, 0            movf          POSTINC1,w              ; get the byte from the read pointer
+000024   6e83     movwf	0x83, 0              movwf         PORTD                   ; put it in the buffer for the next read
+000026   0e01     movlw	0x1                  movlw         0x01
+000028   6ee2     movwf	0xe2, 0              movwf         FSR1H                   ; make sure we don't overflow the buffer
+00002a   9a89     bcf	0x89, 0x5, 0           bcf           LATA, P_INT             ; set the interrupt again
+00002c   ef8f     goto	0x11e                 goto          exit_interrupt
+00002e   f000
+                                           
+                                           timeout
+                                             ; called if Timer0 overflows.  This means that there wasn't a bit edge in time
+                                             ; alternatively that we've initiated host->device comms
+000030   bb87     btfsc	0x87, 0x5, 0x1       btfsc         flags, talking_flag
+000032   ef21     goto	0x42                  goto          timeout_talking
+000034   f000
+                                             ; just a timeout.  Set all registers back to zero
+000036   6b83     clrf	0x83, 0x1             clrf          bit_count
+000038   6b84     clrf	0x84, 0x1             clrf          rxreg
+00003a   9ed5     bcf	0xd5, 0x7, 0           bcf           T0CON, TMR0ON           ; disable the timeout until the next
+                                                                                   ; start bit
+00003c   94f2     bcf	0xf2, 0x2, 0           bcf           INTCON, TMR0IF
+00003e   ef8f     goto	0x11e                 goto          exit_interrupt
+000040   f000
+                                           
+                                           timeout_talking
+                                             ; Timer0 overflowed, but this is the start of the talking routine
+000042   0e00     movlw	0                    movlw         0x00
+000044   1983     xorwf	0x83, 0, 0x1         xorwf         bit_count,w
+000046   e009     bz	0x5a                    bz            timeout_start_talking
+                                             ; it's a timeout in some other part of the talk routine.  set send_failed_flag
+                                             ; and clear up
+000048   8d87     bsf	0x87, 0x6, 0x1         bsf           flags, send_failed_flag
+00004a   9b87     bcf	0x87, 0x5, 0x1         bcf           flags, talking_flag
+00004c   9ed5     bcf	0xd5, 0x7, 0           bcf           T0CON, TMR0ON           ; disable the timer again
+00004e   8293     bsf	0x93, 0x1, 0           bsf           TRISB,1                 ; make sure the data pin is an input!
+000050   6b83     clrf	0x83, 0x1             clrf          bit_count
+000052   6b85     clrf	0x85, 0x1             clrf          txreg
+000054   94f2     bcf	0xf2, 0x2, 0           bcf           INTCON, TMR0IF          ; clear the interrupt flag
+000056   ef8f     goto	0x11e                 goto          exit_interrupt          ; all done
+000058   f000
+                                           
+                                           timeout_start_talking
+                                             ; just finished the "I want to talk signal"
+                                             ; initialise the parity counter for odd parity
+00005a   8188     bsf	0x88, 0, 0x1           bsf           parity, parity_flag
+                                             ; set data as output
+00005c   9293     bcf	0x93, 0x1, 0           bcf           TRISB, 1
+00005e   0e14     movlw	0x14                 movlw         d'20'
+000060   6f80     movwf	0x80, 0x1            movwf         count
+                                           timeout_wait_loop
+000062   2f80     decfsz	0x80, 0x1, 0x1      decfsz        count,f
+000064   d7fe     bra	0x62                   bra           timeout_wait_loop
+                                             ; set clock as input
+000066   8093     bsf	0x93, 0, 0             bsf           TRISB, 0
+                                             ; clear the edge interrupt flag
+000068   92f2     bcf	0xf2, 0x1, 0           bcf           INTCON, INT0IF
+                                             ; enable the edge interrupt again
+00006a   88f2     bsf	0xf2, 0x4, 0           bsf           INTCON, INT0IE
+                                             ; increment the bit counter because that data bit is the start bit
+00006c   2b83     incf	0x83, 0x1, 0x1        incf          bit_count,f
+                                             ; re-enable the timer overflow interrupt
+00006e   94f2     bcf	0xf2, 0x2, 0           bcf           INTCON, TMR0IF
+000070   9ed5     bcf	0xd5, 0x7, 0           bcf           T0CON, TMR0ON
+000072   6ad6     clrf	0xd6, 0               clrf          TMR0L
+                                           ;   clrf          txreg
+                                             ; leave the interrupt
+000074   ef8f     goto	0x11e                 goto          exit_interrupt
+000076   f000
+                                           
+                                           edge_event
+                                             ; a falling edge on the keyboard clock save the bit
+000078   8ed5     bsf	0xd5, 0x7, 0           bsf           T0CON, TMR0ON           ; enable timeout counter
+00007a   0e00     movlw	0                    movlw         d'0'
+00007c   1983     xorwf	0x83, 0, 0x1         xorwf         bit_count,w
+00007e   e02e     bz	0xdc                    bz            edge_event_start
+000080   0e09     movlw	0x9                  movlw         d'9'
+000082   1983     xorwf	0x83, 0, 0x1         xorwf         bit_count,w
+000084   e02f     bz	0xe4                    bz            edge_event_parity
+000086   0e0a     movlw	0xa                  movlw         d'10'
+000088   1983     xorwf	0x83, 0, 0x1         xorwf         bit_count,w
+00008a   e014     bz	0xb4                    bz            edge_event_stop
+00008c   0e0b     movlw	0xb                  movlw         d'11'                   ; ack bit in tx mode only
+00008e   1983     xorwf	0x83, 0, 0x1         xorwf         bit_count,w
+000090   e032     bz	0xf6                    bz            edge_event_ack
+                                           
+                                             ; it's a data bit
+                                             ; see if we're in talk or listen mode
+000092   bb87     btfsc	0x87, 0x5, 0x1       btfsc         flags, talking_flag
+000094   d006     bra	0xa2                   bra           edge_event_send_bit
+                                             ; listening so clock in a bit
+000096   4384     rrncf	0x84, 0x1, 0x1       rrncf         rxreg,f
+000098   9f84     bcf	0x84, 0x7, 0x1         bcf           rxreg,7
+00009a   b281     btfsc	0x81, 0x1, 0         btfsc         PORTB, 1
+00009c   8f84     bsf	0x84, 0x7, 0x1         bsf           rxreg,7
+00009e   ef8a     goto	0x114                 goto          edge_event_exit
+0000a0   f000
+                                           
+                                           edge_event_send_bit
+0000a2   b185     btfsc	0x85, 0, 0x1         btfsc         txreg,0
+0000a4   8293     bsf	0x93, 0x1, 0           bsf           TRISB, 1        ; only one of these will run but it avoids
+0000a6   a185     btfss	0x85, 0, 0x1         btfss         txreg,0         ; 'glitching' the hardware line with a clear-set
+0000a8   9293     bcf	0x93, 0x1, 0           bcf           TRISB, 1
+0000aa   b185     btfsc	0x85, 0, 0x1         btfsc         txreg,0
+0000ac   7188     btg	0x88, 0, 0x1           btg           parity,parity_flag  ; don't forget the parity bit
+0000ae   4385     rrncf	0x85, 0x1, 0x1       rrncf         txreg,f         ; rotate the register to put the next bit at 0
+0000b0   ef8a     goto	0x114                 goto          edge_event_exit ; all done
+0000b2   f000
+                                           
+                                           edge_event_stop
+                                             ; if we got this far it's the stop bit
+                                             ; see if we need to receive or send
+0000b4   bb87     btfsc	0x87, 0x5, 0x1       btfsc         flags, talking_flag
+0000b6   d004     bra	0xc0                   bra           edge_event_send_stop
+0000b8   9ed5     bcf	0xd5, 0x7, 0           bcf           T0CON, TMR0ON           ; turn off the timer
+0000ba   6983     setf	0x83, 0x1             setf          bit_count               ; clear the bit count for the next one
+0000bc   effb     goto	0x1f6                 goto          key_translate
+0000be   f000
+                                             ; do some translation here
+                                           
+                                           edge_event_send_stop
+                                             ; need to send the stop bit
+0000c0   8293     bsf	0x93, 0x1, 0           bsf           TRISB, 1                ; set data as HIGH-Z
+                                             ; not quite done, need to wait for an ack as well
+0000c2   ef8a     goto	0x114                 goto          edge_event_exit
+0000c4   f000
+                                           
+                                           edge_event_save_byte
+0000c6   bc96     btfsc	0x96, 0x6, 0         btfsc         TRISE,OBF
+0000c8   d004     bra	0xd2                   bra           edge_event_load_fifo
+                                             ; the buffer is empty so load the byte directly to the Z80
+                                           ;   movf          rxreg,w
+0000ca   6e83     movwf	0x83, 0              movwf         PORTD
+0000cc   9a89     bcf	0x89, 0x5, 0           bcf           LATA,P_INT              ; set an interrupt.
+0000ce   ef8a     goto	0x114                 goto          edge_event_exit
+0000d0   f000
+                                           
+                                           edge_event_load_fifo
+                                           ;   movf          rxreg,w
+0000d2   6eee     movwf	0xee, 0              movwf         POSTINC0                ; bung the byte in the fifo
+0000d4   0e01     movlw	0x1                  movlw         0x01
+0000d6   6eea     movwf	0xea, 0              movwf         FSR0H                   ; make sure we wrap around 256 bytes
+0000d8   ef8a     goto	0x114                 goto          edge_event_exit
+0000da   f000
+                                           
+                                           edge_event_start
+                                             ; only do this on receive
+0000dc   6b84     clrf	0x84, 0x1             clrf          rxreg
+0000de   8ed5     bsf	0xd5, 0x7, 0           bsf           T0CON, TMR0ON           ; enable the timeout function
+0000e0   ef8a     goto	0x114                 goto          edge_event_exit
+0000e2   f000
+                                           
+                                           edge_event_parity
+                                             ; only care when we're talking but need to check this
+0000e4   ab87     btfss	0x87, 0x5, 0x1       btfss         flags, talking_flag
+0000e6   ef8a     goto	0x114                 goto          edge_event_exit
+0000e8   f000
+                                             ; okay so we're talking, send the parity bit
+0000ea   a188     btfss	0x88, 0, 0x1         btfss         parity, parity_flag
+0000ec   9293     bcf	0x93, 0x1, 0           bcf           TRISB,1
+0000ee   b188     btfsc	0x88, 0, 0x1         btfsc         parity, parity_flag
+0000f0   8293     bsf	0x93, 0x1, 0           bsf           TRISB,1
+                                             ; all done
+0000f2   ef8a     goto	0x114                 goto          edge_event_exit
+0000f4   f000
+                                           
+                                           edge_event_ack
+                                             ; this is the acknowledge from the keyboard when we've just sent a byte
+0000f6   b281     btfsc	0x81, 0x1, 0         btfsc         PORTB,1
+0000f8   d006     bra	0x106                  bra           edge_event_ack_error    ; should have been low
+                                             ; all done transmitting, clear the flags and tidy up
+0000fa   9ed5     bcf	0xd5, 0x7, 0           bcf           T0CON, TMR0ON           ; stop the timer
+0000fc   6983     setf	0x83, 0x1             setf          bit_count               ; reset the bit counter
+0000fe   9b87     bcf	0x87, 0x5, 0x1         bcf           flags, talking_flag     ; exit talking mode
+000100   6b85     clrf	0x85, 0x1             clrf          txreg
+000102   ef8a     goto	0x114                 goto          edge_event_exit
+000104   f000
+                                           
+                                           edge_event_ack_error
+                                             ; all went wrong somewhere, set send_failed bit and clear the status
+000106   8d87     bsf	0x87, 0x6, 0x1         bsf           flags, send_failed_flag
+000108   9b87     bcf	0x87, 0x5, 0x1         bcf           flags, talking_flag
+00010a   6983     setf	0x83, 0x1             setf          bit_count
+00010c   9ed5     bcf	0xd5, 0x7, 0           bcf           T0CON, TMR0ON
+00010e   6b85     clrf	0x85, 0x1             clrf          txreg
+000110   ef8a     goto	0x114                 goto          edge_event_exit
+000112   f000
+                                           
+                                           edge_event_exit
+000114   2b83     incf	0x83, 0x1, 0x1        incf          bit_count,f
+000116   6ad6     clrf	0xd6, 0               clrf          TMR0L                   ; clear the timeout counter
+000118   92f2     bcf	0xf2, 0x1, 0           bcf           INTCON, INT0IF
+00011a   ef8f     goto	0x11e                 goto          exit_interrupt
+00011c   f000
+                                           
+                                           exit_interrupt
+00011e   0011     retfie	0x1                 retfie        FAST
+                                           
+                                           ; == End of Interrupt code ====================================================
+                                           
+                                           init
+000120   0e0f     movlw	0xf                  movlw         ADCONDEF
+000122   6ec1     movwf	0xc1, 0              movwf         ADCON1
+                                           
+000124   0e20     movlw	0x20                 movlw         PORTADEF
+000126   6e89     movwf	0x89, 0              movwf         LATA
+000128   0edc     movlw	0xdc                 movlw         PORTADIR
+00012a   6e92     movwf	0x92, 0              movwf         TRISA
+                                           
+00012c   0e00     movlw	0                    movlw         PORTBDEF
+00012e   6e8a     movwf	0x8a, 0              movwf         LATB
+000130   0e7f     movlw	0x7f                 movlw         PORTBDIR
+000132   6e93     movwf	0x93, 0              movwf         TRISB
+                                           
+000134   0e00     movlw	0                    movlw         PORTCDEF
+000136   6e8b     movwf	0x8b, 0              movwf         LATC
+000138   0eff     movlw	0xff                 movlw         PORTCDIR
+00013a   6e94     movwf	0x94, 0              movwf         TRISC
+                                           
+                                             ; don't need to set up port D because it is controlled by the PSP mode bits
+                                             ; in TRISE
+                                           
+00013c   0e00     movlw	0                    movlw         PORTEDEF
+00013e   6e8d     movwf	0x8d, 0              movwf         LATE
+000140   0e17     movlw	0x17                 movlw         PORTEDIR
+000142   6e96     movwf	0x96, 0              movwf         TRISE
+                                           
+                                             ; setup the pointers
+000144   0e01     movlw	0x1                  movlw         0x01
+000146   6eea     movwf	0xea, 0              movwf         FSR0H
+000148   6ee2     movwf	0xe2, 0              movwf         FSR1H
+00014a   6ae9     clrf	0xe9, 0               clrf          FSR0L
+00014c   6ae1     clrf	0xe1, 0               clrf          FSR1L
+                                           
+00014e   6b83     clrf	0x83, 0x1             clrf          bit_count
+                                           
+000150   0e42     movlw	0x42                 movlw         b'01000010'
+000152   6ed5     movwf	0xd5, 0              movwf         T0CON                   ; setup for interrupt ~5kHz
+000154   6ad6     clrf	0xd6, 0               clrf          TMR0L
+                                           
+                                             ; set the default translation mode to ascii
+000156   0e01     movlw	0x1                  movlw         TRANSLATE_ASCII
+000158   6f86     movwf	0x86, 0x1            movwf         translate_mode
+                                           
+                                             ; set the default flags
+00015a   0e02     movlw	0x2                  movlw         b'00000010'
+00015c   6f87     movwf	0x87, 0x1            movwf         flags
+                                           
+00015e   9cf1     bcf	0xf1, 0x6, 0           bcf           INTCON2, INTEDG0        ; interrupt on falling edge on RB0
+                                           
+000160   88f2     bsf	0xf2, 0x4, 0           bsf           INTCON, INT0IE
+000162   8af2     bsf	0xf2, 0x5, 0           bsf           INTCON, TMR0IE
+000164   94f2     bcf	0xf2, 0x2, 0           bcf           INTCON, TMR0IF
+000166   92f2     bcf	0xf2, 0x1, 0           bcf           INTCON, INT0IF
+000168   9e9e     bcf	0x9e, 0x7, 0           bcf           PIR1, PSPIF
+00016a   8e9d     bsf	0x9d, 0x7, 0           bsf           PIE1, PSPIE
+00016c   8cf2     bsf	0xf2, 0x6, 0           bsf           INTCON, PEIE
+00016e   8ef2     bsf	0xf2, 0x7, 0           bsf           INTCON, GIE
+                                              
+000170   8089     bsf	0x89, 0, 0             bsf           LATA, P_READY           ; set the ready bit in the Z80 status register
+                                           
+                                           waiting_start
+000172   7e8a     btg	0x8a, 0x7, 0           btg           LATB,7
+000174   6980     setf	0x80, 0x1             setf          count
+000176   6981     setf	0x81, 0x1             setf          count+1                 ; set up a timeout
+000178   0e20     movlw	0x20                 movlw         0x20
+00017a   6f82     movwf	0x82, 0x1            movwf         count+2
+                                           wait_new_board_loop
+00017c   b289     btfsc	0x89, 0x1, 0         btfsc         LATA, P_FOUND           ; keep checking if there's a keyboard
+00017e   efcc     goto	0x198                 goto          main2                    ; ready
+000180   f000
+000182   2f80     decfsz	0x80, 0x1, 0x1      decfsz        count,f
+000184   d7fb     bra	0x17c                  bra           wait_new_board_loop     ; wait until there is
+000186   2f81     decfsz	0x81, 0x1, 0x1      decfsz        count+1,f
+000188   d7f9     bra	0x17c                  bra           wait_new_board_loop
+00018a   2f82     decfsz	0x82, 0x1, 0x1      decfsz        count+2,f
+00018c   d7f7     bra	0x17c                  bra           wait_new_board_loop
+                                           
+                                             ; wait timed out - try sending a reset
+00018e   0eff     movlw	0xff                 movlw         0xff
+000190   6f85     movwf	0x85, 0x1            movwf         txreg
+                                           
+000192   ecda     call	0x1b4, 0              call          wait_to_talk
+000194   f000
+                                           
+000196   d7ed     bra	0x172                  bra           waiting_start
+                                           
+                                           main2
+000198   0eed     movlw	0xed                 movlw         0xED
+00019a   6f85     movwf	0x85, 0x1            movwf         txreg
+                                           
+                                           main
+                                           ;   bra           main
+                                           
+00019c   bf87     btfsc	0x87, 0x7, 0x1       btfsc         flags, update_leds_flag
+00019e   d00e     bra	0x1bc                  bra           send_leds_byte
+                                             ; keep looking for bytes to send, and then to see if it's safe to send them
+0001a0   0e00     movlw	0                    movlw         0x00
+0001a2   1985     xorwf	0x85, 0, 0x1         xorwf         txreg,w
+0001a4   e0fb     bz	0x19c                   bz            main            ; if it's a null byte don't send
+                                             ; check if this is a set LEDs command and set a flag
+0001a6   0eed     movlw	0xed                 movlw         0xED
+0001a8   1985     xorwf	0x85, 0, 0x1         xorwf         txreg,w
+0001aa   b4d8     btfsc	0xd8, 0x2, 0         btfsc         STATUS,Z        ; don't set flag if not zero
+0001ac   8f87     bsf	0x87, 0x7, 0x1         bsf           flags, update_leds_flag
+                                           
+0001ae   ecda     call	0x1b4, 0              call          wait_to_talk
+0001b0   f000
+0001b2   d7f4     bra	0x19c                  bra           main
+                                           
+                                           wait_to_talk
+0001b4   0e00     movlw	0                    movlw         0x00
+0001b6   1983     xorwf	0x83, 0, 0x1         xorwf         bit_count,w     ; see if we're already receiving something
+0001b8   e010     bz	0x1da                   bz            start_talking   ; if not start talking
+                                             
+0001ba   d7fc     bra	0x1b4                  bra           wait_to_talk       ; other wise wait for a gap
+                                           
+                                           send_leds_byte
+0001bc   0e20     movlw	0x20                 movlw         0x20
+0001be   6f81     movwf	0x81, 0x1            movwf         count+1
+0001c0   6980     setf	0x80, 0x1             setf          count
+                                           ;   setf          count+1
+                                           loop
+0001c2   2f80     decfsz	0x80, 0x1, 0x1      decfsz        count,f
+0001c4   d7fe     bra	0x1c2                  bra           loop
+0001c6   2f81     decfsz	0x81, 0x1, 0x1      decfsz        count+1,f
+0001c8   d7fc     bra	0x1c2                  bra           loop
+0001ca   5187     movf	0x87, 0, 0x1          movf          flags,w
+0001cc   0b07     andlw	0x7                  andlw         0x07            ; mask the led bits
+0001ce   6f85     movwf	0x85, 0x1            movwf         txreg
+0001d0   9f87     bcf	0x87, 0x7, 0x1         bcf           flags, update_leds_flag
+0001d2   ecda     call	0x1b4, 0              call          wait_to_talk
+0001d4   f000
+0001d6   efce     goto	0x19c                 goto          main
+0001d8   f000
+                                           
+                                           ; ------------------------------------------------------------------------------
+                                           ;       Host -> device comms
+                                           ; ------------------------------------------------------------------------------
+                                           
+                                           start_talking
+                                             ; turn off the edge interrupt for a bit
+0001da   98f2     bcf	0xf2, 0x4, 0           bcf           INTCON, INT0IE
+                                             ; set the clock pin to output (drive the line low)
+0001dc   9093     bcf	0x93, 0, 0             bcf           TRISB, 0
+                                             ; clear timer 0 for a ~200uS delay, longer than the 100uS minimum
+0001de   6ad6     clrf	0xd6, 0               clrf          TMR0L
+                                             ; start the timer to do the startup delay
+0001e0   8ed5     bsf	0xd5, 0x7, 0           bsf           T0CON, TMR0ON
+                                             ; set the flag to say we're in talk mode
+0001e2   8b87     bsf	0x87, 0x5, 0x1         bsf           flags, talking_flag
+                                             ; wait for the flag to get cleared by the last interrupt (ack bit)
+                                           
+                                           talking_loop
+0001e4   bb87     btfsc	0x87, 0x5, 0x1       btfsc         flags, talking_flag
+0001e6   d7fe     bra	0x1e4                  bra           talking_loop
+                                             ; all done go back to main
+0001e8   0012     return	0                   return
+                                           
+                                           test_startup
+0001ea   0eaa     movlw	0xaa                 movlw         0xAA
+0001ec   1984     xorwf	0x84, 0, 0x1         xorwf         rxreg,w
+0001ee   b4d8     btfsc	0xd8, 0x2, 0         btfsc         STATUS,Z
+0001f0   8289     bsf	0x89, 0x1, 0           bsf           LATA, P_FOUND
+0001f2   ef8a     goto	0x114                 goto          edge_event_exit
+0001f4   f000
+                                           
+                                           key_translate
+0001f6   a289     btfss	0x89, 0x1, 0         btfss         LATA, P_FOUND
+0001f8   eff5     goto	0x1ea                 goto          test_startup
+0001fa   f000
+                                             ; see what translation mode is enabled
+0001fc   0e01     movlw	0x1                  movlw         TRANSLATE_ASCII
+0001fe   1986     xorwf	0x86, 0, 0x1         xorwf         translate_mode,w
+000200   b4d8     btfsc	0xd8, 0x2, 0         btfsc         STATUS,Z
+000202   ef06     goto	0x20c                 goto          key_ascii
+000204   f001
+                                             ; failsafe do key_none
+000206   5184     movf	0x84, 0, 0x1          movf          rxreg,w
+000208   ef63     goto	0xc6                  goto          edge_event_save_byte
+00020a   f000
+                                           
+                                           key_ascii
+00020c   0ef0     movlw	0xf0                 movlw         0xF0
+00020e   1984     xorwf	0x84, 0, 0x1         xorwf         rxreg, w
+000210   e01e     bz	0x24e                   bz            key_ascii_release
+000212   0ee0     movlw	0xe0                 movlw         0xE0
+000214   1984     xorwf	0x84, 0, 0x1         xorwf         rxreg, w
+000216   e016     bz	0x244                   bz            key_ascii_special
+000218   0e83     movlw	0x83                 movlw         0x83                    ; F7 - only scan code above 7F
+00021a   1984     xorwf	0x84, 0, 0x1         xorwf         rxreg, w
+00021c   b4d8     btfsc	0xd8, 0x2, 0         btfsc         STATUS,Z
+00021e   6984     setf	0x84, 0x1             setf          rxreg
+000220   9f84     bcf	0x84, 0x7, 0x1         bcf           rxreg, 7                ; sets code to 7F if we just set the register,
+                                                                                   ; if not then it won't affect it.
+                                           ;   movlw         0xFE
+                                           ;   andwf         rxreg,w                 ; make both shits seem the same
+                                           ;   xorlw         CC_L_SHIFT
+                                           ;   btfsc         flags, dump_next
+                                           ;   bra           key_ascii_no_char
+                                           
+                                             ; do a first pass lookup into "nathan-code"
+000222   5184     movf	0x84, 0, 0x1          movf          rxreg,w
+000224   ec70     call	0x2e0, 0              call          key_nd_decode
+000226   f001
+                                           ;   goto          edge_event_save_byte            ; TESTING
+                                             ; now it's easy to decide what key group the key was in
+000228   bee8     btfsc	0xe8, 0x7, 0         btfsc         WREG, 7
+00022a   ef2a     goto	0x254                 goto          key_ascii_control       ; it's a control or keypad key
+00022c   f001
+                                             ; if it's not a control key (and it's not!!) then we don't care about release
+00022e   b987     btfsc	0x87, 0x4, 0x1       btfsc         flags, release_flag
+000230   ef24     goto	0x248                 goto          key_ascii_exit_release
+000232   f001
+                                             ; not a special key, translate it into something based on shift/caps
+000234   b787     btfsc	0x87, 0x3, 0x1       btfsc         flags, shift_flag
+000236   ef5e     goto	0x2bc                 goto          key_ascii_decode_shift
+000238   f001
+00023a   b587     btfsc	0x87, 0x2, 0x1       btfsc         flags, caps_flag
+00023c   ef68     goto	0x2d0                 goto          key_ascii_decode_caps
+00023e   f001
+                                             ; no modifiers, just translate to ascii
+000240   ef54     goto	0x2a8                 goto          key_ascii_decode_nomod
+000242   f001
+                                           
+                                           ; key_ascii_no_char
+                                           ;   bcf           flags, dump_next
+                                           ;   goto          edge_event_exit         ; don't send this byte
+                                           
+                                           key_ascii_special
+000244   ef8a     goto	0x114                 goto          edge_event_exit
+000246   f000
+                                           
+                                           key_ascii_exit_release
+                                             ; release event on a character key, don't care, clear the flag and exit
+000248   9987     bcf	0x87, 0x4, 0x1         bcf           flags, release_flag
+00024a   ef8a     goto	0x114                 goto          edge_event_exit
+00024c   f000
+                                           
+                                           key_ascii_release
+00024e   8987     bsf	0x87, 0x4, 0x1         bsf           flags, release_flag
+000250   ef8a     goto	0x114                 goto          edge_event_exit
+000252   f000
+                                           
+                                           key_ascii_control
+                                             ; control or keypad button
+                                             ; first trap locally important keys (shift, caps)
+000254   6f84     movwf	0x84, 0x1            movwf         rxreg
+000256   0efe     movlw	0xfe                 movlw         0xFE            ; mask makes LSHIFT == RSHIFT
+000258   1584     andwf	0x84, 0, 0x1         andwf         rxreg, w
+00025a   0a92     xorlw	0x92                 xorlw         CC_LSHIFT
+00025c   b4d8     btfsc	0xd8, 0x2, 0         btfsc         STATUS,Z
+00025e   ef40     goto	0x280                 goto          key_ascii_set_shift
+000260   f001
+                                             ; don't care about key release on any of these
+000262   b987     btfsc	0x87, 0x4, 0x1       btfsc         flags, release_flag
+000264   ef24     goto	0x248                 goto          key_ascii_exit_release
+000266   f001
+000268   0e91     movlw	0x91                 movlw         CC_CAPS
+00026a   1984     xorwf	0x84, 0, 0x1         xorwf         rxreg, w
+00026c   b4d8     btfsc	0xd8, 0x2, 0         btfsc         STATUS,Z
+00026e   ef4a     goto	0x294                 goto          key_ascii_set_caps
+000270   f001
+000272   0e90     movlw	0x90                 movlw         CC_NUM
+000274   1984     xorwf	0x84, 0, 0x1         xorwf         rxreg, w
+000276   b4d8     btfsc	0xd8, 0x2, 0         btfsc         STATUS,Z
+000278   ef4f     goto	0x29e                 goto          key_ascii_set_num
+00027a   f001
+00027c   ef8a     goto	0x114                 goto          edge_event_exit         ; key code we're not interested in
+00027e   f000
+                                           
+                                           key_ascii_set_shift
+                                             ; see if this is a press or release event
+000280   b987     btfsc	0x87, 0x4, 0x1       btfsc         flags, release_flag
+000282   ef46     goto	0x28c                 goto          key_ascii_clear_shift
+000284   f001
+                                             ; it's a shift key press, set the shift flag
+000286   8787     bsf	0x87, 0x3, 0x1         bsf           flags, shift_flag
+000288   ef8a     goto	0x114                 goto          edge_event_exit
+00028a   f000
+                                           
+                                           key_ascii_clear_shift
+00028c   9787     bcf	0x87, 0x3, 0x1         bcf           flags, shift_flag
+00028e   9987     bcf	0x87, 0x4, 0x1         bcf           flags, release_flag
+000290   ef8a     goto	0x114                 goto          edge_event_exit
+000292   f000
+                                           
+                                           key_ascii_set_caps
+                                             ; actually this is toggle caps
+000294   7587     btg	0x87, 0x2, 0x1         btg           flags, caps_flag
+                                             ; queue a set CAPS LED command
+000296   0eed     movlw	0xed                 movlw         0xED
+000298   6f85     movwf	0x85, 0x1            movwf         txreg
+00029a   ef8a     goto	0x114                 goto          edge_event_exit
+00029c   f000
+                                           
+                                           key_ascii_set_num
+00029e   0eed     movlw	0xed                 movlw         0xED
+0002a0   6f85     movwf	0x85, 0x1            movwf         txreg
+0002a2   7387     btg	0x87, 0x1, 0x1         btg           flags, num_flag
+0002a4   ef8a     goto	0x114                 goto          edge_event_exit
+0002a6   f000
+                                           
+                                           key_ascii_decode_nomod
+0002a8   6ef6     movwf	0xf6, 0              movwf         TBLPTRL
+0002aa   0e80     movlw	0x80                 movlw         0x80
+0002ac   12f6     iorwf	0xf6, 0x1, 0         iorwf         TBLPTRL,f
+0002ae   6af8     clrf	0xf8, 0               clrf          TBLPTRU
+0002b0   0e77     movlw	0x77                 movlw         0x77
+0002b2   6ef7     movwf	0xf7, 0              movwf         TBLPTRH
+0002b4   0008     tblrd	*                    tblrd*
+0002b6   50f5     movf	0xf5, 0, 0            movf          TABLAT,w
+0002b8   ef63     goto	0xc6                  goto          edge_event_save_byte
+0002ba   f000
+                                           
+                                           key_ascii_decode_shift
+0002bc   6ef6     movwf	0xf6, 0              movwf         TBLPTRL
+0002be   0ec0     movlw	0xc0                 movlw         0xC0
+0002c0   12f6     iorwf	0xf6, 0x1, 0         iorwf         TBLPTRL,f
+0002c2   6af8     clrf	0xf8, 0               clrf          TBLPTRU
+0002c4   0e77     movlw	0x77                 movlw         0x77
+0002c6   6ef7     movwf	0xf7, 0              movwf         TBLPTRH
+0002c8   0008     tblrd	*                    tblrd*
+0002ca   50f5     movf	0xf5, 0, 0            movf          TABLAT,w
+0002cc   ef63     goto	0xc6                  goto          edge_event_save_byte
+0002ce   f000
+                                           
+                                           key_ascii_decode_caps
+0002d0   6ef6     movwf	0xf6, 0              movwf         TBLPTRL
+0002d2   6af8     clrf	0xf8, 0               clrf          TBLPTRU
+0002d4   0e78     movlw	0x78                 movlw         0x78
+0002d6   6ef7     movwf	0xf7, 0              movwf         TBLPTRH
+0002d8   0008     tblrd	*                    tblrd*
+0002da   50f5     movf	0xf5, 0, 0            movf          TABLAT,w
+0002dc   ef63     goto	0xc6                  goto          edge_event_save_byte
+0002de   f000
+                                           
+                                           key_nd_decode
+                                             ; return a keycode in the custom code map specified in scancodes.inc
+                                             ; this sets bit 7 if the key is a control (escape - F1-F12 - Home, Insert etc.)
+                                             ; bits 7 and 6 are set if it is a numberpad key
+                                             ; if neither bit 6 or 7 are set it's a main character/number key
+0002e0   6ef6     movwf	0xf6, 0              movwf         TBLPTRL
+0002e2   6af8     clrf	0xf8, 0               clrf          TBLPTRU
+0002e4   0e77     movlw	0x77                 movlw         0x77
+0002e6   6ef7     movwf	0xf7, 0              movwf         TBLPTRH
+0002e8   0008     tblrd	*                    tblrd*
+0002ea   50f5     movf	0xf5, 0, 0            movf          TABLAT,w
+0002ec   0012     return	0                   return
+                                             
+                                           org 0x7700
+                                           SCAN_CODES_ND
+007700   89ff     bsf	0xff, 0x4, 0x1               db 0xFF,CC_F9   ;00, 01 - F9
+007702   85ff     bsf	0xff, 0x2, 0x1               db 0xFF,CC_F5   ;02, 03 - F5
+007704   8183     bsf	0x83, 0, 0x1                 db CC_F3,CC_F1  ;04 - F3, 05 - F1
+007706   8c82     bsf	0x82, 0x6, 0                 db CC_F2,CC_F12 ;06 - F2, 07 - F12
+007708   8aff     bsf	0xff, 0x5, 0                 db 0xFF,CC_F10  ;08, 09 - F10
+00770a   8688     bsf	0x88, 0x3, 0                 db CC_F8,CC_F6  ;0A - F8, 0B - F6
+00770c   3084     rrcf	0x84, 0, 0                  db CC_F4,CC_TAB ;0C - F4, 0D - TAB
+00770e   ff24     dw	0xff24  ;unknown opcode         db CC_LQ,0xFF   ;0E - `, 0F
+007710   95ff     bcf	0xff, 0x2, 0x1               db 0xFF,CC_ALT  ;10, 11 - ALT
+007712   ff92     dw	0xff92  ;unknown opcode         db CC_LSHIFT,0xFF       ;12 - L SHIFT, 13
+007714   1a94     xorwf	0x94, 0x1, 0               db CC_CTRL,CC_Q ;14 - CTRL, 15 - Q
+007716   ff01     dw	0xff01  ;unknown opcode         db CC_1,0xFF    ;16 - 1, 17
+007718   ffff     dw	0xffff  ;unknown opcode         db 0xFF,0xFF    ;18, 19
+00771a   1c23     comf	0x23, 0, 0                  db CC_Z,CC_S    ;1A - Z, 1B - S
+00771c   200a     addwfc	0xa, 0, 0                 db CC_A,CC_W    ;1C - A, 1D - W
+00771e   9602     bcf	0x2, 0x3, 0                  db CC_2,CC_GUIL ;1E - 2, 1F - L GUI
+007720   0cff     retlw	0xff                       db 0xFF,CC_C    ;20, 21 - C
+007722   0d21     mullw	0x21                       db CC_X,CC_D    ;22 - X, 23 - D
+007724   040e     decf	0xe, 0, 0                   db CC_E,CC_4    ;24 - E, 25 - 4
+007726   9703     bcf	0x3, 0x3, 0x1                db CC_3,CC_GUIR ;26 - 3, 27 - R GUI
+007728   2fff     decfsz	0xff, 0x1, 0x1            db 0xFF,CC_SP   ;28, 29 - SPACE
+00772a   0f1f     addlw	0x1f                       db CC_V,CC_F    ;2A - V,2B - F
+00772c   1b1d     xorwf	0x1d, 0x1, 0x1             db CC_T,CC_R    ;2C - T,2D - R
+00772e   9805     bcf	0x5, 0x4, 0                  db CC_5,CC_APPS ;2E - 5, 2F - APPS
+007730   17ff     andwf	0xff, 0x1, 0x1             db 0xFF,CC_N    ;30, 31 - N
+007732   110b     iorwf	0xb, 0, 0x1                db CC_B,CC_H    ;32 - B, 33 - H
+007734   2210     addwfc	0x10, 0x1, 0              db CC_G,CC_Y    ;34 - G,35 - Y
+007736   ff06     dw	0xff06  ;unknown opcode         db CC_6,0xFF    ;36 - 6, 37
+007738   ffff     dw	0xffff  ;unknown opcode         db 0xFF,0xFF    ;38, 39
+00773a   1316     iorwf	0x16, 0x1, 0x1             db CC_M,CC_J    ;3A - M, 3B - J
+00773c   071e     decf	0x1e, 0x1, 0x1              db CC_U,CC_7    ;3C - U, 3D - 7
+00773e   ff08     dw	0xff08  ;unknown opcode         db CC_8,0xFF    ;3E - 8, 3F
+007740   2aff     incf	0xff, 0x1, 0                db 0xFF,CC_CM   ;40, 41 - ,
+007742   1214     iorwf	0x14, 0x1, 0               db CC_K,CC_I    ;42 - K, 43 - I
+007744   0018     dw	0x18  ;unknown opcode         db CC_O,CC_0    ;44 - O, 45 - 0 (zero)
+007746   ff09     dw	0xff09  ;unknown opcode         db CC_9,0xFF    ;46 - 9, 47
+007748   2bff     incf	0xff, 0x1, 0x1              db 0xFF,CC_FS   ;48, 49 - .
+00774a   152d     andwf	0x2d, 0, 0x1               db CC_US,CC_L   ;4A - /,4B - L
+00774c   192e     xorwf	0x2e, 0, 0x1               db CC_SC,CC_P   ;4C - ;, 4D - P
+00774e   ff25     dw	0xff25  ;unknown opcode         db CC_DSH,0xFF  ;4E - -, 4F
+007750   ffff     dw	0xffff  ;unknown opcode         db 0xFF,0xFF    ;50, 51
+007752   ff29     dw	0xff29  ;unknown opcode         db CC_AP,0xFF   ;52 - ', 53
+007754   2627     addwf	0x27, 0x1, 0               db CC_LSB,CC_EQ ;54 - [, 55     - =
+007756   ffff     dw	0xffff  ;unknown opcode         db 0xFF,0xFF    ;56, 57
+007758   9391     bcf	0x91, 0x1, 0x1               db CC_CAPS,CC_RSHIFT    ;58 - CAPS, 59 - R SHIFT
+00775a   2831     incf	0x31, 0, 0                  db CC_ENTER,CC_RSB      ;5A - ENTER, 5B - ]
+00775c   2cff     decfsz	0xff, 0, 0                db 0xFF,CC_WS   ;5C, 5D - \
+00775e   ffff     dw	0xffff  ;unknown opcode         db 0xFF,0xFF    ;5E, 5F
+007760   ffff     dw	0xffff  ;unknown opcode         db 0xFF,0xFF    ;60, 61
+007762   ffff     dw	0xffff  ;unknown opcode         db 0xFF,0xFF    ;62,63
+007764   ffff     dw	0xffff  ;unknown opcode         db 0xFF,0xFF    ;64, 65
+007766   ff33     dw	0xff33  ;unknown opcode         db CC_BKSP,0xFF ;66 - BKSP, 67
+007768   c1ff     movff	0x1ff, 0x4ff               db 0xFF,CC_KP1  ;68, 69 - KP 1
+00776a   c4ff
+00776a   c4ff     movff	0x4ff, 0xfc7               db 0xFF,CC_KP4  ;6A, 6B - KP 4
+00776c   ffc7
+00776c   ffc7     dw	0xffc7  ;unknown opcode         db CC_KP7,0xFF  ;6C - KP 7, 6D
+00776e   ffff     dw	0xffff  ;unknown opcode         db 0xFF,0xFF    ;6E, 6F
+007770   cac0     movff	0xac0, 0x5c2               db CC_KP0,CC_KPD        ;70 - KP 0, 71 - KP .
+007772   c5c2
+007772   c5c2     movff	0x5c2, 0x8c6               db CC_KP2,CC_KP5        ;72 - KP 2, 73 - KP 5
+007774   c8c6
+007774   c8c6     movff	0x8c6, 0x80                db CC_KP6,CC_KP8        ;74 - KP 6, 75 - KP 8
+007776   9080
+007776   9080     bcf	0x80, 0, 0                   db CC_ESC,CC_NUM        ;76 - ESC, 77 - NUM
+007778   cc8b     movff	0xc8b, 0xdc3               db CC_F11,CC_KPP        ;78 - F11,79 - KP+
+00777a   cdc3
+00777a   cdc3     movff	0xdc3, 0x9cb               db CC_KP3,CC_KPM        ;7A - KP 3, 7B - KP -
+00777c   c9cb
+00777c   c9cb     movff	0x9cb, 0x78e               db CC_KPS,CC_KP9        ;7C - KP *, 7D - KP 9
+00777e   878e
+00777e   878e     bsf	0x8e, 0x3, 0x1               db CC_SCROLL,CC_F7      ;7E - SCROLL, 7F - F7 (Not real scan code, has to be moved here from 83)
+                                           
+                                           org 0x7780
+                                           ND_CODES_ASCII_NOMOD
+007780   3130     rrcf	0x30, 0, 0x1                db '0','1'
+007782   3332     rrcf	0x32, 0x1, 0x1              db '2','3'
+007784   3534     rlcf	0x34, 0, 0x1                db '4','5'
+007786   3736     rlcf	0x36, 0x1, 0x1              db '6','7'
+007788   3938     swapf	0x38, 0, 0x1               db '8','9'
+00778a   6261     cpfseq	0x61, 0                   db 'a','b'
+00778c   6463     cpfsgt	0x63, 0                   db 'c','d'
+00778e   6665     tstfsz	0x65, 0                   db 'e','f'
+007790   6867     setf	0x67, 0                     db 'g','h'
+007792   6a69     clrf	0x69, 0                     db 'i','j'
+007794   6c6b     negf	0x6b, 0                     db 'k','l'
+007796   6e6d     movwf	0x6d, 0                    db 'm','n'
+007798   706f     btg	0x6f, 0, 0                   db 'o','p'
+00779a   7271     btg	0x71, 0x1, 0                 db 'q','r'
+00779c   7473     btg	0x73, 0x2, 0                 db 's','t'
+00779e   7675     btg	0x75, 0x3, 0                 db 'u','v'
+0077a0   7877     btg	0x77, 0x4, 0                 db 'w','x'
+0077a2   7a79     btg	0x79, 0x5, 0                 db 'y','z'
+0077a4   2d60     decfsz	0x60, 0, 0x1              db '`','-'
+0077a6   5b3d     subwfb	0x3d, 0x1, 0x1            db '=','['
+0077a8   275d     addwf	0x5d, 0x1, 0x1             db ']','\''
+0077aa   2e2c     decfsz	0x2c, 0x1, 0              db ',','.'
+0077ac   2f5c     decfsz	0x5c, 0x1, 0x1            db '\\','/'
+0077ae   203b     addwfc	0x3b, 0, 0                db ';',' '
+0077b0   0a09     xorlw	0x9                        db '\t','\n'
+0077b2   087f     sublw	0x7f                       db 0x7F,0x08
+                                           
+                                           org 0x77C0
+                                           ND_CODES_ASCII_SHIFT
+0077c0   2129     addwfc	0x29, 0, 0x1              db ')','!'
+0077c2   a322     btfss	0x22, 0x1, 0x1             db '\"',0xA3    ; £ symbol
+0077c4   2524     addwf	0x24, 0, 0x1               db '$','%'
+0077c6   265e     addwf	0x5e, 0x1, 0               db '^','&'
+0077c8   282a     incf	0x2a, 0, 0                  db '*','('
+0077ca   4241     rrncf	0x41, 0x1, 0               db 'A','B'
+0077cc   4443     rlncf	0x43, 0, 0                 db 'C','D'
+0077ce   4645     rlncf	0x45, 0x1, 0               db 'E','F'
+0077d0   4847     infsnz	0x47, 0, 0                db 'G','H'
+0077d2   4a49     infsnz	0x49, 0x1, 0              db 'I','J'
+0077d4   4c4b     dcfsnz	0x4b, 0, 0                db 'K','L'
+0077d6   4e4d     dcfsnz	0x4d, 0x1, 0              db 'M','N'
+0077d8   504f     movf	0x4f, 0, 0                  db 'O','P'
+0077da   5251     movf	0x51, 0x1, 0                db 'Q','R'
+0077dc   5453     subfwb	0x53, 0, 0                db 'S','T'
+0077de   5655     subfwb	0x55, 0x1, 0              db 'U','V'
+0077e0   5857     subwfb	0x57, 0, 0                db 'W','X'
+0077e2   5a59     subwfb	0x59, 0x1, 0              db 'Y','Z'
+0077e4   5fb0     subwf	0xb0, 0x1, 0x1             db 0xB0,'_'     ;¬ character mapped to degree symbol
+0077e6   7b2b     btg	0x2b, 0x5, 0x1               db '+','{'
+0077e8   407d     rrncf	0x7d, 0, 0                 db '}','@'
+0077ea   3e3c     incfsz	0x3c, 0x1, 0              db '<','>'
+0077ec   3f7c     incfsz	0x7c, 0x1, 0x1            db '|','?'
+0077ee   203a     addwfc	0x3a, 0, 0                db ':',' '
+0077f0   0a09     xorlw	0x9                        db '\t','\n'
+0077f2   087f     sublw	0x7f                       db 0x7F, 0x08
+                                           
+                                           org 0x7800
+                                           ND_CODES_ASCII_CAPS
+007800   3130     rrcf	0x30, 0, 0x1                db '0','1'
+007802   3332     rrcf	0x32, 0x1, 0x1              db '2','3'
+007804   3534     rlcf	0x34, 0, 0x1                db '4','5'
+007806   3736     rlcf	0x36, 0x1, 0x1              db '6','7'
+007808   3938     swapf	0x38, 0, 0x1               db '8','9'
+00780a   4241     rrncf	0x41, 0x1, 0               db 'A','B'
+00780c   4443     rlncf	0x43, 0, 0                 db 'C','D'
+00780e   4645     rlncf	0x45, 0x1, 0               db 'E','F'
+007810   4847     infsnz	0x47, 0, 0                db 'G','H'
+007812   4a49     infsnz	0x49, 0x1, 0              db 'I','J'
+007814   4c4b     dcfsnz	0x4b, 0, 0                db 'K','L'
+007816   4e4d     dcfsnz	0x4d, 0x1, 0              db 'M','N'
+007818   504f     movf	0x4f, 0, 0                  db 'O','P'
+00781a   5251     movf	0x51, 0x1, 0                db 'Q','R'
+00781c   5453     subfwb	0x53, 0, 0                db 'S','T'
+00781e   5655     subfwb	0x55, 0x1, 0              db 'U','V'
+007820   5857     subwfb	0x57, 0, 0                db 'W','X'
+007822   5a59     subwfb	0x59, 0x1, 0              db 'Y','Z'
+007824   2d60     decfsz	0x60, 0, 0x1              db '`','-'
+007826   5b3d     subwfb	0x3d, 0x1, 0x1            db '=','['
+007828   275d     addwf	0x5d, 0x1, 0x1             db ']','\''
+00782a   2e2c     decfsz	0x2c, 0x1, 0              db ',','.'
+00782c   2f5c     decfsz	0x5c, 0x1, 0x1            db '\\','/'
+00782e   203b     addwfc	0x3b, 0, 0                db ';',' '
+007830   0a09     xorlw	0x9                        db '\t','\n'
+007832   087f     sublw	0x7f                       db 0x7F,0x08
+                                           
+                                           end

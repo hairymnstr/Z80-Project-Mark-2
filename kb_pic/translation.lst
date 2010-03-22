@@ -1,0 +1,1688 @@
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00001 ;-------------------------------------------------------------------------------
+               00002 ;
+               00003 ; translation.asm - translate and handle raw set 2 scancodes
+               00004 ; File Version 1.0 - 23 Feb 2010
+               00005 ; hairymnstr@gmail.com
+               00006 ;
+               00007 ; Copyright (C) 2010  Nathan Dumont
+               00008 ;
+               00009 ; This program is free software: you can redistribute it and/or modify
+               00010 ; it under the terms of the GNU General Public License as published by
+               00011 ; the Free Software Foundation, either version 3 of the License, or
+               00012 ; (at your option) any later version.
+               00013 ;
+               00014 ; This program is distributed in the hope that it will be useful,
+               00015 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
+               00016 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+               00017 ; GNU General Public License for more details.
+               00018 ;
+               00019 ; You should have received a copy of the GNU General Public License
+               00020 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+               00021 ;
+               00022 ;-------------------------------------------------------------------------------
+               00023 
+               00024 list p=18f4520
+               00025 include <p18f4520.inc>
+               00001         LIST
+               00002 
+               00003 ;==========================================================================
+               00004 ;  MPASM PIC18F4520 processor include
+               00005 ; 
+               00006 ;  (c) Copyright 1999-2007 Microchip Technology, All rights reserved
+               00007 ;==========================================================================
+               00008 
+               01336         LIST
+               00026 include scancodes.inc
+  00000000     00001 CC_0            equ 0x00
+  00000001     00002 CC_1            equ 0x01
+  00000002     00003 CC_2            equ 0x02
+  00000003     00004 CC_3            equ 0x03
+  00000004     00005 CC_4            equ 0x04
+  00000005     00006 CC_5            equ 0x05
+  00000006     00007 CC_6            equ 0x06
+  00000007     00008 CC_7            equ 0x07
+  00000008     00009 CC_8            equ 0x08
+  00000009     00010 CC_9            equ 0x09
+  0000000A     00011 CC_A            equ 0x0A
+  0000000B     00012 CC_B            equ 0x0B
+  0000000C     00013 CC_C            equ 0x0C
+  0000000D     00014 CC_D            equ 0x0D
+  0000000E     00015 CC_E            equ 0x0E
+  0000000F     00016 CC_F            equ 0x0F
+  00000010     00017 CC_G            equ 0x10
+  00000011     00018 CC_H            equ 0x11
+  00000012     00019 CC_I            equ 0x12
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+  00000013     00020 CC_J            equ 0x13
+  00000014     00021 CC_K            equ 0x14
+  00000015     00022 CC_L            equ 0x15
+  00000016     00023 CC_M            equ 0x16
+  00000017     00024 CC_N            equ 0x17
+  00000018     00025 CC_O            equ 0x18
+  00000019     00026 CC_P            equ 0x19
+  0000001A     00027 CC_Q            equ 0x1A
+  0000001B     00028 CC_R            equ 0x1B
+  0000001C     00029 CC_S            equ 0x1C
+  0000001D     00030 CC_T            equ 0x1D
+  0000001E     00031 CC_U            equ 0x1E
+  0000001F     00032 CC_V            equ 0x1F
+  00000020     00033 CC_W            equ 0x20
+  00000021     00034 CC_X            equ 0x21
+  00000022     00035 CC_Y            equ 0x22
+  00000023     00036 CC_Z            equ 0x23
+  00000024     00037 CC_LQ           equ 0x24        ;`
+  00000025     00038 CC_DSH          equ 0x25        ;-
+  00000026     00039 CC_EQ           equ 0x26        ;=
+  00000027     00040 CC_LSB          equ 0x27        ;[
+  00000028     00041 CC_RSB          equ 0x28        ;]
+  00000029     00042 CC_AP           equ 0x29        ;'
+  0000002A     00043 CC_CM           equ 0x2A        ;,
+  0000002B     00044 CC_FS           equ 0x2B        ;.
+  0000002C     00045 CC_WS           equ 0x2C        ;\
+  0000002D     00046 CC_US           equ 0x2D        ;/
+  0000002E     00047 CC_SC           equ 0x2E        ;;
+  0000002F     00048 CC_SP           equ 0x2F        ;SPACE
+  00000030     00049 CC_TAB          equ 0x30        ;TAB
+  00000031     00050 CC_ENTER        equ 0x31        ;ENTER
+  00000032     00051 CC_KPE          equ 0x32        ;Key pad ENTER
+  00000033     00052 CC_DEL          equ 0x33        ;DELETE
+  00000034     00053 CC_BKSP         equ 0x34        ;BACKSPACE
+               00054 
+  00000080     00055 CC_ESC          equ 0x80        ;ESCAPE
+  00000081     00056 CC_F1           equ 0x81
+  00000082     00057 CC_F2           equ 0x82
+  00000083     00058 CC_F3           equ 0x83
+  00000084     00059 CC_F4           equ 0x84
+  00000085     00060 CC_F5           equ 0x85
+  00000086     00061 CC_F6           equ 0x86
+  00000087     00062 CC_F7           equ 0x87
+  00000088     00063 CC_F8           equ 0x88
+  00000089     00064 CC_F9           equ 0x89
+  0000008A     00065 CC_F10          equ 0x8A
+  0000008B     00066 CC_F11          equ 0x8B
+  0000008C     00067 CC_F12          equ 0x8C
+  0000008D     00068 CC_PRINT        equ 0x8D
+  0000008E     00069 CC_SCROLL       equ 0x8E
+  0000008F     00070 CC_PAUSE        equ 0x8F
+  00000090     00071 CC_NUM          equ 0x90
+  00000091     00072 CC_CAPS         equ 0x91
+  00000092     00073 CC_LSHIFT       equ 0x92
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+  00000093     00074 CC_RSHIFT       equ 0x93
+  00000094     00075 CC_CTRL         equ 0x94
+  00000095     00076 CC_CTRLR        equ 0x95
+  00000096     00077 CC_ALT          equ 0x96
+  00000097     00078 CC_ALTR         equ 0x97
+  00000098     00079 CC_GUIL         equ 0x98
+  00000099     00080 CC_GUIR         equ 0x99
+  0000009A     00081 CC_APPS         equ 0x9A
+  0000009B     00082 CC_INS          equ 0x9B
+  0000009C     00083 CC_HOME         equ 0x9C
+  0000009D     00084 CC_END          equ 0x9D
+  0000009E     00085 CC_PGUP         equ 0x9E
+  0000009F     00086 CC_PGDN         equ 0x9F
+  000000A0     00087 CC_PSF          equ 0xA0
+  000000A1     00088 CC_PSR          equ 0xA1
+               00089 ; A3 is £ symbol in character set, don't use it here
+  000000A4     00090 CC_LEFT         equ 0xA4
+  000000A5     00091 CC_RIGHT        equ 0xA5
+  000000A6     00092 CC_UP           equ 0xA6
+  000000A7     00093 CC_DOWN         equ 0xA7
+               00094 ; media keys
+  000000A7     00095 CC_MNXT         equ 0xA7        ; media next
+  000000A8     00096 CC_MPRV         equ 0xA8        ; media previous
+  000000A9     00097 CC_MPP          equ 0xA9        ; media play/pause
+  000000AA     00098 CC_MSTP         equ 0xAA        ; media stop
+  000000AB     00099 CC_MMT          equ 0xAB        ; media mute
+  000000AC     00100 CC_MVU          equ 0xAC        ; media volume up
+  000000AD     00101 CC_MVD          equ 0xAD        ; media volume down
+  000000AE     00102 CC_MSL          equ 0xAE        ; media select
+  000000AF     00103 CC_MEM          equ 0xAF        ; media email
+               00104 ; B0 is the degrees symbol, mapped to a key
+  000000B1     00105 CC_MCLC         equ 0xB1        ; media calculator
+  000000B2     00106 CC_MCMP         equ 0xB2        ; media my computer
+  000000B3     00107 CC_MSRCH        equ 0xB3        ; media web search
+  000000B4     00108 CC_MHOME        equ 0xB4        ; media web home
+  000000B5     00109 CC_MBCK         equ 0xB5        ; media web back
+  000000B6     00110 CC_MFWD         equ 0xB6        ; media web forward
+  000000B7     00111 CC_MWSP         equ 0xB7        ; media web stop
+  000000B8     00112 CC_MRFSH        equ 0xB8        ; media web refresh
+  000000B9     00113 CC_MFV          equ 0xB9        ; media web favourites
+               00114 ; acpi control codes
+  000000BA     00115 CC_PWR          equ 0xBA        ; power
+  000000BB     00116 CC_SLP          equ 0xBB        ; sleep
+  000000BC     00117 CC_WK           equ 0xBC        ; wake
+               00118 
+  000000C0     00119 CC_KP0          equ 0xC0
+  000000C1     00120 CC_KP1          equ 0xC1
+  000000C2     00121 CC_KP2          equ 0xC2
+  000000C3     00122 CC_KP3          equ 0xC3
+  000000C4     00123 CC_KP4          equ 0xC4
+  000000C5     00124 CC_KP5          equ 0xC5
+  000000C6     00125 CC_KP6          equ 0xC6
+  000000C7     00126 CC_KP7          equ 0xC7
+  000000C8     00127 CC_KP8          equ 0xC8
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+  000000C9     00128 CC_KP9          equ 0xC9
+  000000CA     00129 CC_KPD          equ 0xCA        ;.
+  000000CB     00130 CC_KPS          equ 0xCB        ;*
+  000000CC     00131 CC_KPP          equ 0xCC        ;+
+  000000CD     00132 CC_KPM          equ 0xCD        ;-
+  000000CE     00133 CC_KPSL         equ 0xCE        ;/
+               00027 include portpins.inc
+               00001 ;== PORT Definitions ==========================================================
+               00002 
+               00003 ;-- PORT A --------------------------------------------------------------------
+               00004 
+  00000000     00005 P_READY         EQU     0
+  00000001     00006 P_FOUND         EQU     1
+  00000005     00007 P_INT           EQU     5
+               00008 
+  00000023     00009 PORTADEF        EQU     b'00100011'
+  000000DC     00010 PORTADIR        EQU     b'11011100'
+               00011 
+               00012 ;-- PORT B --------------------------------------------------------------------
+               00013 
+  00000000     00014 PORTBDEF        EQU     b'00000000'
+  0000007F     00015 PORTBDIR        EQU     b'01111111'
+               00016 
+               00017 ;-- PORT C --------------------------------------------------------------------
+               00018 
+  00000006     00019 P_TX            EQU     6
+  00000007     00020 P_RX            EQU     7
+               00021 
+  00000000     00022 PORTCDEF        EQU     b'00000000'
+  000000FF     00023 PORTCDIR        EQU     b'11111111'
+               00024 
+               00025 ;-- PORT E --------------------------------------------------------------------
+               00026 
+  00000000     00027 P_RD            EQU     0
+  00000001     00028 P_WR            EQU     1
+  00000002     00029 P_CS            EQU     2
+               00030 
+  00000017     00031 PORTEDIR        EQU     b'00010111'
+  00000000     00032 PORTEDEF        EQU     b'00000000'
+               00033 
+               00034 ;-- ADC PINS -------------------------------------------------------------------
+               00035 
+  0000000F     00036 ADCONDEF        EQU     b'00001111'
+               00037 
+               00038 ;== FLAG BIT DEFINITIONS =======================================================
+               00039 
+               00040 ; flags
+  00000000     00041 scroll_flag             equ     0
+  00000001     00042 num_flag                equ     1
+  00000002     00043 caps_flag               equ     2
+  00000003     00044 shift_flag              equ     3
+  00000004     00045 release_flag            equ     4
+  00000005     00046 talking_flag            equ     5
+  00000006     00047 send_failed_flag        equ     6
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+  00000007     00048 special_flag            equ     7
+               00049 
+               00050 ; txflags
+  00000000     00051 ack_flag                equ     0
+  00000001     00052 resend_flag             equ     1
+  00000002     00053 pause_flag              equ     2
+  00000003     00054 send_release_flag       equ     3
+  00000004     00028 
+               00029 ;-- Externals from hostbus.asm -------------------------------------------------
+               00030 
+               00031     EXTERN      hostbus_push
+               00032 
+               00033 ;-- Externals from ps2.asm -----------------------------------------------------
+               00034 
+               00035     EXTERN      ps2_queue_send
+               00036 
+               00037     EXTERN      flags
+               00038     EXTERN      txflags
+               00039 
+               00040 ;-- Externals from asciicodes.asm ----------------------------------------------
+               00041 
+               00042     EXTERN      ascii_lookup
+               00043 
+               00044 ;-- Externals from ndcodes.asm -------------------------------------------------
+               00045 
+               00046     EXTERN      ndcodes_lookup
+               00047 
+               00048     UDATA
+               00049 
+               00050 translation_buffer      res     1
+               00051 pause_count             res     1
+               00052 translation_mode        res     1
+               00053 
+  00000001     00054 TRANSLATE_ASCII         equ     1
+               00055 
+               00056 
+               00057     CODE
+               00058 
+               00059 ;===============================================================================
+               00060 ; translate_init - setup the translation system
+               00061 ;===============================================================================
+               00062 
+0000 00063 translate_init
+0000 0E01      00064   movlw         TRANSLATE_ASCII
+0002 6E00      00065   movwf         translation_mode
+               00066 
+0004 9600      00067   bcf           txflags, send_release_flag
+0006 8800      00068   bsf           txflags, send_command_release_flag
+0008 9400      00069   bcf           txflags, pause_flag
+               00070 
+000A 0012      00071   return
+               00072 
+               00073 ;===============================================================================
+               00074 ; translate_key - handle a generic byte from a PS/2 keyboard
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00075 ;===============================================================================
+               00076 
+               00077 ;; This takes any byte received via the PS/2 protocol module and translates it
+               00078 ;; to another code e.g. ASCII or NDCODE.  It also handles all flag setting (e.g.
+               00079 ;; ack flag when 0xFA is received, and shift, caps, num flag setting
+               00080 
+000C 00081 translate_key
+000C 6E00      00082   movwf         translation_buffer      ; store the code before it gets mangled
+               00083   ; if we're waiting for the Pause stream to finish, don't do anything
+000E B400      00084   btfsc         txflags, pause_flag
+0010 D000      00085   bra           translate_pause_count
+               00086 
+               00087   ; next handle F7
+0012 0E83      00088   movlw         0x83
+0014 1800      00089   xorwf         translation_buffer, w
+0016 B4D8      00090   btfsc         STATUS, Z
+0018 EC00 F000 00091   call          translate_f7
+               00092 
+               00093   ; Now we can generalise
+001C BE00      00094   btfsc         translation_buffer, 7
+001E EF00 F000 00095   goto          translate_key_message   ; it's a special message not character
+               00096 
+               00097   ; if not, then it's a scancode, turn it into something more useful
+0022 0E01      00098   movlw         TRANSLATE_ASCII
+0024 1800      00099   xorwf         translation_mode, w
+0026 E000      00100   bz            translate_ascii
+               00101 
+               00102   ; default send the raw code and flags
+               00103   ; set the LEDS first though
+0028 0E77      00104   movlw         0x77                            ; set2 - set numlock
+002A 1800      00105   xorwf         translation_buffer, w
+002C B4D8      00106   btfsc         STATUS, Z
+002E EC00 F000 00107   call          translate_set_num
+               00108 
+0032 0E58      00109   movlw         0x58                            ; set2 - set capslock
+0034 1800      00110   xorwf         translation_buffer, w
+0036 B4D8      00111   btfsc         STATUS, Z
+0038 EC00 F000 00112   call          translate_set_caps
+               00113 
+003C 0E7E      00114   movlw         0x7E                            ; set2 - set scrolllock
+003E 1800      00115   xorwf         translation_buffer, w
+0040 B4D8      00116   btfsc         STATUS, Z
+0042 EC00 F000 00117   call          translate_set_scroll
+               00118 
+0046 BE00      00119   btfsc         flags, special_flag
+0048 EC00 F000 00120   call          translate_send_special
+               00121 
+004C B800      00122   btfsc         flags, release_flag
+004E EC00 F000 00123   call          translate_send_release
+               00124 
+0052 5000      00125   movf          translation_buffer, w
+0054 EC00 F000 00126   call          hostbus_push
+               00127 
+0058 9E00      00128   bcf           flags, special_flag
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+005A 9800      00129   bcf           flags, release_flag
+               00130 
+005C 0012      00131   return
+               00132 
+005E 00133 translate_send_special
+005E 0EE0      00134   movlw         0xE0
+0060 EC00 F000 00135   call          hostbus_push
+0064 0012      00136   return
+               00137 
+0066 00138 translate_send_release
+0066 0EF0      00139   movlw         0xF0
+0068 EC00 F000 00140   call          hostbus_push
+006C 0012      00141   return
+               00142 
+006E 00143 translate_f7
+006E 0E7F      00144   movlw         0x7F                    ; fake scancode for F7
+0070 6E00      00145   movwf         translation_buffer
+0072 0012      00146   return
+               00147 
+0074 00148 translate_key_message
+               00149   ; need to set flags and stuff here
+               00150   ; release code
+0074 0EF0      00151   movlw         0xF0
+0076 1800      00152   xorwf         translation_buffer, w
+0078 E000      00153   bz            translate_set_release
+               00154   ; special key code
+007A 0EE0      00155   movlw         0xE0
+007C 1800      00156   xorwf         translation_buffer, w
+007E E000      00157   bz            translate_set_special
+               00158   ; acknowledge code
+0080 0EFA      00159   movlw         0xFA
+0082 1800      00160   xorwf         translation_buffer, w
+0084 E000      00161   bz            translate_set_ack
+               00162   ; resend code
+0086 0EFE      00163   movlw         0xFE
+0088 1800      00164   xorwf         translation_buffer, w
+008A E000      00165   bz            translate_set_resend
+               00166   ; startup OK code
+008C 0EAA      00167   movlw         0xAA
+008E 1800      00168   xorwf         translation_buffer, w
+0090 E000      00169   bz            translate_set_startup
+               00170   ; pause break start
+0092 0EE1      00171   movlw         0xE1
+0094 1800      00172   xorwf         translation_buffer, w
+0096 E000      00173   bz            translate_set_pause
+               00174   ; other codes shouldn't happen or we don't care about them
+0098 0012      00175   return
+               00176 
+009A 00177 translate_set_release
+009A 8800      00178   bsf           flags, release_flag
+009C 0012      00179   return
+               00180 
+009E 00181 translate_set_special
+009E 8E00      00182   bsf           flags, special_flag
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+00A0 0012      00183   return
+               00184 
+00A2 00185 translate_set_ack
+00A2 8000      00186   bsf           txflags, ack_flag
+00A4 0012      00187   return
+               00188 
+00A6 00189 translate_set_resend
+00A6 8200      00190   bsf           txflags, resend_flag
+00A8 0012      00191   return
+               00192 
+00AA 00193 translate_set_startup
+00AA 9289      00194   bcf           LATA, P_FOUND
+00AC 0012      00195   return
+               00196 
+               00197 ; -- Pause/Break handling ------------------------------------------------------
+               00198 
+00AE 00199 translate_set_pause
+00AE 8400      00200   bsf           txflags, pause_flag
+00B0 0E07      00201   movlw         0x7
+00B2 6E00      00202   movwf         pause_count
+00B4 0E8F      00203   movlw         CC_PAUSE
+00B6 EC00 F000 00204   call          hostbus_push
+00BA 0012      00205   return
+               00206 
+00BC 00207 translate_pause_count
+00BC 4E00      00208   dcfsnz        pause_count, f
+00BE 9400      00209   bcf           txflags, pause_flag
+00C0 0012      00210   return
+               00211 
+               00212 ;===============================================================================
+               00213 ; translate_ascii - use ndcodes and ascii tables to send a useful code
+               00214 ;===============================================================================
+               00215 
+               00216 ;; This routine translates the ASCII compatible keys to single ASCII symbols.
+               00217 ;; Other keys (e.g. Cursor Keys, Control, Shift etc.) are sent in NDCODE along
+               00218 ;; with their release regardless of the "send_release" flag.
+               00219 
+00C2 00220 translate_ascii
+               00221   ; to ndcode then it's just a bittest to see if it's printable or control
+00C2 5000      00222   movf          translation_buffer, w
+00C4 EC00 F000 00223   call          ndcodes_lookup
+00C8 AEE8      00224   btfss         WREG, 7
+00CA D000      00225   bra           translate_ascii_norm
+               00226   ; bit 7 set so it's keypad or control
+00CC BCE8      00227   btfsc         WREG, 6
+00CE D000      00228   bra           translate_ascii_norm
+               00229   ; bit 6 clear so it's not keypad
+               00230 
+               00231   ; trap the extra fluff the keyboard sends
+00D0 6E00      00232   movwf         translation_buffer
+00D2 0AA0      00233   xorlw         CC_PSF
+00D4 B4D8      00234   btfsc         STATUS, Z
+00D6 D000      00235   bra           translate_clearflags_leave      ; clear flags and return
+               00236 
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00237   ; trap shift, caps, num and scroll
+00D8 5000      00238   movf          translation_buffer, w
+00DA 0BFE      00239   andlw         0xFE
+00DC 0A92      00240   xorlw         CC_LSHIFT
+00DE B4D8      00241   btfsc         STATUS, Z
+00E0 EC00 F000 00242   call          translate_set_shift
+               00243 
+00E4 0E90      00244   movlw         CC_NUM
+00E6 1800      00245   xorwf         translation_buffer, w
+00E8 B4D8      00246   btfsc         STATUS, Z
+00EA EC00 F000 00247   call          translate_set_num
+               00248 
+00EE 0E91      00249   movlw         CC_CAPS
+00F0 1800      00250   xorwf         translation_buffer, w
+00F2 B4D8      00251   btfsc         STATUS, Z
+00F4 EC00 F000 00252   call          translate_set_caps
+               00253 
+00F8 0E8E      00254   movlw         CC_SCROLL
+00FA 1800      00255   xorwf         translation_buffer, w
+00FC B4D8      00256   btfsc         STATUS, Z
+00FE EC00 F000 00257   call          translate_set_scroll
+               00258 
+0102 00259 translate_ascii_control
+0102 B800      00260   btfsc         txflags, send_command_release_flag
+0104 D000      00261   bra           translate_ascii_control_release
+               00262 
+               00263   ; send the nd control code
+0106 5000      00264   movf          translation_buffer, w
+0108 A800      00265   btfss         flags, release_flag
+010A EC00 F000 00266   call          hostbus_push
+               00267 
+               00268   ; clear the flags and exit
+010E 00269 translate_clearflags_leave
+010E 9800      00270   bcf           flags, release_flag
+0110 9E00      00271   bcf           flags, special_flag
+0112 0012      00272   return
+               00273 
+0114 00274 translate_ascii_control_release
+               00275   ; see if this is a release and send if so
+0114 B800      00276   btfsc         flags, release_flag
+0116 EC00 F000 00277   call          translate_send_release
+               00278 
+               00279   ; now  send the key
+011A 5000      00280   movf          translation_buffer, w
+011C EC00 F000 00281   call          hostbus_push
+               00282 
+0120 9800      00283   bcf           flags, release_flag
+0122 9E00      00284   bcf           flags, special_flag
+               00285 
+0124 0012      00286   return
+               00287 
+0126 00288 translate_ascii_norm
+               00289   ; it's a character or keypad press, so translate to an ascii code if pos
+0126 EC00 F000 00290   call          ascii_lookup
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00291 
+012A 6E00      00292   movwf         translation_buffer
+               00293   ; now see if it really is ascii
+               00294   ; two exceptions 1st is £ symbol, trap that
+012C 0EA3      00295   movlw         0xA3
+012E 1800      00296   xorwf         translation_buffer, w
+0130 E000      00297   bz            translate_ascii_not_control
+               00298   ; other is degree symbol, replaces mystery symbol ¬
+0132 0EB0      00299   movlw         0xB0
+0134 1800      00300   xorwf         translation_buffer, w
+0136 E000      00301   bz            translate_ascii_not_control
+               00302   ; othewise it it's above 0x7F it's a control key
+0138 BE00      00303   btfsc         translation_buffer, 7
+013A D000      00304   bra           translate_ascii_control ; probably numlock off then
+               00305 
+               00306   ; also interested in null bytes e.g. 5 when numlock is off, don't send these
+013C 0E00      00307   movlw         0x00
+013E 1800      00308   xorwf         translation_buffer, w
+0140 E000      00309   bz            translate_ascii_nosend  ; still clear the flags
+               00310 
+0142 00311 translate_ascii_not_control
+               00312   ; actual ascii, see if we should send a release
+0142 B600      00313   btfsc         txflags, send_release_flag
+0144 D000      00314   bra           translate_ascii_norm_release
+               00315 
+               00316   ; send the code
+0146 5000      00317   movf          translation_buffer, w
+0148 A800      00318   btfss         flags, release_flag
+014A EC00 F000 00319   call          hostbus_push
+               00320 
+014E 00321 translate_ascii_nosend
+               00322   ; clear the flags
+014E 9800      00323   bcf           flags, release_flag
+0150 9E00      00324   bcf           flags, special_flag
+0152 0012      00325   return
+               00326 
+0154 00327 translate_ascii_norm_release
+0154 B800      00328   btfsc         flags,release_flag
+0156 EC00 F000 00329   call          translate_send_release
+               00330 
+015A 5000      00331   movf          translation_buffer, w
+015C EC00 F000 00332   call          hostbus_push
+               00333 
+0160 9800      00334   bcf           flags, release_flag
+0162 9E00      00335   bcf           flags, special_flag
+0164 0012      00336   return
+               00337 
+               00338 ;===============================================================================
+               00339 ; translate_set_shift - set or clear the shift flag
+               00340 ;===============================================================================
+               00341 
+0166 00342 translate_set_shift
+0166 8600      00343   bsf           flags, shift_flag
+0168 B800      00344   btfsc         flags, release_flag
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+016A 9600      00345   bcf           flags, shift_flag
+016C 0012      00346   return
+               00347 
+016E 00348 translate_set_num
+016E B800      00349   btfsc         flags, release_flag
+0170 0012      00350   return                                        ; do nothing on key-release
+0172 7200      00351   btg           flags, num_flag
+0174 0EED      00352   movlw         0xED
+0176 EC00 F000 00353   call          ps2_queue_send
+017A 0E07      00354   movlw         0x07
+017C 1400      00355   andwf         flags, w
+017E EC00 F000 00356   call          ps2_queue_send
+0182 0012      00357   return
+               00358 
+0184 00359 translate_set_caps
+0184 B800      00360   btfsc         flags, release_flag
+0186 0012      00361   return                                        ; do nothing on key-release
+0188 7400      00362   btg           flags, caps_flag
+018A 0EED      00363   movlw         0xED
+018C EC00 F000 00364   call          ps2_queue_send
+0190 0E07      00365   movlw         0x07
+0192 1400      00366   andwf         flags, w
+0194 EC00 F000 00367   call          ps2_queue_send
+0198 0012      00368   return
+               00369 
+019A 00370 translate_set_scroll
+019A B800      00371   btfsc         flags, release_flag
+019C 0012      00372   return                                        ; do nothing on key-release
+019E 7000      00373   btg           flags, scroll_flag
+01A0 0EED      00374   movlw         0xED
+01A2 EC00 F000 00375   call          ps2_queue_send
+01A6 0E07      00376   movlw         0x07
+01A8 1400      00377   andwf         flags, w
+01AA EC00 F000 00378   call          ps2_queue_send
+01AE 0012      00379   return
+               00380 
+               00381 ;-- Exported functions ---------------------------------------------------------
+               00382 
+               00383     GLOBAL      translate_key
+               00384     GLOBAL      translate_init
+               00385 
+               00386     GLOBAL      translation_mode        ; can be set by hostbus
+               00387 
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 12
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+A                                 00000000
+ABDEN                             00000000
+ABDOVF                            00000007
+ACCESS                            00000000
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ACQT0                             00000003
+ACQT1                             00000004
+ACQT2                             00000005
+ADCON0                            00000FC2
+ADCON1                            00000FC1
+ADCON2                            00000FC0
+ADCONDEF                          0000000F
+ADCS0                             00000000
+ADCS1                             00000001
+ADCS2                             00000002
+ADDEN                             00000003
+ADEN                              00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADIP                              00000006
+ADON                              00000000
+ADRES                             00000FC3
+ADRESH                            00000FC4
+ADRESL                            00000FC3
+AN0                               00000000
+AN1                               00000001
+AN10                              00000001
+AN11                              00000004
+AN12                              00000000
+AN2                               00000002
+AN3                               00000003
+AN4                               00000005
+AN5                               00000000
+AN6                               00000001
+AN7                               00000002
+AN8                               00000002
+AN9                               00000003
+BANKED                            00000001
+BAUDCON                           00000FB8
+BAUDCTL                           00000FB8
+BCLIE                             00000003
+BCLIF                             00000003
+BCLIP                             00000003
+BF                                00000000
+BGST                              00000005
+BOR                               00000000
+BRG16                             00000003
+BRGH                              00000002
+BSR                               00000FE0
+C                                 00000000
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+C1INV                             00000004
+C1OUT                             00000006
+C2INV                             00000005
+C2OUT                             00000007
+CCP1                              00000002
+CCP1CON                           00000FBD
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1IP                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCP2CON                           00000FBA
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2IP                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2X                             00000005
+CCP2Y                             00000004
+CCP2_PORTB                        00000003
+CCP2_PORTC                        00000001
+CCPR1                             00000FBE
+CCPR1H                            00000FBF
+CCPR1L                            00000FBE
+CCPR2                             00000FBB
+CCPR2H                            00000FBC
+CCPR2L                            00000FBB
+CC_0                              00000000
+CC_1                              00000001
+CC_2                              00000002
+CC_3                              00000003
+CC_4                              00000004
+CC_5                              00000005
+CC_6                              00000006
+CC_7                              00000007
+CC_8                              00000008
+CC_9                              00000009
+CC_A                              0000000A
+CC_ALT                            00000096
+CC_ALTR                           00000097
+CC_AP                             00000029
+CC_APPS                           0000009A
+CC_B                              0000000B
+CC_BKSP                           00000034
+CC_C                              0000000C
+CC_CAPS                           00000091
+CC_CM                             0000002A
+CC_CTRL                           00000094
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+CC_CTRLR                          00000095
+CC_D                              0000000D
+CC_DEL                            00000033
+CC_DOWN                           000000A7
+CC_DSH                            00000025
+CC_E                              0000000E
+CC_END                            0000009D
+CC_ENTER                          00000031
+CC_EQ                             00000026
+CC_ESC                            00000080
+CC_F                              0000000F
+CC_F1                             00000081
+CC_F10                            0000008A
+CC_F11                            0000008B
+CC_F12                            0000008C
+CC_F2                             00000082
+CC_F3                             00000083
+CC_F4                             00000084
+CC_F5                             00000085
+CC_F6                             00000086
+CC_F7                             00000087
+CC_F8                             00000088
+CC_F9                             00000089
+CC_FS                             0000002B
+CC_G                              00000010
+CC_GUIL                           00000098
+CC_GUIR                           00000099
+CC_H                              00000011
+CC_HOME                           0000009C
+CC_I                              00000012
+CC_INS                            0000009B
+CC_J                              00000013
+CC_K                              00000014
+CC_KP0                            000000C0
+CC_KP1                            000000C1
+CC_KP2                            000000C2
+CC_KP3                            000000C3
+CC_KP4                            000000C4
+CC_KP5                            000000C5
+CC_KP6                            000000C6
+CC_KP7                            000000C7
+CC_KP8                            000000C8
+CC_KP9                            000000C9
+CC_KPD                            000000CA
+CC_KPE                            00000032
+CC_KPM                            000000CD
+CC_KPP                            000000CC
+CC_KPS                            000000CB
+CC_KPSL                           000000CE
+CC_L                              00000015
+CC_LEFT                           000000A4
+CC_LQ                             00000024
+CC_LSB                            00000027
+CC_LSHIFT                         00000092
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+CC_M                              00000016
+CC_MBCK                           000000B5
+CC_MCLC                           000000B1
+CC_MCMP                           000000B2
+CC_MEM                            000000AF
+CC_MFV                            000000B9
+CC_MFWD                           000000B6
+CC_MHOME                          000000B4
+CC_MMT                            000000AB
+CC_MNXT                           000000A7
+CC_MPP                            000000A9
+CC_MPRV                           000000A8
+CC_MRFSH                          000000B8
+CC_MSL                            000000AE
+CC_MSRCH                          000000B3
+CC_MSTP                           000000AA
+CC_MVD                            000000AD
+CC_MVU                            000000AC
+CC_MWSP                           000000B7
+CC_N                              00000017
+CC_NUM                            00000090
+CC_O                              00000018
+CC_P                              00000019
+CC_PAUSE                          0000008F
+CC_PGDN                           0000009F
+CC_PGUP                           0000009E
+CC_PRINT                          0000008D
+CC_PSF                            000000A0
+CC_PSR                            000000A1
+CC_PWR                            000000BA
+CC_Q                              0000001A
+CC_R                              0000001B
+CC_RIGHT                          000000A5
+CC_RSB                            00000028
+CC_RSHIFT                         00000093
+CC_S                              0000001C
+CC_SC                             0000002E
+CC_SCROLL                         0000008E
+CC_SLP                            000000BB
+CC_SP                             0000002F
+CC_T                              0000001D
+CC_TAB                            00000030
+CC_U                              0000001E
+CC_UP                             000000A6
+CC_US                             0000002D
+CC_V                              0000001F
+CC_W                              00000020
+CC_WK                             000000BC
+CC_WS                             0000002C
+CC_X                              00000021
+CC_Y                              00000022
+CC_Z                              00000023
+CFGS                              00000006
+CHS0                              00000002
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+CHS1                              00000003
+CHS2                              00000004
+CHS3                              00000005
+CIS                               00000003
+CK                                00000006
+CKE                               00000006
+CKP                               00000004
+CLKI                              00000007
+CLKO                              00000006
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             00000FB4
+CMIE                              00000006
+CMIF                              00000006
+CMIP                              00000006
+CREN                              00000004
+CS                                00000002
+CSRC                              00000007
+CVR0                              00000000
+CVR1                              00000001
+CVR2                              00000002
+CVR3                              00000003
+CVRCON                            00000FB5
+CVREF                             00000002
+CVREN                             00000007
+CVROE                             00000006
+CVRR                              00000005
+CVRSS                             00000004
+D                                 00000005
+DC                                00000001
+DC1B0                             00000004
+DC1B1                             00000005
+DC2B0                             00000004
+DC2B1                             00000005
+DONE                              00000001
+D_A                               00000005
+ECCP1AS                           00000FB6
+ECCPAS0                           00000004
+ECCPAS1                           00000005
+ECCPAS2                           00000006
+ECCPASE                           00000007
+EEADR                             00000FA9
+EECON1                            00000FA6
+EECON2                            00000FA7
+EEDATA                            00000FA8
+EEIE                              00000004
+EEIF                              00000004
+EEIP                              00000004
+EEPGD                             00000007
+FAST                              00000001
+FERR                              00000002
+FLTS                              00000002
+FREE                              00000004
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 17
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+FSR0                              00000000
+FSR0H                             00000FEA
+FSR0L                             00000FE9
+FSR1                              00000001
+FSR1H                             00000FE2
+FSR1L                             00000FE1
+FSR2                              00000002
+FSR2H                             00000FDA
+FSR2L                             00000FD9
+GCEN                              00000007
+GIE                               00000007
+GIEH                              00000007
+GIEL                              00000006
+GO                                00000001
+GO_DONE                           00000001
+HLVDCON                           00000FD2
+HLVDEN                            00000004
+HLVDIE                            00000002
+HLVDIF                            00000002
+HLVDIP                            00000002
+HLVDL0                            00000000
+HLVDL1                            00000001
+HLVDL2                            00000002
+HLVDL3                            00000003
+IBF                               00000007
+IBOV                              00000005
+IDLEN                             00000007
+INDF0                             00000FEF
+INDF1                             00000FE7
+INDF2                             00000FDF
+INT0                              00000000
+INT0E                             00000004
+INT0F                             00000001
+INT0IE                            00000004
+INT0IF                            00000001
+INT1                              00000001
+INT1E                             00000003
+INT1F                             00000000
+INT1IE                            00000003
+INT1IF                            00000000
+INT1IP                            00000006
+INT1P                             00000006
+INT2                              00000002
+INT2E                             00000004
+INT2F                             00000001
+INT2IE                            00000004
+INT2IF                            00000001
+INT2IP                            00000007
+INT2P                             00000007
+INTCON                            00000FF2
+INTCON2                           00000FF1
+INTCON3                           00000FF0
+INTEDG0                           00000006
+INTEDG1                           00000005
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 18
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+INTEDG2                           00000004
+INTSRC                            00000007
+IOFS                              00000002
+IPEN                              00000007
+IPR1                              00000F9F
+IPR2                              00000FA2
+IRCF0                             00000004
+IRCF1                             00000005
+IRCF2                             00000006
+IRVST                             00000005
+IVRST                             00000005
+KBI0                              00000004
+KBI1                              00000005
+KBI2                              00000006
+KBI3                              00000007
+LATA                              00000F89
+LATA0                             00000000
+LATA1                             00000001
+LATA2                             00000002
+LATA3                             00000003
+LATA4                             00000004
+LATA5                             00000005
+LATA6                             00000006
+LATA7                             00000007
+LATB                              00000F8A
+LATB0                             00000000
+LATB1                             00000001
+LATB2                             00000002
+LATB3                             00000003
+LATB4                             00000004
+LATB5                             00000005
+LATB6                             00000006
+LATB7                             00000007
+LATC                              00000F8B
+LATC0                             00000000
+LATC1                             00000001
+LATC2                             00000002
+LATC3                             00000003
+LATC4                             00000004
+LATC5                             00000005
+LATC6                             00000006
+LATC7                             00000007
+LATD                              00000F8C
+LATD0                             00000000
+LATD1                             00000001
+LATD2                             00000002
+LATD3                             00000003
+LATD4                             00000004
+LATD5                             00000005
+LATD6                             00000006
+LATD7                             00000007
+LATE                              00000F8D
+LATE0                             00000000
+LATE1                             00000001
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+LATE2                             00000002
+LVDCON                            00000FD2
+LVDEN                             00000004
+LVDIE                             00000002
+LVDIF                             00000002
+LVDIN                             00000005
+LVDIP                             00000002
+LVDL0                             00000000
+LVDL1                             00000001
+LVDL2                             00000002
+LVDL3                             00000003
+LVV0                              00000000
+LVV1                              00000001
+LVV2                              00000002
+LVV3                              00000003
+MCLR                              00000003
+N                                 00000004
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BOR                           00000000
+NOT_CS                            00000002
+NOT_DONE                          00000001
+NOT_MCLR                          00000003
+NOT_PD                            00000002
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RD                            00000000
+NOT_RI                            00000004
+NOT_SS                            00000005
+NOT_T1SYNC                        00000002
+NOT_T3SYNC                        00000002
+NOT_TO                            00000003
+NOT_W                             00000002
+NOT_WR                            00000001
+NOT_WRITE                         00000002
+OBF                               00000006
+OERR                              00000001
+OSC1                              00000007
+OSC2                              00000006
+OSCCON                            00000FD3
+OSCFIE                            00000007
+OSCFIF                            00000007
+OSCFIP                            00000007
+OSCTUNE                           00000F9B
+OSTS                              00000003
+OV                                00000003
+P                                 00000004
+P1B                               00000005
+P1C                               00000006
+P1D                               00000007
+P1M0                              00000006
+P1M1                              00000007
+PC                                00000FF9
+PCFG0                             00000000
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 20
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000FF9
+PCLATH                            00000FFA
+PCLATU                            00000FFB
+PD                                00000002
+PDC0                              00000000
+PDC1                              00000001
+PDC2                              00000002
+PDC3                              00000003
+PDC4                              00000004
+PDC5                              00000005
+PDC6                              00000006
+PEIE                              00000006
+PEN                               00000002
+PGC                               00000006
+PGD                               00000007
+PGM                               00000005
+PIE1                              00000F9D
+PIE2                              00000FA0
+PIR1                              00000F9E
+PIR2                              00000FA1
+PLLEN                             00000006
+PLUSW0                            00000FEB
+PLUSW1                            00000FE3
+PLUSW2                            00000FDB
+POR                               00000001
+PORTA                             00000F80
+PORTADEF                          00000023
+PORTADIR                          000000DC
+PORTB                             00000F81
+PORTBDEF                          00000000
+PORTBDIR                          0000007F
+PORTC                             00000F82
+PORTCDEF                          00000000
+PORTCDIR                          000000FF
+PORTD                             00000F83
+PORTE                             00000F84
+PORTEDEF                          00000000
+PORTEDIR                          00000017
+POSTDEC0                          00000FED
+POSTDEC1                          00000FE5
+POSTDEC2                          00000FDD
+POSTINC0                          00000FEE
+POSTINC1                          00000FE6
+POSTINC2                          00000FDE
+PR2                               00000FCB
+PREINC0                           00000FEC
+PREINC1                           00000FE4
+PREINC2                           00000FDC
+PROD                              00000FF3
+PRODH                             00000FF4
+PRODL                             00000FF3
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 21
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+PRSEN                             00000007
+PSA                               00000003
+PSP0                              00000000
+PSP1                              00000001
+PSP2                              00000002
+PSP3                              00000003
+PSP4                              00000004
+PSP5                              00000005
+PSP6                              00000006
+PSP7                              00000007
+PSPIE                             00000007
+PSPIF                             00000007
+PSPIP                             00000007
+PSPMODE                           00000004
+PSSAC0                            00000002
+PSSAC1                            00000003
+PSSBD0                            00000000
+PSSBD1                            00000001
+PWM1CON                           00000FB7
+P_CS                              00000002
+P_FOUND                           00000001
+P_INT                             00000005
+P_RD                              00000000
+P_READY                           00000000
+P_RX                              00000007
+P_TX                              00000006
+P_WR                              00000001
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RA6                               00000006
+RA7                               00000007
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RBIP                              00000000
+RBPU                              00000007
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 22
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+RC6                               00000006
+RC7                               00000007
+RCEN                              00000003
+RCIDL                             00000006
+RCIE                              00000005
+RCIF                              00000005
+RCIP                              00000005
+RCMT                              00000006
+RCON                              00000FD0
+RCREG                             00000FAE
+RCSTA                             00000FAB
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD16                              00000007
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+RE3                               00000003
+RI                                00000004
+RSEN                              00000001
+RX                                00000007
+RX9                               00000006
+RX9D                              00000000
+RXDTP                             00000005
+R_W                               00000002
+S                                 00000003
+SBOREN                            00000006
+SCK                               00000003
+SCKP                              00000004
+SCL                               00000003
+SCS0                              00000000
+SCS1                              00000001
+SDA                               00000004
+SDI                               00000004
+SDO                               00000005
+SEN                               00000000
+SENDB                             00000003
+SMP                               00000007
+SP0                               00000000
+SP1                               00000001
+SP2                               00000002
+SP3                               00000003
+SP4                               00000004
+SPBRG                             00000FAF
+SPBRGH                            00000FB0
+SPEN                              00000007
+SREN                              00000005
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 23
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+SS                                00000005
+SSPADD                            00000FC8
+SSPBUF                            00000FC9
+SSPCON1                           00000FC6
+SSPCON2                           00000FC5
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPIP                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000FC7
+STATUS                            00000FD8
+STKFUL                            00000007
+STKOVF                            00000007
+STKPTR                            00000FFC
+STKUNF                            00000006
+SWDTE                             00000000
+SWDTEN                            00000000
+SYNC                              00000004
+T08BIT                            00000006
+T0CKI                             00000004
+T0CON                             00000FD5
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0PS0                             00000000
+T0PS1                             00000001
+T0PS2                             00000002
+T0SE                              00000004
+T13CKI                            00000000
+T1CKI                             00000000
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000FCD
+T1OSCEN                           00000003
+T1OSI                             00000001
+T1OSO                             00000000
+T1RUN                             00000006
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000FCA
+T2OUTPS0                          00000003
+T2OUTPS1                          00000004
+T2OUTPS2                          00000005
+T2OUTPS3                          00000006
+T3CCP1                            00000003
+T3CCP2                            00000006
+T3CKPS0                           00000004
+T3CKPS1                           00000005
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 24
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+T3CON                             00000FB1
+T3SYNC                            00000002
+TABLAT                            00000FF5
+TBLPTR                            00000FF6
+TBLPTRH                           00000FF7
+TBLPTRL                           00000FF6
+TBLPTRU                           00000FF8
+TMR0H                             00000FD7
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR0IP                            00000002
+TMR0L                             00000FD6
+TMR0ON                            00000007
+TMR1CS                            00000001
+TMR1H                             00000FCF
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1IP                            00000000
+TMR1L                             00000FCE
+TMR1ON                            00000000
+TMR2                              00000FCC
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2IP                            00000001
+TMR2ON                            00000002
+TMR3CS                            00000001
+TMR3H                             00000FB3
+TMR3IE                            00000001
+TMR3IF                            00000001
+TMR3IP                            00000001
+TMR3L                             00000FB2
+TMR3ON                            00000000
+TO                                00000003
+TOS                               00000FFD
+TOSH                              00000FFE
+TOSL                              00000FFD
+TOSU                              00000FFF
+TRANSLATE_ASCII                   00000001
+TRISA                             00000F92
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISA6                            00000006
+TRISA7                            00000007
+TRISB                             00000F93
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 25
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000F94
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000F95
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000F96
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TUN0                              00000000
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TX                                00000006
+TX9                               00000006
+TX9D                              00000000
+TXCKP                             00000004
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXIP                              00000004
+TXREG                             00000FAD
+TXSTA                             00000FAC
+UA                                00000001
+VCFG0                             00000004
+VCFG1                             00000005
+VDIRMAG                           00000007
+VPP                               00000003
+VREFN                             00000002
+VREFP                             00000003
+W                                 00000000
+WCOL                              00000007
+WDTCON                            00000FD1
+WR                                00000001
+WREG                              00000FE8
+WREN                              00000002
+WRERR                             00000003
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 26
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+WUE                               00000001
+Z                                 00000002
+_BOREN_NOSLP_2L                   000000FD
+_BOREN_OFF_2L                     000000F9
+_BOREN_ON_2L                      000000FB
+_BOREN_SBORDIS_2L                 000000FF
+_BORV_0_2L                        000000E7
+_BORV_1_2L                        000000EF
+_BORV_2_2L                        000000F7
+_BORV_3_2L                        000000FF
+_CCP2MX_PORTBE_3H                 000000FE
+_CCP2MX_PORTC_3H                  000000FF
+_CONFIG1H                         00300001
+_CONFIG2H                         00300003
+_CONFIG2L                         00300002
+_CONFIG3H                         00300005
+_CONFIG4L                         00300006
+_CONFIG5H                         00300009
+_CONFIG5L                         00300008
+_CONFIG6H                         0030000B
+_CONFIG6L                         0030000A
+_CONFIG7H                         0030000D
+_CONFIG7L                         0030000C
+_CP0_OFF_5L                       000000FF
+_CP0_ON_5L                        000000FE
+_CP1_OFF_5L                       000000FF
+_CP1_ON_5L                        000000FD
+_CP2_OFF_5L                       000000FF
+_CP2_ON_5L                        000000FB
+_CP3_OFF_5L                       000000FF
+_CP3_ON_5L                        000000F7
+_CPB_OFF_5H                       000000FF
+_CPB_ON_5H                        000000BF
+_CPD_OFF_5H                       000000FF
+_CPD_ON_5H                        0000007F
+_DEBUG_OFF_4L                     000000FF
+_DEBUG_ON_4L                      0000007F
+_DEVID1                           003FFFFE
+_DEVID2                           003FFFFF
+_EBTR0_OFF_7L                     000000FF
+_EBTR0_ON_7L                      000000FE
+_EBTR1_OFF_7L                     000000FF
+_EBTR1_ON_7L                      000000FD
+_EBTR2_OFF_7L                     000000FF
+_EBTR2_ON_7L                      000000FB
+_EBTR3_OFF_7L                     000000FF
+_EBTR3_ON_7L                      000000F7
+_EBTRB_OFF_7H                     000000FF
+_EBTRB_ON_7H                      000000BF
+_FCMEN_OFF_1H                     000000BF
+_FCMEN_ON_1H                      000000FF
+_IDLOC0                           00200000
+_IDLOC1                           00200001
+_IDLOC2                           00200002
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 27
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+_IDLOC3                           00200003
+_IDLOC4                           00200004
+_IDLOC5                           00200005
+_IDLOC6                           00200006
+_IDLOC7                           00200007
+_IESO_OFF_1H                      0000007F
+_IESO_ON_1H                       000000FF
+_LPT1OSC_OFF_3H                   000000FB
+_LPT1OSC_ON_3H                    000000FF
+_LVP_OFF_4L                       000000FB
+_LVP_ON_4L                        000000FF
+_MCLRE_OFF_3H                     0000007F
+_MCLRE_ON_3H                      000000FF
+_OSC_ECIO6_1H                     000000F5
+_OSC_EC_1H                        000000F4
+_OSC_HSPLL_1H                     000000F6
+_OSC_HS_1H                        000000F2
+_OSC_INTIO67_1H                   000000F8
+_OSC_INTIO7_1H                    000000F9
+_OSC_LP_1H                        000000F0
+_OSC_RCIO6_1H                     000000F7
+_OSC_RC_1H                        000000F3
+_OSC_XT_1H                        000000F1
+_PBADEN_OFF_3H                    000000FD
+_PBADEN_ON_3H                     000000FF
+_PWRT_OFF_2L                      000000FF
+_PWRT_ON_2L                       000000FE
+_STVREN_OFF_4L                    000000FE
+_STVREN_ON_4L                     000000FF
+_WDTPS_1024_2H                    000000F5
+_WDTPS_128_2H                     000000EF
+_WDTPS_16384_2H                   000000FD
+_WDTPS_16_2H                      000000E9
+_WDTPS_1_2H                       000000E1
+_WDTPS_2048_2H                    000000F7
+_WDTPS_256_2H                     000000F1
+_WDTPS_2_2H                       000000E3
+_WDTPS_32768_2H                   000000FF
+_WDTPS_32_2H                      000000EB
+_WDTPS_4096_2H                    000000F9
+_WDTPS_4_2H                       000000E5
+_WDTPS_512_2H                     000000F3
+_WDTPS_64_2H                      000000ED
+_WDTPS_8192_2H                    000000FB
+_WDTPS_8_2H                       000000E7
+_WDT_OFF_2H                       000000FE
+_WDT_ON_2H                        000000FF
+_WRT0_OFF_6L                      000000FF
+_WRT0_ON_6L                       000000FE
+_WRT1_OFF_6L                      000000FF
+_WRT1_ON_6L                       000000FD
+_WRT2_OFF_6L                      000000FF
+_WRT2_ON_6L                       000000FB
+_WRT3_OFF_6L                      000000FF
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 28
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+_WRT3_ON_6L                       000000F7
+_WRTB_OFF_6H                      000000FF
+_WRTB_ON_6H                       000000BF
+_WRTC_OFF_6H                      000000FF
+_WRTC_ON_6H                       000000DF
+_WRTD_OFF_6H                      000000FF
+_WRTD_ON_6H                       0000007F
+_XINST_OFF_4L                     000000BF
+_XINST_ON_4L                      000000FF
+__18F4520                         00000001
+ack_flag                          00000000
+ascii_lookup                      00000000
+caps_flag                         00000002
+flags                             00000000
+hostbus_push                      00000000
+ndcodes_lookup                    00000000
+num_flag                          00000001
+pause_count                       00000001
+pause_flag                        00000002
+ps2_queue_send                    00000000
+release_flag                      00000004
+resend_flag                       00000001
+scroll_flag                       00000000
+send_command_release_flag         00000004
+send_failed_flag                  00000006
+send_release_flag                 00000003
+shift_flag                        00000003
+special_flag                      00000007
+talking_flag                      00000005
+translate_ascii                   000000C2
+translate_ascii_control           00000102
+translate_ascii_control_release   00000114
+translate_ascii_norm              00000126
+translate_ascii_norm_release      00000154
+translate_ascii_nosend            0000014E
+translate_ascii_not_control       00000142
+translate_clearflags_leave        0000010E
+translate_f7                      0000006E
+translate_init                    00000000
+translate_key                     0000000C
+translate_key_message             00000074
+translate_pause_count             000000BC
+translate_send_release            00000066
+translate_send_special            0000005E
+translate_set_ack                 000000A2
+translate_set_caps                00000184
+translate_set_num                 0000016E
+translate_set_pause               000000AE
+translate_set_release             0000009A
+translate_set_resend              000000A6
+translate_set_scroll              0000019A
+translate_set_shift               00000166
+translate_set_special             0000009E
+translate_set_startup             000000AA
+gpasm-0.13.7 beta               translation.asm2-25-2010  00:38:49          PAGE 29
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+translation_buffer                00000000
+translation_mode                  00000002
+txflags                           00000000
+DDRA                              TRISA
+DDRB                              TRISB
+DDRC                              TRISC
+DDRD                              TRISD
+DDRE                              TRISE
+
+
+Errors   :       0
+Warnings :       0 reported,       0 suppressed
+Messages :       0 reported,       0 suppressed
+

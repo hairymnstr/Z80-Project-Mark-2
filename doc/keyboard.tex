@@ -1,0 +1,135 @@
+% keyboard driver documentation
+
+\section{Keyboard Controller Commands}
+You can set various keyboard parameters by writing to the KEY\_DATA port.  The
+basic format for these commands is an upper nibble specifiying the command and
+some parameters in the lower nibble (allowing a total of 16 commands).
+
+\begin{tabular}{llp{6cm}l}
+ \textbf{Command}&\textbf{Name}&\textbf{Description}&\textbf{Default}\\
+ 1100xxxx&KB\_SET\_TM&Sets the translation mode to xxxx, this is an internal 
+                      setting that defines what bytes are sent to the Z80 on
+                      keypress. See Table \ref{tab:translators} for details on 
+                      implemented translations.& 1 (ASCII)\\
+ 1101000x&KB\_SET\_REL&If x is 1, all subsequent ``normal keys'' will send
+                       release codes (0xF0 followed by keycode) on release.&0\\
+ 1110000x&KB\_SET\_CMD\_REL&If x is 1, all subsequent control keys will send
+                            release codes (0xF0 followed by keycode on release.
+ &1\\
+ 11110xxx&KB\_SET\_LEDS&This command sets the LEDs (and internal state flags)
+                        to xxx.  The MSb is CAPS Lock, the middle is NUM Lock
+                        and the LSb is SCROLL Lock.&010\\
+\end{tabular}
+
+\section{Translation Modes}
+In the firmware implementation a relatively abstract lookup mechanism called
+translate\_key is included.  This allows arbitrary byte patterns to be sent on
+any keypress.  The specifications of these translators is in the following
+sections, they can be selected with the KB\_SET\_TM command.  Table
+\ref{tab:translators} has a summary list of available translator functions.
+
+\begin{table}
+ \begin{tabular}{rlp{7cm}}
+  \textbf{Number}&\textbf{Name}&\textbf{Description}\\
+  0&None&No translation is done, LEDs are kept up to date and Pause/Break is
+         filtered to send only one byte.  F7 will also send 0xF7 instead of 0x83
+         other than that all key-press related codes will be sent as Set 2
+         scancodes.\\
+  1&ASCII&Keycodes that map directly will be sent as ASCII codes these are
+          ``normal keys'' which won't send release info by default.  Command
+          keys (e.g. shift, ctrl, cursor keys etc.) will send custom ndcodes
+          which guarantee 1 byte identification.  They will send release info
+          by default.\\
+ \end{tabular}
+ \caption{Translation Modes}
+ \label{tab:translators}
+\end{table}
+
+\section{ASCII Mode Codes}
+In ASCII Mode, printable characters will be sent, CAPS, SHIFT and NUM are taken
+into account before the byte is sent.  In addition keys with direct mapping to
+ASCII codes will be sent as ASCII (Del = 127, Backspace = 8, Tab = 9, Return and
+Enter = 10).  The only exceptions to this are two (UK) keyboard keys that don't
+map to standard ASCII codes, £ and ¬.  The £ symbol is mapped to 0xA3, which 
+matches the GPU's internal font mapping, the ¬ symbol has no representation in
+the GPU and is replaced with a degrees symbol 0xB0.  Neither of these codes are
+used in ndcodes to avoid confusion.
+
+Other keys are sent as ndcodes which is a simple mapping which makes sure bit 7
+is set for all control keys and assigns a single unique byte to each key.  These
+are shown in the table below.
+
+\subsection{Control Keys}
+\begin{tabular}{llp{7cm}}
+ \textbf{Mnemonic}&\textbf{Hex}&\textbf{Description}\\
+ CC\_ESC&0x80&Escape\\
+ CC\_F1&0x81&F1\\
+ CC\_F2&0x82&F2\\
+ CC\_F3&0x83&F3\\
+ CC\_F4&0x84&F4\\
+ CC\_F5&0x85&F5\\
+ CC\_F6&0x86&F6\\
+ CC\_F7&0x87&F7\\
+ CC\_F8&0x88&F8\\
+ CC\_F9&0x89&F9\\
+ CC\_F10&0x8A&F10\\
+ CC\_F11&0x8B&F11\\
+ CC\_F12&0x8C&F12\\
+ CC\_PRINT&0x8D&Print Screen\\
+ CC\_SCROLL&0x8E&Scroll Lock\\
+ CC\_PAUSE&0x8F&Pause/Break\\
+ CC\_NUM&0x90&Num Lock\\
+ CC\_CAPS&0x91&Caps Lock\\
+ CC\_LSHIFT&0x92&Left Shift\\
+ CC\_RSHIFT&0x93&Right Shift\\
+ CC\_CTRL&0x94&Left Control\\
+ CC\_CTRLR&0x95&Right Control\\
+ CC\_ALT&0x96&Left Alt\\
+ CC\_ALTR&0x97&Right Alt\\
+ CC\_GUIL&0x98&Left GUI (Windows key)\\
+ CC\_GUIR&0x99&Right GUI (Windows key)\\
+ CC\_APPS&0x9A&Apps (Looks like a menu on most keyboards next to Windows Key\\
+ CC\_INS&0x9B&Insert\\
+ CC\_HOME&0x9C&Home\\
+ CC\_END&0x9D&End\\
+ CC\_PGUP&0x9E&Page Up\\
+ CC\_PGDN&0x9F&Page Down\\
+ CC\_PSF&0xA0&Fake scan code, trapped internally.\\
+ CC\_PSR&0xA1&Print Screen\\
+ \multicolumn{3}{c}{0xA3 is £ symbol in our character set, don't use it here}\\
+ CC\_LEFT&0xA4&Left cursor key\\
+ CC\_RIGHT&0xA5&Right cursor key\\
+ CC\_UP&0xA6&Up cursor key\\
+ CC\_DOWN&0xA7&Down cursor key\\
+\end{tabular}
+
+\subsection{Media Keys}
+\begin{tabular}{llp{7cm}}
+ CC\_MNXT&0xA7&Media next\\
+ CC\_MPRV&0xA8&Media previous\\
+ CC\_MPP&0xA9&Media play/pause\\
+ CC\_MSTP&0xAA&Media stop\\
+ CC\_MMT&0xAB&Media mute\\
+ CC\_MVU&0xAC&Media volume up\\
+ CC\_MVD&0xAD&Media volume down\\
+ CC\_MSL&0xAE&Media select\\
+ CC\_MEM&0xAF&Media email\\
+ \multicolumn{3}{c}{0xB0 is the degrees symbol in our character set}\\
+ CC\_MCLC&0xB1&Media calculator\\
+ CC\_MCMP&0xB2&Media my computer\\
+ CC\_MSRCH&0xB3&Web search\\
+ CC\_MHOME&0xB4&Web home\\
+ CC\_MBCK&0xB5&Web back\\
+ CC\_MFWD&0xB6&Web forward\\
+ CC\_MWSP&0xB7&Web stop\\
+ CC\_MRFSH&0xB8&Web refresh\\
+ CC\_MFV&0xB9&Web favourites\\
+\end{tabular}
+
+\subsection{ACPI Control Keys}
+\begin{tabular}{llp{7cm}}
+ CC\_PWR&0xBA&Power\\
+ CC\_SLP&0xBB&Sleep\\
+ CC\_WK&0xBC&Wake\\
+ 
+\end{tabular}

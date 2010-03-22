@@ -1,0 +1,121 @@
+gplink-0.13.7 beta
+Map File - Created 1-10-2010  16:13:46
+ 
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   00000000    program   0x000004
+                   .org_4       code   0x000008    program   0x00002e
+                    .code       code   0x000036    program   0x000b36
+                .org_3000       code   0x006000    program   0x002000
+                  .config       code   0x300000    program   0x00000e
+                   .udata      udata   0x000080       data   0x000010
+ 
+                              Program Memory Usage
+                               Start         End
+                           ---------   ---------
+                            0x000036    0x000b6b
+                            0x300000    0x30000d
+                            00000000    0x000003
+                            0x000008    0x000035
+                            0x006000    0x007fff
+ 
+                            5563 program addresses used
+ 
+                              Symbols
+                     Name    Address   Location    Storage File
+                ---------  ---------  ---------  --------- ---------
+                  RX_MODE   0x000080       data     static serial.asm
+               RX_COMMAND   0x000081       data     static serial.asm
+                 RX_COUNT   0x000082       data     static serial.asm
+              RX_CHECKSUM   0x000083       data     static serial.asm
+                 RX_FLAGS   0x000084       data     static serial.asm
+              TX_CHECKSUM   0x000085       data     static serial.asm
+                 TX_COUNT   0x000086       data     static serial.asm
+                 JUMP_REG   0x000087       data     static serial.asm
+              serial_init   0x000036    program     extern serial.asm
+              serial_send   0x00006c    program     static serial.asm
+    serial_tx_send_packet   0x000074    program     static serial.asm
+serial_tx_send_packet_data_loop   0x000088    program     static serial.asm
+serial_tx_send_packet_checksum   0x000092    program     static serial.asm
+      serial_rx_int_error   0x00009c    program     static serial.asm
+            serial_rx_int   0x0000aa    program     extern serial.asm
+   serial_rx_int_no_error   0x0000b0    program     static serial.asm
+     serial_rx_jump_table   0x0000c8    program     static serial.asm
+        serial_rx_command   0x0000da    program     static serial.asm
+         serial_rx_length   0x0000e6    program     static serial.asm
+           serial_rx_data   0x0000fa    program     static serial.asm
+       serial_rx_checksum   0x000108    program     static serial.asm
+serial_rx_checksum_passed   0x00011a    program     static serial.asm
+  serial_command_dispatch   0x000120    program     extern serial.asm
+serial_command_jump_table   0x000146    program     static serial.asm
+           serial_read_io   0x0001c8    program     static serial.asm
+          serial_write_io   0x00020a    program     static serial.asm
+          serial_read_mem   0x00024a    program     static serial.asm
+         serial_write_mem   0x00028c    program     static serial.asm
+    serial_block_mem_read   0x0002cc    program     static serial.asm
+serial_block_mem_read_loop   0x000300    program     static serial.asm
+   serial_block_mem_write   0x000322    program     static serial.asm
+serial_block_mem_write_loop   0x000344    program     static serial.asm
+       serial_bios_update   0x000372    program     static serial.asm
+       serial_do_commands   0x0003a8    program     static serial.asm
+         serial_cmd_jumps   0x0003de    program     static serial.asm
+      serial_do_get_reset   0x0007de    program     static serial.asm
+        serial_do_get_dma   0x0007ea    program     static serial.asm
+      serial_do_get_slave   0x0007f6    program     static serial.asm
+          serial_do_reset   0x000802    program     static serial.asm
+     serial_do_reset_loop   0x000806    program     static serial.asm
+            serial_do_ack   0x00080c    program     static serial.asm
+    serial_error_checksum   0x00082e    program     static serial.asm
+ serial_error_bad_command   0x00085a    program     static serial.asm
+serial_error_unused_command   0x000886    program     static serial.asm
+serial_error_wrong_parameters   0x0008ae    program     static serial.asm
+  serial_error_do_unknown   0x0008dc    program     static serial.asm
+serial_error_packet_length   0x00090c    program     static serial.asm
+serial_error_bios_address_space   0x000914    program     static serial.asm
+serial_error_bios_address_offset   0x00091c    program     static serial.asm
+     serial_error_generic   0x000924    program     static serial.asm
+      serial_handler_exit   0x00094a    program     static serial.asm
+                MAIN_TEMP   0x000088       data     extern main.asm
+                interrupt   0x000008    program     static main.asm
+                     init   0x000010    program     static main.asm
+                     main   0x00002e    program     static main.asm
+                  LO_ADDR   0x000089       data     extern host_bus.asm
+                  HI_ADDR   0x00008a       data     extern host_bus.asm
+                     DREG   0x00008b       data     extern host_bus.asm
+                     MODE   0x00008c       data     static host_bus.asm
+                TEMP_MODE   0x00008d       data     static host_bus.asm
+            ensure_master   0x000952    program     extern host_bus.asm
+ ensure_master_not_master   0x00095c    program     static host_bus.asm
+            revert_master   0x000962    program     extern host_bus.asm
+revert_master_needs_change   0x00096a    program     static host_bus.asm
+      revert_master_reset   0x00097c    program     static host_bus.asm
+        revert_master_dma   0x000982    program     static host_bus.asm
+                  get_dma   0x000988    program     extern host_bus.asm
+             get_dma_loop   0x00098a    program     static host_bus.asm
+                get_reset   0x000998    program     extern host_bus.asm
+                get_slave   0x0009b4    program     extern host_bus.asm
+               set_master   0x0009bc    program     static host_bus.asm
+                set_slave   0x0009d0    program     static host_bus.asm
+                  io_read   0x0009de    program     extern host_bus.asm
+        io_read_wait_loop   0x0009f2    program     static host_bus.asm
+                 io_write   0x000a00    program     extern host_bus.asm
+       io_write_wait_loop   0x000a18    program     static host_bus.asm
+                 mem_read   0x000a24    program     extern host_bus.asm
+       mem_read_wait_loop   0x000a34    program     static host_bus.asm
+                mem_write   0x000a42    program     extern host_bus.asm
+      mem_write_wait_loop   0x000a58    program     static host_bus.asm
+                  WRCOUNT   0x00008e       data     static boot.asm
+             BOOTWR_FLAGS   0x00008f       data     static boot.asm
+                boot_init   0x000a64    program     extern boot.asm
+                boot_load   0x000a78    program     extern boot.asm
+           boot_load_loop   0x000a8c    program     static boot.asm
+              boot_update   0x000aa8    program     extern boot.asm
+        boot_update_erase   0x000ab4    program     static boot.asm
+        boot_update_write   0x000ace    program     static boot.asm
+   boot_update_write_loop   0x000ad2    program     static boot.asm
+ boot_update_second_erase   0x000afa    program     static boot.asm
+              boot_verify   0x000b08    program     static boot.asm
+         boot_verify_loop   0x000b20    program     static boot.asm
+          boot_verify_nak   0x000b46    program     static boot.asm
+ 

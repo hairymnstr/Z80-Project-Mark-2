@@ -1,0 +1,131 @@
+gplink-0.13.7 beta
+Map File - Created 2-25-2010  00:38:49
+ 
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   00000000    program   0x000004
+                   .org_4       code   0x000008    program   0x000064
+                    .code       code   0x00006c    program   0x0006e6
+                  .config       code   0x300000    program   0x00000e
+                   .udata      udata   0x000080       data   0x000013
+ 
+                              Program Memory Usage
+                               Start         End
+                           ---------   ---------
+                            0x300000    0x30000d
+                            00000000    0x000003
+                            0x000008    0x00006b
+                            0x00006c    0x000751
+ 
+                            942 program addresses used
+ 
+                              Symbols
+                     Name    Address   Location    Storage File
+                ---------  ---------  ---------  --------- ---------
+                interrupt   0x000008    program     static main.asm
+                  psp_int   0x000018    program     static main.asm
+                 tmr0_int   0x00001e    program     static main.asm
+                 int0_int   0x000024    program     static main.asm
+           exit_interrupt   0x00002a    program     static main.asm
+                     init   0x00002c    program     static main.asm
+                     main   0x000066    program     static main.asm
+             ascii_lookup   0x00006c    program     extern asciicodes.asm
+       ascii_lookup_nomod   0x000078    program     static asciicodes.asm
+       ascii_lookup_shift   0x00008e    program     static asciicodes.asm
+        ascii_lookup_caps   0x0000a8    program     static asciicodes.asm
+   ascii_lookup_shiftcaps   0x0000be    program     static asciicodes.asm
+      ascii_lookup_numpad   0x0000d4    program     static asciicodes.asm
+         ascii_lookup_num   0x0000da    program     static asciicodes.asm
+     ascii_lookup_numctrl   0x0000f0    program     static asciicodes.asm
+     ND_CODES_ASCII_NOMOD   0x000106    program     static asciicodes.inc
+     ND_CODES_ASCII_SHIFT   0x00013c    program     static asciicodes.inc
+      ND_CODES_ASCII_CAPS   0x000172    program     static asciicodes.inc
+ ND_CODES_ASCII_SHIFTCAPS   0x0001a8    program     static asciicodes.inc
+       ND_CODES_ASCII_NUM   0x0001de    program     static asciicodes.inc
+   ND_CODES_ASCII_NUMCTRL   0x0001ee    program     static asciicodes.inc
+       translation_buffer   0x000080       data     static translation.asm
+              pause_count   0x000081       data     static translation.asm
+         translation_mode   0x000082       data     extern translation.asm
+           translate_init   0x0001fe    program     extern translation.asm
+            translate_key   0x00020a    program     extern translation.asm
+   translate_send_special   0x00025c    program     static translation.asm
+   translate_send_release   0x000264    program     static translation.asm
+             translate_f7   0x00026c    program     static translation.asm
+    translate_key_message   0x000272    program     static translation.asm
+    translate_set_release   0x000298    program     static translation.asm
+    translate_set_special   0x00029c    program     static translation.asm
+        translate_set_ack   0x0002a0    program     static translation.asm
+     translate_set_resend   0x0002a4    program     static translation.asm
+    translate_set_startup   0x0002a8    program     static translation.asm
+      translate_set_pause   0x0002ac    program     static translation.asm
+    translate_pause_count   0x0002ba    program     static translation.asm
+          translate_ascii   0x0002c0    program     static translation.asm
+  translate_ascii_control   0x000300    program     static translation.asm
+translate_clearflags_leave   0x00030c    program     static translation.asm
+translate_ascii_control_release   0x000312    program     static translation.asm
+     translate_ascii_norm   0x000324    program     static translation.asm
+translate_ascii_not_control   0x000340    program     static translation.asm
+   translate_ascii_nosend   0x00034c    program     static translation.asm
+translate_ascii_norm_release   0x000352    program     static translation.asm
+      translate_set_shift   0x000364    program     static translation.asm
+        translate_set_num   0x00036c    program     static translation.asm
+       translate_set_caps   0x000382    program     static translation.asm
+     translate_set_scroll   0x000398    program     static translation.asm
+           ndcodes_lookup   0x0003ae    program     extern ndcodes.asm
+          ndcodes_special   0x0003ca    program     static ndcodes.asm
+            SCAN_CODES_ND   0x0003e0    program     static ndcodes.inc
+         SCAN_CODES_ND_E0   0x000460    program     static ndcodes.inc
+                bit_count   0x000083       data     static ps2.asm
+                    txreg   0x000084       data     static ps2.asm
+                    rxreg   0x000085       data     static ps2.asm
+        ps2_send_val_temp   0x000086       data     static ps2.asm
+        ps2_send_ptr_temp   0x000087       data     static ps2.asm
+          ps2_timeout_reg   0x000088       data     static ps2.asm
+           ps2_send_count   0x000089       data     static ps2.asm
+                    flags   0x00008a       data     extern ps2.asm
+                  txflags   0x00008b       data     extern ps2.asm
+                    count   0x00008c       data     static ps2.asm
+                   parity   0x00008f       data     static ps2.asm
+                 ps2_init   0x0004e0    program     extern ps2.asm
+        ps2_keyboard_init   0x00050a    program     extern ps2.asm
+        ps2_keyboard_wait   0x000512    program     static ps2.asm
+   ps2_keyboard_init_done   0x000530    program     static ps2.asm
+            ps2_timer_int   0x000548    program     extern ps2.asm
+          timeout_talking   0x000558    program     static ps2.asm
+    timeout_start_talking   0x00056e    program     static ps2.asm
+        timeout_wait_loop   0x000576    program     static ps2.asm
+             ps2_edge_int   0x00058a    program     extern ps2.asm
+      edge_event_send_bit   0x0005b4    program     static ps2.asm
+          edge_event_stop   0x0005c6    program     static ps2.asm
+     edge_event_send_stop   0x0005d8    program     static ps2.asm
+         edge_event_start   0x0005de    program     static ps2.asm
+        edge_event_parity   0x0005e6    program     static ps2.asm
+           edge_event_ack   0x0005f8    program     static ps2.asm
+     edge_event_ack_error   0x000608    program     static ps2.asm
+          edge_event_exit   0x000616    program     static ps2.asm
+           ps2_queue_send   0x00061e    program     extern ps2.asm
+      ps2_queue_send_loop   0x00062a    program     static ps2.asm
+ ps2_queue_send_save_here   0x000630    program     static ps2.asm
+           ps2_send_bytes   0x00063c    program     extern ps2.asm
+    ps2_send_bytes_resend   0x000644    program     static ps2.asm
+      ps2_send_bytes_wait   0x000650    program     static ps2.asm
+         ps2_wait_to_talk   0x000664    program     static ps2.asm
+        ps2_start_talking   0x00066c    program     static ps2.asm
+           hostbus_buffer   0x000090       data     static hostbus.asm
+                high_jump   0x000091       data     static hostbus.asm
+                 low_jump   0x000092       data     static hostbus.asm
+             hostbus_init   0x00067a    program     extern hostbus.asm
+              hostbus_int   0x00068a    program     extern hostbus.asm
+         hostbus_int_read   0x00068e    program     static hostbus.asm
+        hostbus_int_write   0x0006a6    program     static hostbus.asm
+             hostbus_push   0x0006b0    program     extern hostbus.asm
+   hostbus_push_load_fifo   0x0006ba    program     static hostbus.asm
+          hostbus_command   0x0006c2    program     static hostbus.asm
+    hostbus_command_table   0x0006de    program     static hostbus.asm
+     hostbus_null_command   0x00071e    program     static hostbus.asm
+        hostbus_set_flags   0x000720    program     static hostbus.asm
+hostbus_set_send_command_release   0x00073a    program     static hostbus.asm
+ hostbus_set_send_release   0x000742    program     static hostbus.asm
+hostbus_set_translation_mode   0x00074a    program     static hostbus.asm
+ 

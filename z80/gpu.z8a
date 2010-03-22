@@ -1,0 +1,290 @@
+;-------------------------------------------------------------------------------
+;|                                                                             |
+;| gpu.z8a - Driver functions for the Mark 2 Z80 project's Propeller based GPU |
+;| File Version: 1.0                                                           |
+;| hairymnstr@gmail.com                                                        |
+;|                                                                             |
+;| Copyright (C) 2010  Nathan Dumont                                           |
+;|                                                                             |
+;| This program is free software: you can redistribute it and/or modify        |
+;| it under the terms of the GNU General Public License as published by        |
+;| the Free Software Foundation, either version 3 of the License, or           |
+;| (at your option) any later version.                                         |
+;|                                                                             |
+;| This program is distributed in the hope that it will be useful,             |
+;| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+;| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+;| GNU General Public License for more details.                                |
+;|                                                                             |
+;| You should have received a copy of the GNU General Public License           |
+;| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+;|                                                                             |
+;-------------------------------------------------------------------------------
+
+;===============================================================================
+; gpu_init - Reset the GPU to its power-on state
+;===============================================================================
+
+;; On start up the GPU displays a blank screen on both VGA and TV monitors.  It
+;; is in a 16x32 tile-based mode with a default colour table.  Running this
+;; command orders the GPU to return to this state.  Register *A* is used, but no
+;; arguments or return values are associated with this function.
+
+gpu_init:
+  ld    a, GPU_RESET_COMMAND
+  out   (GPU_COMMAND), a
+  ret
+
+;===============================================================================
+; gpu_cls - Clear the active screen
+;===============================================================================
+
+;; This sets all pixels in the active screen to the currently selected
+;; background colour.  Reading any cursor location will return $20 (the ASCII
+;; code for SPACE).  Register *A* is used, but no arguments or return values are
+;; associated with this function.
+
+gpu_cls:
+  ld    a, GPU_CLS_COMMAND
+  out   (GPU_COMMAND), a
+  ret
+
+;===============================================================================
+; gpu_set_colour - Select the colour on the active screen
+;===============================================================================
+
+;; There are 8 colours available at any time in the GPU.  Each colour is a pair
+;; of foreground and background values selected from a possible range of 64
+;; visible colours.  This command selects which of the eight
+;; foreground/background colour pairs from the current colour map will be used
+;; when printing characters to the active screen.\\
+;; The colour to use is passed in *A* and is masked to a value 0-7.
+
+gpu_set_colour:
+  and   $07             ; colour is 3 bit so mask to 3 bits
+  add   a, GPU_COLOUR_COMMAND     ; add the command mask
+  or    $08             ; set bit 3 (the set rather than get bit)
+  out   (GPU_COMMAND), a
+  ret
+
+;===============================================================================
+; gpu_get_colour - Return the active colour from the GPU
+;===============================================================================
+
+;; This command queries the GPU to find out what the active colour is.  This
+;; colour index is returned in *A* and must be in the range 0-7.  The actual
+;; colour this represents depends on the colour map of the GPU at the time of
+;; the request.
+
+gpu_get_colour:
+  ld    a, GPU_COLOUR_COMMAND
+  out   (GPU_COMMAND), a
+  ; now reading GPU_COMMAND should return the colour
+  in    a, (GPU_COMMAND)
+  ret
+
+gpu_set_column:
+  ; set the cursor to a specific column
+  ; column is in a, no other registers are affected
+  push  af              ; shove a on the stack for a minute
+  ld    a, GPU_COLUMN_COMMAND
+  or    $08             ; make this a set command
+  out   (GPU_COMMAND), a
+  pop   af              ; get the column back from the stack
+  out   (GPU_COMMAND), a
+  ret
+
+gpu_get_column:
+  ; get the current column from the GPU
+  ; column is returned in a, no other registers are affected
+  ld    a, GPU_COLUMN_COMMAND
+  out   (GPU_COMMAND), a
+  ; reading GPU_COMMAND should return the column index now
+  in    a, (GPU_COMMAND)
+  ret
+
+gpu_set_row:
+  ; set the current row in the GPU
+  ; a contains the target row, no other registers are affected
+  push  af
+  ld    a, GPU_ROW_COMMAND
+  or    $08             ; make it a set command
+  out   (GPU_COMMAND), a
+  pop   af
+  out   (GPU_COMMAND), a
+  ret
+
+gpu_get_row:
+  ; get the current row from the GPU
+  ; row is returned in a, no other registers are affected
+  ld    a, GPU_ROW_COMMAND
+  out   (GPU_COMMAND), a
+  ; reading GPU_COMMAND should now return the row
+  in    a, (GPU_COMMAND)
+  ret
+
+gpu_set_active:
+  ; set which is the active screen in the GPU
+  ; a contains the number of the screen to switch to, no other registers are affected
+  and   $07             ; maximum of 8 screens
+  add   a, GPU_ACTIVE_COMMAND
+  out   (GPU_COMMAND), a
+  ret
+
+gpu_set_vga:
+  ; set which screen is displayed on the VGA output
+  ; a contains the screen number to display
+  and   $07
+  add   a, GPU_SELECT_COMMAND
+  out   (GPU_COMMAND), a
+  ret
+
+gpu_set_tv:
+  ; set which screen is displayed on the VGA output
+  ; a contains the screen number to display
+  and   $03
+  add   a, GPU_SELECT_COMMAND
+  or    $08          ; select the TV screen
+  out   (GPU_COMMAND), a
+  ret
+
+;===============================================================================
+; gpu_str - Print a null terminated string
+;===============================================================================
+
+;; *HL* is a pointer to the first byte of a null-terinated string.  The bytes
+;; are sent un-altered to the data port of the GPU until a null is found which
+;; causes the function to return.  *A* is altered during this function, *HL* is
+;; incremented to the end of the string, no other registers or memory locations
+;; will be written.
+
+gpu_str:
+  ld    a, (hl)         ; load a byte from the string
+  xor   0               ; this sets the Z flag if zero but doesn't affect a
+  ret   z               ; if the byte is zero that's the end of the string
+  out   (GPU_DATA), a   ; write the byte to the GPU as data
+  inc   hl              ; increment the pointer
+  jp    gpu_str         ; get the next byte
+
+;===============================================================================
+; gpu_dec - Print a decimal value to the screen, maximum of 32bit input
+;===============================================================================
+
+;; This prints a decimal representation (in ASCII characters 0-9) of a numerical
+;; value to the screen.  The number should be a normal binary number (to print
+;; BCD, call gpu_hex).  The source is not affected, but the maths registers are
+;; used for the conversion to BCD.  HL is a pointer to the source number, *B*
+;; contains the number of ASCII characters (counted from the least significant
+;; up) to print to the screen, *A* contains a number of bytes long the number to
+;; convert is (can be 1, 2, 3 or 4).  If *A* is zero or 5 or more then 32bit is
+;; assumed.
+
+gpu_dec:
+
+  ; hl is pointing at the number, b is the number of characters, a is the length
+  ; of the binary, need to check a for sanity
+
+  xor           0
+  jr            nz, gpu_dec_valid_a
+  ld            a, 4
+gpu_dec_valid_a:
+  dec           a
+  and           $3              ; quickest way to make sure it's 1-4
+  inc           a
+  call          maths_bin_to_bcd        ; convert to BCD
+  ld            hl, maths_op_c          ; where the BCD number is
+  ld            a, b                    ; number of characters to print
+  call          gpu_hex
+  ret
+
+;===============================================================================
+; gpu_hex - Print a hex representation of a number
+;===============================================================================
+
+;; This function sends ASCII characters representing 4 bit values to the GPU to
+;; display binary values from memory.  *HL* contains a pointer to the location
+;; in memory of the bytes to represent, *A* contains a number of Hex digits to
+;; print.  When called the function starts printing nibbles from *A* above *HL*
+;; and moves down.  *HL* is not altered by this function, neither is the memory
+;; that is printed.  This function can also be used to print BCD values
+;; directly.
+
+gpu_hex_high:
+  push          bc
+  push          de
+  push          hl
+
+  ld            c, $80          ; highlight characters
+  jr            gpu_hex_enter
+
+gpu_hex:
+  push          bc
+  push          de
+  push          hl
+  ld            c, $00
+
+gpu_hex_enter:
+  ; calculate the start byte
+  ld            b, a            ; save for later
+
+  and           $fe             ; mask
+  rrca                          ; divide 2 (two digits/byte)
+  bit           0, b            ; see if it's even, and dec byte if so
+  jr            nz, gpu_hex_setup
+  dec           a
+gpu_hex_setup:
+  add           a, l
+  jr            nc, gpu_hex_setup_nc
+  inc           h
+gpu_hex_setup_nc:
+  ld            l, a
+
+gpu_hex_loop:
+  ld            a, (hl)
+
+  bit           0,b
+  jr            z, gpu_hex_even_loop
+gpu_hex_odd_loop:
+  dec           hl
+  jr            gpu_hex_main_loop
+
+gpu_hex_even_loop:
+  rrca
+  rrca
+  rrca
+  rrca
+
+gpu_hex_main_loop:
+  ld            de, gpu_hex_lut
+  and           $f
+  add           a, e
+  jr            NC, gpu_hex_loop_on
+  inc           d
+gpu_hex_loop_on:
+  ld            e, a
+  ld            a, (de)
+  or            c                       ; set c=$80 to highlight
+  out           (GPU_DATA), a
+
+  djnz          gpu_hex_loop
+
+  pop           hl
+  pop           de
+  pop           bc
+  ret
+
+;*******************************************************************************
+; gpu_hex_lut - 16 byte lookup to convert one 4 bit value to an ASCII character
+;*******************************************************************************
+
+;; Since ASCII characters A-F do not follow 0-9 normally this is provided as a
+;; lookup to convert a 4 bit value to ASCII.\\
+;;
+;; Access: Read-only
+
+gpu_hex_lut:
+  defm '0123456789ABCDEF'
+
+gpu_variable:
+  ds    10                       ; 2 bytes used as parameter to all gpu_functions that take
+                                ; values in

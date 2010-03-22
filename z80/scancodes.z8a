@@ -1,0 +1,133 @@
+CC_0:           equ $00
+CC_1:           equ $01
+CC_2:           equ $02
+CC_3:           equ $03
+CC_4:           equ $04
+CC_5:           equ $05
+CC_6:           equ $06
+CC_7:           equ $07
+CC_8:           equ $08
+CC_9:           equ $09
+CC_A:           equ $0A
+CC_B:           equ $0B
+CC_C:           equ $0C
+CC_D:           equ $0D
+CC_E:           equ $0E
+CC_F:           equ $0F
+CC_G:           equ $10
+CC_H:           equ $11
+CC_I:           equ $12
+CC_J:           equ $13
+CC_K:           equ $14
+CC_L:           equ $15
+CC_M:           equ $16
+CC_N:           equ $17
+CC_O:           equ $18
+CC_P:           equ $19
+CC_Q:           equ $1A
+CC_R:           equ $1B
+CC_S:           equ $1C
+CC_T:           equ $1D
+CC_U:           equ $1E
+CC_V:           equ $1F
+CC_W:           equ $20
+CC_X:           equ $21
+CC_Y:           equ $22
+CC_Z:           equ $23
+CC_LQ:          equ $24	;`
+CC_DSH:         equ $25        ;-
+CC_EQ:          equ $26	;=
+CC_LSB:         equ $27        ;[
+CC_RSB:         equ $28        ;]
+CC_AP:          equ $29	;'
+CC_CM:          equ $2A	;,
+CC_FS:          equ $2B	;.
+CC_WS:          equ $2C	;\
+CC_US:          equ $2D	;/
+CC_SC:          equ $2E	;;
+CC_SP:          equ $2F	;SPACE
+CC_TAB:         equ $30	;TAB
+CC_ENTER:       equ $31	;ENTER
+CC_KPE:         equ $32        ;Key pad ENTER
+CC_DEL:         equ $33	;DELETE
+CC_BKSP:        equ $34	;BACKSPACE
+
+CC_ESC:         equ $80	;ESCAPE
+CC_F1:          equ $81
+CC_F2:          equ $82
+CC_F3:          equ $83
+CC_F4:          equ $84
+CC_F5:          equ $85
+CC_F6:          equ $86
+CC_F7:          equ $87
+CC_F8:          equ $88
+CC_F9:          equ $89
+CC_F10:         equ $8A
+CC_F11:         equ $8B
+CC_F12:         equ $8C
+CC_PRINT:       equ $8D
+CC_SCROLL:      equ $8E
+CC_PAUSE:       equ $8F
+CC_NUM:         equ $90
+CC_CAPS:        equ $91
+CC_LSHIFT:      equ $92
+CC_RSHIFT:      equ $93
+CC_CTRL:        equ $94
+CC_CTRLR:       equ $95
+CC_ALT:         equ $96
+CC_ALTR:        equ $97
+CC_GUIL:        equ $98
+CC_GUIR:        equ $99
+CC_APPS:        equ $9A
+CC_INS:         equ $9B
+CC_HOME:        equ $9C
+CC_END:         equ $9D
+CC_PGUP:        equ $9E
+CC_PGDN:        equ $9F
+CC_PSF:         equ $A0
+CC_PSR:         equ $A1
+; A3 is £ symbol in character set, don't use it here
+CC_LEFT:        equ $A4
+CC_RIGHT:       equ $A5
+CC_UP:          equ $A6
+CC_DOWN:        equ $A7
+; media keys
+CC_MNXT:        equ $A7        ; media next
+CC_MPRV:        equ $A8        ; media previous
+CC_MPP:         equ $A9        ; media play/pause
+CC_MSTP:        equ $AA        ; media stop
+CC_MMT:         equ $AB        ; media mute
+CC_MVU:         equ $AC        ; media volume up
+CC_MVD:         equ $AD        ; media volume down
+CC_MSL:         equ $AE        ; media select
+CC_MEM:         equ $AF        ; media email
+; B0 is the degrees symbol, mapped to a key
+CC_MCLC:        equ $B1        ; media calculator
+CC_MCMP:        equ $B2        ; media my computer
+CC_MSRCH:       equ $B3        ; media web search
+CC_MHOME:       equ $B4        ; media web home
+CC_MBCK:        equ $B5        ; media web back
+CC_MFWD:        equ $B6        ; media web forward
+CC_MWSP:        equ $B7        ; media web stop
+CC_MRFSH:       equ $B8        ; media web refresh
+CC_MFV:         equ $B9        ; media web favourites
+; acpi control codes
+CC_PWR:         equ $BA        ; power
+CC_SLP:         equ $BB        ; sleep
+CC_WK:          equ $BC        ; wake
+
+CC_KP0:         equ $C0
+CC_KP1:         equ $C1
+CC_KP2:         equ $C2
+CC_KP3:         equ $C3
+CC_KP4:         equ $C4
+CC_KP5:         equ $C5
+CC_KP6:         equ $C6
+CC_KP7:         equ $C7
+CC_KP8:         equ $C8
+CC_KP9:         equ $C9
+CC_KPD:         equ $CA	;.
+CC_KPS:         equ $CB	;*
+CC_KPP:         equ $CC	;+
+CC_KPM:         equ $CD	;-
+CC_KPSL:        equ $CE        ;/

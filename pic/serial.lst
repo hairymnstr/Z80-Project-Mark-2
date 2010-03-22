@@ -1,0 +1,2277 @@
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00001 ;==============================================================================
+               00002 ;    serial.asm
+               00003 ;==============================================================================
+               00004 
+               00005 list p=18f4520
+               00006 #include <p18f4520.inc>
+               00001         LIST
+               00002 
+               00003 ;==========================================================================
+               00004 ;  MPASM PIC18F4520 processor include
+               00005 ; 
+               00006 ;  (c) Copyright 1999-2007 Microchip Technology, All rights reserved
+               00007 ;==========================================================================
+               00008 
+               01336         LIST
+               00007 
+               00008 ; -- Externals From main.asm --------------------------------------------------
+               00009     extern      MAIN_TEMP
+               00010 
+               00011 ; -- Externals From host_bus.asm ----------------------------------------------
+               00012     extern      HI_ADDR
+               00013     extern      LO_ADDR
+               00014     extern      DREG
+               00015 
+               00016     extern      ensure_master
+               00017     extern      revert_master
+               00018     extern      io_read
+               00019     extern      io_write
+               00020     extern      mem_read
+               00021     extern      mem_write
+               00022     extern      get_reset
+               00023     extern      get_slave
+               00024     extern      get_dma
+               00025 
+               00026 ; -- Externals From boot.asm --------------------------------------------------
+               00027     extern      boot_update
+               00028 
+               00029   UDATA
+               00030 
+               00031 RX_MODE RES     1
+               00032 ; -- RX MODE CONSTANTS --------------------------------------------------------
+  00000000     00033 RX_COM  EQU     0
+  00000001     00034 RX_LEN  EQU     1
+  00000002     00035 RX_DAT  EQU     2
+  00000003     00036 RX_CKS  EQU     3
+  00000004     00037 RX_BSY  EQU     4
+               00038 
+               00039 RX_COMMAND      RES     1
+               00040 RX_COUNT        RES     1
+               00041 RX_CHECKSUM     RES     1
+               00042 RX_FLAGS        RES     1
+               00043 ; -- FLAG VALUES --------------------------------------------------------------
+  00000001     00044 CHECKSUM_FAIL   EQU     0x01
+               00045 
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00046 TX_CHECKSUM     RES     1
+               00047 TX_COUNT        RES     1
+               00048 JUMP_REG        RES     1
+               00049   
+               00050   CODE
+               00051 ;== Serial Console Functions ==================================================
+               00052 
+               00053 ;******************************************************************************
+               00054 ;*                                                                            *
+               00055 ;* serial_init - set up the serial port for PC comms                          *
+               00056 ;*                                                                            *
+               00057 ;* Inputs:  NONE                                                              *
+               00058 ;* Outputs: NONE                                                              *
+               00059 ;* Called:                                                                    *
+               00060 ;* Changes: SPBRG, RCSTA, TXSTA, BAUDCON, TRISC, RCON, PIR1, PIE1, INTCON     *
+               00061 ;*                                                                            *
+               00062 ;******************************************************************************
+               00063 
+0000 00064 serial_init
+0000 6A00      00065     clrf        RX_FLAGS
+0002 0E01      00066     movlw       0x01
+0004 6EEA      00067     movwf       FSR0H           ; set FSR0 to BANK1, RX Buffer
+0006 6AE9      00068     clrf        FSR0L
+0008 0E02      00069     movlw       0x02
+000A 6EE2      00070     movwf       FSR1H           ; set FSR1 to BANK2, TX Buffer
+000C 6AE1      00071     clrf        FSR1L
+000E 0E00      00072     movlw       RX_COM
+0010 6E00      00073     movwf       RX_MODE         ; set RX_MODE to look for a command
+               00074     ; first make sure that the RX and TX are both set input, hardware changes
+               00075     ; this once the UART is enabled
+0012 0EC0      00076     movlw       b'11000000'
+0014 1294      00077     iorwf       TRISC,f
+               00078 
+               00079     ; next set the UART up
+0016 0E10      00080     movlw       0x10
+0018 6EAF      00081     movwf       SPBRG
+001A 0E04      00082     movlw       0x04
+001C 6EB0      00083     movwf       SPBRGH          ; 9600 baud high speed 16 bit mode
+001E 0E24      00084     movlw       b'00100100'     ; enable sending, 8-bit, high speed baud rate
+0020 6EAC      00085     movwf       TXSTA
+0022 0E10      00086     movlw       b'00010000'     ; enable receiving 8-bit
+0024 6EAB      00087     movwf       RCSTA
+0026 0E08      00088     movlw       b'00001000'     ; no-auto sensing - 16 bit baud rate
+0028 6EB8      00089     movwf       BAUDCON
+002A 8EAB      00090     bsf         RCSTA,SPEN      ; enable the serial port
+               00091 
+               00092     ; set up interrupt on receive
+002C 8ED0      00093     bsf         RCON, IPEN
+002E 9A9E      00094     bcf         PIR1, RCIF
+0030 8A9D      00095     bsf         PIE1, RCIE
+0032 8EF2      00096     bsf         INTCON, GIEH    ; enable global interrupts
+0034 0012      00097     return
+               00098 
+               00099 ;******************************************************************************
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00100 ;*                                                                            *
+               00101 ;* serial_send - send the contents of W via the UART                          *
+               00102 ;*                                                                            *
+               00103 ;* Inputs:  Byte to send in W                                                 *
+               00104 ;* Outputs: NONE                                                              *
+               00105 ;* Called:                                                                    *
+               00106 ;* Changes: TXREG                                                             *
+               00107 ;*                                                                            *
+               00108 ;******************************************************************************
+               00109 
+0036 00110 serial_send
+0036 A89E      00111     btfss PIR1,TXIF     ;test transmit interrupt flag
+0038 D000      00112     bra serial_send     ;if clear, TXREG is full
+003A 6EAD      00113     movwf TXREG         ;if set, TXREG is empty, so copy data into it
+003C 0012      00114     return
+               00115 
+               00116 ; -- serial_tx_send_packet ----------------------------------------------------
+               00117 
+003E 00118 serial_tx_send_packet
+               00119     ; send a whole message packet from the TX Buffer
+               00120     ; first set the TX pointer to the start of the buffer
+003E 6AE1      00121     clrf        FSR1L
+               00122     ; send the first byte (the command code)
+0040 50E6      00123     movf        POSTINC1,w
+0042 EC00 F000 00124     call        serial_send
+               00125     ; now send the length byte, and initialise the counter
+0046 50E6      00126     movf        POSTINC1,w
+0048 EC00 F000 00127     call        serial_send
+004C 6E00      00128     movwf       TX_COUNT
+               00129 
+004E 0BFF      00130     andlw       0xFF
+0050 E000      00131     bz          serial_tx_send_packet_checksum  ; if length is zero skip data loop
+               00132     ; now we loop over send and decrement the counter
+0052 00133 serial_tx_send_packet_data_loop
+0052 50E6      00134     movf        POSTINC1,w
+0054 EC00 F000 00135     call        serial_send
+0058 2E00      00136     decfsz      TX_COUNT,f
+005A D000      00137     bra         serial_tx_send_packet_data_loop
+               00138     
+005C 00139 serial_tx_send_packet_checksum
+005C 9A8B      00140     bcf         LATC,5
+               00141     ; lastly send the checksum
+005E 50E6      00142     movf        POSTINC1,w
+0060 EC00 F000 00143     call        serial_send
+               00144 
+               00145     ; done, return
+0064 0012      00146     return
+               00147 
+               00148 ;******************************************************************************
+               00149 ;*                                                                            *
+               00150 ;* serial_rx_int - UART receive interrupt routine                             *
+               00151 ;*                                                                            *
+               00152 ;* Inputs:  None                                                              *
+               00153 ;* Outputs: None                                                              *
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00154 ;* Called:                                                                    *
+               00155 ;* Changes: PIR1, w                                                           *
+               00156 ;*                                                                            *
+               00157 ;******************************************************************************
+               00158 
+               00159 ; called later but must be on before the page to avoid relative branch errors
+               00160 ; !! deprecated !!
+               00161 ; serial_nak_exit
+               00162 ;     movlw       0x15
+               00163 ;     call        serial_send
+               00164 ;     return
+               00165 
+0066 00166 serial_rx_int_error
+0066 98AB      00167     bcf         RCSTA,CREN              ;clear the CREN bit to clear errors
+0068 0E15      00168     movlw       0x15                    ;prepare a NAK symbol
+006A EC00 F000 00169     call        serial_send             ;and send it
+006E 88AB      00170     bsf         RCSTA,CREN              ;re-enable receiving
+0070 50AE      00171     movf        RCREG,w                 ;have to read the RCREG to clear the interrupt
+0072 0012      00172     return
+               00173 
+0074 00174 serial_rx_int
+0074 0E06      00175     movlw       b'00000110'
+0076 14AB      00176     andwf       RCSTA,w                 ;test if either of the error bits are set
+0078 E100      00177     bnz         serial_rx_int_error     ;if result is not zero an error occurred
+007A 00178 serial_rx_int_no_error                  ;if no error occurred, just echo input
+               00179 
+               00180     ; if RX_MODE & FC != 0 -> error message, busy
+007A 0EFC      00181     movlw       0xFC                    ; three non-busy modes
+007C 1400      00182     andwf       RX_MODE,w               ; don't change the RX_MODE
+007E E100      00183     bnz         serial_rx_int_error     ; busy mode so reply NAK, we don't want data at the moment
+               00184 
+0080 0E00      00185     movlw       UPPER serial_rx_jump_table
+0082 6EFB      00186     movwf       PCLATU
+0084 0E00      00187     movlw       HIGH serial_rx_jump_table
+0086 6EFA      00188     movwf       PCLATH
+0088 5000      00189     movf        RX_MODE,w
+008A 46E8      00190     rlncf       WREG,f
+008C 46E8      00191     rlncf       WREG,f
+008E EF00 F000 00192     goto        serial_rx_jump_table
+               00193 
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE  5
+
+
+               00194     PAGE            ; doing a jump table need to make sure it's all in one page of memory
+               00195 
+0092 00196 serial_rx_jump_table
+0092 26F9      00197     addwf       PCL,f
+0094 EF00 F000 00198     goto        serial_rx_command       ;0
+0098 EF00 F000 00199     goto        serial_rx_length        ;1
+009C EF00 F000 00200     goto        serial_rx_data          ;2
+00A0 EF00 F000 00201     goto        serial_rx_checksum      ;3
+               00202 
+               00203 ;command byte
+00A4 00204 serial_rx_command
+               00205     ; store the command
+00A4 50AE      00206     movf        RCREG,w
+00A6 6E00      00207     movwf       RX_COMMAND    
+               00208     ; put it in the RX buffer
+00A8 6EEE      00209     movwf       POSTINC0
+               00210     ; also store it to start the checksum
+00AA 6E00      00211     movwf       RX_CHECKSUM
+               00212     ; change to length mode
+00AC 2A00      00213     incf        RX_MODE,f
+               00214     ; return
+00AE 0012      00215     return
+               00216 
+               00217 ; length byte
+00B0 00218 serial_rx_length
+               00219     ; set the byte count
+00B0 50AE      00220     movf        RCREG,w
+00B2 6E00      00221     movwf       RX_COUNT
+               00222     ; store this in the RX buffer too
+00B4 6EEE      00223     movwf       POSTINC0
+               00224     ; xor the length for checksum
+00B6 1A00      00225     xorwf       RX_CHECKSUM,f
+               00226     ; change to data mode
+00B8 2A00      00227     incf        RX_MODE,f
+               00228     ; if the byte count is 0 skip data mode
+00BA 0E00      00229     movlw       0x00
+00BC 6200      00230     cpfseq      RX_COUNT
+00BE 0012      00231     return
+00C0 2A00      00232     incf        RX_MODE,f       ; inc to checksum mode
+00C2 0012      00233     return
+               00234 
+00C4 00235 serial_rx_data
+               00236     ; store the data byte in the indirect register
+00C4 50AE      00237     movf        RCREG,w
+00C6 6EEE      00238     movwf       POSTINC0
+               00239     ; update the checksum
+00C8 1A00      00240     xorwf       RX_CHECKSUM,f
+               00241     ; decrement the byte counter
+00CA 2E00      00242     decfsz      RX_COUNT,f
+00CC 0012      00243     return
+               00244     ; if execution got here the full count of bytes is done
+00CE 2A00      00245     incf        RX_MODE,f       ; inc to checksum mode
+00D0 0012      00246     return
+               00247 
+00D2 00248 serial_rx_checksum
+00D2 50AE      00249     movf        RCREG,w
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00250     ; keep a copy in the RX buffer
+00D4 6EEE      00251     movwf       POSTINC0
+               00252     ; do an xor with the calculated checksum so far, should result in zero
+00D6 1A00      00253     xorwf       RX_CHECKSUM,f
+00D8 E000      00254     bz          serial_rx_checksum_passed
+               00255     ; if execution got here the checksum failed
+00DA 1A00      00256     xorwf       RX_CHECKSUM,f           ; return to the calculated checksum for debug
+00DC 8200      00257     bsf         RX_FLAGS,CHECKSUM_FAIL  ; set a flag
+00DE 2A00      00258     incf        RX_MODE,f               ; switch to busy mode
+00E0 6AE9      00259     clrf        FSR0L                   ; reset the RX pointer
+00E2 0012      00260     return
+               00261 
+00E4 00262 serial_rx_checksum_passed
+               00263     ; checksum okay, set busy mode and exit
+00E4 2A00      00264     incf        RX_MODE,f
+00E6 6AE9      00265     clrf        FSR0L
+00E8 0012      00266     return
+               00267 
+               00268 ; -- End of interrupt routines ------------------------------------------------
+               00269 
+               00270 ;******************************************************************************
+               00271 ;*                                                                            *
+               00272 ;*      serial_command_dispatch - checks command and branches to appropriate  *
+               00273 ;*                                routine                                     *
+               00274 ;*                                                                            *
+               00275 ;*      Called from the main loop to deal with any complete commands          *
+               00276 ;*                                                                            *
+               00277 ;******************************************************************************
+               00278 
+00EA 00279 serial_command_dispatch
+               00280     ; first check if there is a command
+00EA A400      00281     btfss       RX_MODE,2       ; if bit 2 is set (mode 4 == RX_BUSY) there is a command ready
+00EC 0012      00282     return                      ; otherwise nothing to do here
+               00283     ; next see if there was an error in the checksum
+00EE B200      00284     btfsc       RX_FLAGS,CHECKSUM_FAIL
+00F0 EF00 F000 00285     goto        serial_error_checksum           ; if there was report the error
+               00286     ; no error, so check the command is within bounds
+00F4 0EE0      00287     movlw       0xE0
+00F6 1400      00288     andwf       RX_COMMAND,w
+00F8 A4D8      00289     btfss       STATUS,Z
+00FA EF00 F000 00290     goto        serial_error_bad_command        ; command was more than 31
+               00291     ; We know RX_COMMAND is a valid command now.  Jump
+00FE 0E00      00292     movlw       UPPER serial_command_jump_table
+0100 6EFB      00293     movwf       PCLATU
+0102 0E00      00294     movlw       HIGH serial_command_jump_table
+0104 6EFA      00295     movwf       PCLATH
+0106 5000      00296     movf        RX_COMMAND,w
+0108 46E8      00297     rlncf       WREG,f
+010A 46E8      00298     rlncf       WREG,f
+010C EF00 F000 00299     goto        serial_command_jump_table
+               00300 
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE  7
+
+
+               00301     PAGE
+               00302 
+0110 00303 serial_command_jump_table
+0110 26F9      00304     addwf       PCL,f
+0112 EF00 F000 00305     goto        serial_error_unused_command     ; 00
+0116 EF00 F000 00306     goto        serial_error_unused_command     ; 01
+011A EF00 F000 00307     goto        serial_read_mem                 ; 02
+011E EF00 F000 00308     goto        serial_write_mem                ; 03
+0122 EF00 F000 00309     goto        serial_block_mem_read           ; 04
+0126 EF00 F000 00310     goto        serial_block_mem_write          ; 05
+012A EF00 F000 00311     goto        serial_read_io                  ; 06
+012E EF00 F000 00312     goto        serial_write_io                 ; 07
+0132 EF00 F000 00313     goto        serial_bios_update              ; 08
+0136 EF00 F000 00314     goto        serial_do_commands              ; 09
+013A EF00 F000 00315     goto        serial_error_unused_command     ; 0A
+013E EF00 F000 00316     goto        serial_error_unused_command     ; 0B
+0142 EF00 F000 00317     goto        serial_error_unused_command     ; 0C
+0146 EF00 F000 00318     goto        serial_error_unused_command     ; 0D
+014A EF00 F000 00319     goto        serial_error_unused_command     ; 0E
+014E EF00 F000 00320     goto        serial_error_unused_command     ; 0F
+0152 EF00 F000 00321     goto        serial_error_unused_command     ; 10
+0156 EF00 F000 00322     goto        serial_error_unused_command     ; 11
+015A EF00 F000 00323     goto        serial_error_unused_command     ; 12
+015E EF00 F000 00324     goto        serial_error_unused_command     ; 13
+0162 EF00 F000 00325     goto        serial_error_unused_command     ; 14
+0166 EF00 F000 00326     goto        serial_error_unused_command     ; 15
+016A EF00 F000 00327     goto        serial_error_unused_command     ; 16
+016E EF00 F000 00328     goto        serial_error_unused_command     ; 17
+0172 EF00 F000 00329     goto        serial_error_unused_command     ; 18
+0176 EF00 F000 00330     goto        serial_error_unused_command     ; 19
+017A EF00 F000 00331     goto        serial_error_unused_command     ; 1A
+017E EF00 F000 00332     goto        serial_error_unused_command     ; 1B
+0182 EF00 F000 00333     goto        serial_error_unused_command     ; 1C
+0186 EF00 F000 00334     goto        serial_error_unused_command     ; 1D
+018A EF00 F000 00335     goto        serial_error_unused_command     ; 1E
+018E EF00 F000 00336     goto        serial_error_unused_command     ; 1F
+               00337 
+               00338 ; -- serial command functions -------------------------------------------------
+               00339 
+0192 00340 serial_read_io
+               00341     ; read a single IO port to the serial host
+               00342     ; Address   2 bytes be
+               00343     ; check that the command argument length is right
+0192 50EE      00344     movf        POSTINC0,w              ; command, just move the pointer
+0194 0E02      00345     movlw       0x02                    ; correct number of bytes
+0196 6E00      00346     movwf       MAIN_TEMP               ; put it in temp for error report
+0198 18EE      00347     xorwf       POSTINC0,w              ; check that the length is right
+019A A4D8      00348     btfss       STATUS,Z
+019C EF00 F000 00349     goto        serial_error_wrong_parameters   ; long bnz
+               00350 ;    bnz         serial_error_wrong_parameters   ; not zero so not equal, report
+               00351     ; got here so length is good
+               00352 
+               00353     ; make sure we can do Z80 bus operations
+01A0 EC00 F000 00354     call        ensure_master
+               00355 
+01A4 50EE      00356     movf        POSTINC0,w
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+01A6 6E00      00357     movwf       HI_ADDR
+01A8 50EE      00358     movf        POSTINC0,w
+01AA 6E00      00359     movwf       LO_ADDR
+               00360     ; do the IO read
+01AC EC00 F000 00361     call        io_read
+               00362 
+               00363     ; now return to previous master/slave mode
+01B0 EC00 F000 00364     call        revert_master
+               00365 
+               00366     ; now build a serial packet and return it to the host
+01B4 6AE1      00367     clrf        FSR1L
+               00368     ; reply with the command
+01B6 5000      00369     movf        RX_COMMAND,w
+01B8 6EE6      00370     movwf       POSTINC1
+01BA 6E00      00371     movwf       TX_CHECKSUM
+               00372     ; now the length (1 byte)
+01BC 0E01      00373     movlw       0x01
+01BE 6EE6      00374     movwf       POSTINC1
+01C0 1A00      00375     xorwf       TX_CHECKSUM,f
+               00376     ; now the actual data
+01C2 5000      00377     movf        DREG,w
+01C4 6EE6      00378     movwf       POSTINC1
+01C6 1A00      00379     xorwf       TX_CHECKSUM,f
+               00380     ; finally add the checksum to the packet
+01C8 5000      00381     movf        TX_CHECKSUM,w
+01CA 6EE6      00382     movwf       POSTINC1
+               00383 
+01CC EC00 F000 00384     call        serial_tx_send_packet
+               00385 
+01D0 EF00 F000 00386     goto        serial_handler_exit
+               00387 
+01D4 00388 serial_write_io
+               00389     ; write a single IO port from the serial host
+               00390     ; Address   2 bytes be
+               00391     ; Data      1 byte
+               00392     ; check that the command argument length is right
+01D4 50EE      00393     movf        POSTINC0,w              ; command, just move the pointer
+01D6 0E03      00394     movlw       0x03                    ; correct number of bytes
+01D8 6E00      00395     movwf       MAIN_TEMP               ; put it in temp for error report
+01DA 18EE      00396     xorwf       POSTINC0,w              ; check that the length is right
+01DC A4D8      00397     btfss       STATUS,Z                ; long bnz
+01DE EF00 F000 00398     goto        serial_error_wrong_parameters
+               00399 ;    bnz         serial_error_wrong_parameters   ; not zero so not equal, report
+               00400     ; got here so length is good
+               00401 
+               00402     ; make sure we can do Z80 bus operations
+01E2 EC00 F000 00403     call        ensure_master
+               00404 
+01E6 50EE      00405     movf        POSTINC0,w
+01E8 6E00      00406     movwf       HI_ADDR
+01EA 50EE      00407     movf        POSTINC0,w
+01EC 6E00      00408     movwf       LO_ADDR
+01EE 50EE      00409     movf        POSTINC0,w
+01F0 6E00      00410     movwf       DREG
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00411     ; do the IO write
+01F2 EC00 F000 00412     call        io_write
+               00413 
+               00414     ; now return to previous master/slave mode
+01F6 EC00 F000 00415     call        revert_master
+               00416 
+               00417     ; now build a serial packet and return it to the host (just an ack)
+01FA 6AE1      00418     clrf        FSR1L
+               00419     ; reply with the command
+01FC 5000      00420     movf        RX_COMMAND,w
+01FE 6EE6      00421     movwf       POSTINC1
+0200 6E00      00422     movwf       TX_CHECKSUM
+               00423     ; now the length (0 bytes)
+0202 0E00      00424     movlw       0x00
+0204 6EE6      00425     movwf       POSTINC1
+0206 1A00      00426     xorwf       TX_CHECKSUM,f
+               00427     ; finally add the checksum to the packet
+0208 5000      00428     movf        TX_CHECKSUM,w
+020A 6EE6      00429     movwf       POSTINC1
+               00430 
+020C EC00 F000 00431     call        serial_tx_send_packet
+               00432 
+0210 EF00 F000 00433     goto        serial_handler_exit
+               00434 
+0214 00435 serial_read_mem
+               00436     ; read a single byte from system memory
+               00437     ; Address   2 byte be
+               00438 
+0214 50EE      00439     movf        POSTINC0,w      ; dump the command byte
+0216 0E02      00440     movlw       0x02            ; correct number of bytes
+0218 6E00      00441     movwf       MAIN_TEMP       ; put it in temp for error report
+021A 18EE      00442     xorwf       POSTINC0,w      ; check the byte length of the command
+021C A4D8      00443     btfss       STATUS,Z        ; long bnz
+021E EF00 F000 00444     goto        serial_error_wrong_parameters
+               00445 
+               00446     ; make sure we can do Z80 bus operations
+0222 EC00 F000 00447     call        ensure_master
+               00448 
+0226 50EE      00449     movf        POSTINC0,w
+0228 6E00      00450     movwf       HI_ADDR
+022A 50EE      00451     movf        POSTINC0,w
+022C 6E00      00452     movwf       LO_ADDR
+               00453 
+022E EC00 F000 00454     call        mem_read
+               00455 
+0232 EC00 F000 00456     call        revert_master
+               00457 
+               00458     ; reset the send buffer pointer
+0236 6AE1      00459     clrf        FSR1L
+               00460     ; reply with the command
+0238 5000      00461     movf        RX_COMMAND,w
+023A 6EE6      00462     movwf       POSTINC1
+023C 6E00      00463     movwf       TX_CHECKSUM
+               00464     ; now the packet length (1 byte of data)
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+023E 0E01      00465     movlw       0x01
+0240 6EE6      00466     movwf       POSTINC1
+0242 1A00      00467     xorwf       TX_CHECKSUM,f
+               00468     ; now the data byte
+0244 5000      00469     movf        DREG,w
+0246 6EE6      00470     movwf       POSTINC1
+0248 1A00      00471     xorwf       TX_CHECKSUM,f
+               00472     ; finally the checksum
+024A 5000      00473     movf        TX_CHECKSUM,w
+024C 6EE6      00474     movwf       POSTINC1
+               00475     
+024E EC00 F000 00476     call        serial_tx_send_packet
+               00477 
+0252 EF00 F000 00478     goto        serial_handler_exit
+               00479 
+0256 00480 serial_write_mem
+               00481     ; write a single byte to system memory
+               00482     ; Address   2 byte be
+               00483     ; Data      1 byte
+               00484 
+0256 50EE      00485     movf        POSTINC0,w
+0258 0E03      00486     movlw       0x03            ; correct number of bytes
+025A 6E00      00487     movwf       MAIN_TEMP
+025C 18EE      00488     xorwf       POSTINC0,w
+025E A4D8      00489     btfss       STATUS,Z
+0260 EF00 F000 00490     goto        serial_error_wrong_parameters
+               00491 
+               00492     ; make sure we can do Z80 bus operations
+0264 EC00 F000 00493     call        ensure_master
+               00494 
+0268 50EE      00495     movf        POSTINC0,w
+026A 6E00      00496     movwf       HI_ADDR
+026C 50EE      00497     movf        POSTINC0,w
+026E 6E00      00498     movwf       LO_ADDR
+0270 50EE      00499     movf        POSTINC0,w
+0272 6E00      00500     movwf       DREG
+               00501 
+0274 EC00 F000 00502     call        mem_write
+               00503 
+0278 EC00 F000 00504     call        revert_master
+               00505 
+027C 6AE1      00506     clrf        FSR1L
+               00507 
+027E 5000      00508     movf        RX_COMMAND,w
+0280 6EE6      00509     movwf       POSTINC1
+0282 6E00      00510     movwf       TX_CHECKSUM
+               00511     ; now the packet length (0 bytes, this is just an ACK)
+0284 0E00      00512     movlw       0x00
+0286 6EE6      00513     movwf       POSTINC1
+0288 1A00      00514     xorwf       TX_CHECKSUM,f
+               00515     ; finally add the checksum
+028A 5000      00516     movf        TX_CHECKSUM,w
+028C 6EE6      00517     movwf       POSTINC1
+               00518 
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+028E EC00 F000 00519     call        serial_tx_send_packet
+               00520 
+0292 EF00 F000 00521     goto        serial_handler_exit
+               00522 
+0296 00523 serial_block_mem_read
+               00524     ; read a block of memory addresses
+               00525     ; Start Address     2 byte be
+               00526     ; Data Count        1 byte
+               00527 
+0296 50EE      00528     movf        POSTINC0,w
+0298 0E03      00529     movlw       0x03
+029A 6E00      00530     movwf       MAIN_TEMP
+029C 18EE      00531     xorwf       POSTINC0,w
+029E A4D8      00532     btfss       STATUS,Z
+02A0 EF00 F000 00533     goto        serial_error_wrong_parameters
+               00534 
+               00535     ; check that we can do Z80 bus operations
+02A4 EC00 F000 00536     call        ensure_master
+               00537 
+02A8 50EE      00538     movf        POSTINC0,w
+02AA 6E00      00539     movwf       HI_ADDR
+02AC 50EE      00540     movf        POSTINC0,w
+02AE 6E00      00541     movwf       LO_ADDR
+02B0 50EE      00542     movf        POSTINC0,w
+02B2 6E00      00543     movwf       TX_COUNT
+               00544 
+               00545     ; ought to check TX_COUNT length here
+02B4 0EFE      00546     movlw       0xFE
+02B6 6000      00547     cpfslt      TX_COUNT
+02B8 EF00 F000 00548     goto        serial_error_packet_length
+               00549 
+02BC 6AE1      00550     clrf        FSR1L
+               00551 
+02BE 5000      00552     movf        RX_COMMAND,w
+02C0 6EE6      00553     movwf       POSTINC1
+02C2 6E00      00554     movwf       TX_CHECKSUM
+02C4 5000      00555     movf        TX_COUNT,w
+02C6 6EE6      00556     movwf       POSTINC1
+02C8 1A00      00557     xorwf       TX_CHECKSUM,f
+               00558 
+               00559     ; loop call mem_read and store in TX buffer
+02CA 00560 serial_block_mem_read_loop
+02CA EC00 F000 00561     call        mem_read
+02CE 5000      00562     movf        DREG,w
+02D0 6EE6      00563     movwf       POSTINC1
+02D2 1A00      00564     xorwf       TX_CHECKSUM,f
+               00565 
+02D4 4A00      00566     infsnz      LO_ADDR,f
+02D6 2A00      00567     incf        HI_ADDR,f
+               00568 
+02D8 2E00      00569     decfsz      TX_COUNT,f
+02DA D000      00570     bra         serial_block_mem_read_loop
+               00571 
+               00572     ; release the bus
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+02DC EC00 F000 00573     call        revert_master
+               00574 
+               00575     ; add the checksum
+02E0 5000      00576     movf        TX_CHECKSUM,w
+02E2 6EE6      00577     movwf       POSTINC1
+               00578 
+02E4 EC00 F000 00579     call        serial_tx_send_packet
+               00580 
+02E8 EF00 F000 00581     goto        serial_handler_exit
+               00582 
+02EC 00583 serial_block_mem_write
+               00584     ; copy a block of data from the PC into the memory
+               00585     ; Start Address:    2 bytes be
+               00586     ; Data:             Any length 1 or longer
+02EC 50EE      00587     movf        POSTINC0,w
+02EE 0E03      00588     movlw       0x03            ; minimum number of parameters
+02F0 6E00      00589     movwf       MAIN_TEMP
+02F2 50EE      00590     movf        POSTINC0,w
+02F4 6E00      00591     movwf       TX_COUNT        ; need to keep a track of this for byte counting
+02F6 0E02      00592     movlw       0x02            ; we're going to do a greater than, so needs to be 1 less than min
+               00593     ; second parameter can be any length of bytes, so the correct length is a minimum
+02F8 6400      00594     cpfsgt      TX_COUNT
+02FA EF00 F000 00595     goto        serial_error_wrong_parameters
+               00596 
+02FE 50EE      00597     movf        POSTINC0,w
+0300 6E00      00598     movwf       HI_ADDR
+0302 50EE      00599     movf        POSTINC0,w
+0304 6E00      00600     movwf       LO_ADDR
+               00601 
+               00602     ; now set up the byte counter, length of packet data - address field
+0306 0E02      00603     movlw       0x02
+0308 5E00      00604     subwf       TX_COUNT,f      ; take off the address length
+               00605 
+030A EC00 F000 00606     call        ensure_master
+               00607 
+030E 00608 serial_block_mem_write_loop    
+030E 50EE      00609     movf        POSTINC0,w
+0310 6E00      00610     movwf       DREG
+               00611 
+0312 EC00 F000 00612     call        mem_write
+               00613 
+0316 4A00      00614     infsnz      LO_ADDR,f
+0318 2A00      00615     incf        HI_ADDR,f
+               00616 
+031A 2E00      00617     decfsz      TX_COUNT,f
+031C D000      00618     bra         serial_block_mem_write_loop
+               00619 
+031E EC00 F000 00620     call        revert_master
+               00621 
+0322 6AE1      00622     clrf        FSR1L
+0324 5000      00623     movf        RX_COMMAND,w
+0326 6EE6      00624     movwf       POSTINC1
+0328 6E00      00625     movwf       TX_CHECKSUM
+               00626 
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+032A 0E00      00627     movlw       0x00
+032C 6EE6      00628     movwf       POSTINC1
+032E 1A00      00629     xorwf       TX_CHECKSUM,f
+               00630 
+0330 5000      00631     movf        TX_CHECKSUM,w
+0332 6EE6      00632     movwf       POSTINC1
+               00633 
+0334 EC00 F000 00634     call        serial_tx_send_packet
+               00635 
+0338 EF00 F000 00636     goto        serial_handler_exit
+               00637 
+033C 00638 serial_bios_update
+               00639     ; update a 128 byte block of the BIOS image in Flash
+               00640     ; Start Address:    2 bytes be
+               00641     ; Data:             128 bytes
+033C 50EE      00642     movf        POSTINC0,w      ; command, dump this
+033E 0E82      00643     movlw       0x82            ; 130 exact number of bytes for this packet
+0340 6E00      00644     movwf       MAIN_TEMP       ; store the number for a possible error report
+0342 18EE      00645     xorwf       POSTINC0,w      ; xor with the length from the packet
+0344 A4D8      00646     btfss       STATUS,Z        ; if it was zero all ok
+0346 EF00 F000 00647     goto        serial_error_wrong_parameters   ; if not send an error
+               00648 
+               00649     ; need to check the address is a 128 byte aligned one
+               00650     ; next byte is the high address byte, can be anything up to 0x1F
+034A 50EE      00651     movf        POSTINC0,w
+034C 0BE0      00652     andlw       0xE0
+034E A4D8      00653     btfss       STATUS,Z
+0350 EF00 F000 00654     goto        serial_error_bios_address_space
+               00655 
+0354 50EE      00656     movf        POSTINC0,w
+0356 0B7F      00657     andlw       0x7F            ; needs to be 128 bit aligned, so nothing in
+               00658                                 ; bottom 7 bits to be valid
+0358 A4D8      00659     btfss       STATUS,Z
+035A EF00 F000 00660     goto        serial_error_bios_address_offset
+               00661 
+               00662     ; looks like there's enough data and the parameters are valid.
+               00663     ; apply the 24K offset to point the address to the top of ROM
+               00664 
+035E 0E02      00665     movlw       0x02
+0360 6EE9      00666     movwf       FSR0L
+0362 0E60      00667     movlw       0x60
+0364 26EF      00668     addwf       INDF0,f         ; add the offset but leave the pointer there
+               00669 
+               00670     ; call boot_update to deal with the memory writing
+0366 EC00 F000 00671     call        boot_update
+               00672 
+               00673     ; boot_update has built the response packet for us, so just send it
+036A EC00 F000 00674     call        serial_tx_send_packet
+               00675 
+036E EF00 F000 00676     goto        serial_handler_exit
+               00677 
+0372 00678 serial_do_commands
+               00679     ; run a no data command
+0372 50EE      00680     movf        POSTINC0,w      ; command 
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+0374 0E01      00681     movlw       0x01
+0376 6E00      00682     movwf       MAIN_TEMP
+0378 18EE      00683     xorwf       POSTINC0,w
+037A A4D8      00684     btfss       STATUS,Z
+037C EF00 F000 00685     goto        serial_error_wrong_parameters
+               00686 
+               00687     ; now perform the lookup
+0380 50EE      00688     movf        POSTINC0,w
+0382 6E00      00689     movwf       JUMP_REG        ; copy to a holding register
+0384 6A00      00690     clrf        MAIN_TEMP       ; clear for high byte of address jump
+0386 90D8      00691     bcf         STATUS,C        ; clear the carry bit to rotate into bit 0
+0388 3600      00692     rlcf        JUMP_REG,f      ; rotate storing MSB in C == x 2
+038A B0D8      00693     btfsc       STATUS,C        ; see if MSB was set
+038C 8200      00694     bsf         MAIN_TEMP,1     ; if it was add 2 to high reg (gonna x2 later)
+038E 90D8      00695     bcf         STATUS,C        ; clear the carry bit again
+0390 3600      00696     rlcf        JUMP_REG,f      ; rotate again x4 now
+0392 B0D8      00697     btfsc       STATUS,C        ; see if high bit was set
+0394 8000      00698     bsf         MAIN_TEMP,0     ; add 1 to the high byte register
+               00699 
+0396 0E00      00700     movlw       LOW serial_cmd_jumps    ; copy the low address for jump table
+0398 2600      00701     addwf       JUMP_REG,f      ; add it to the jump address
+039A B0D8      00702     btfsc       STATUS,C        ; see if the add overflowed
+039C 2A00      00703     incf        MAIN_TEMP,f     ; if so increment the high address
+039E 0E00      00704     movlw       HIGH serial_cmd_jumps   ; get the high address byte
+03A0 2400      00705     addwf       MAIN_TEMP,w     ; add it to the high address
+               00706 
+03A2 6EFA      00707     movwf       PCLATH          ; put the high byte into the PCLATH
+03A4 5000      00708     movf        JUMP_REG,w
+03A6 6EF9      00709     movwf       PCL             ; put the low address into the PC
+               00710 
+03A8 00711 serial_cmd_jumps
+               00712     ; now put 256 goto commands
+03A8 EF00 F000 00713     goto        serial_error_do_unknown         ; 0                     
+03AC EF00 F000 00714     goto        serial_do_get_reset             ; 1                     
+03B0 EF00 F000 00715     goto        serial_do_get_dma               ; 2                     
+03B4 EF00 F000 00716     goto        serial_do_get_slave             ; 3                     
+03B8 EF00 F000 00717     goto        serial_do_reset                 ; 4                     
+03BC EF00 F000 00718     goto        serial_error_do_unknown         ; 5                     
+03C0 EF00 F000 00719     goto        serial_error_do_unknown         ; 6                     
+03C4 EF00 F000 00720     goto        serial_error_do_unknown         ; 7                     
+03C8 EF00 F000 00721     goto        serial_error_do_unknown         ; 8                     
+03CC EF00 F000 00722     goto        serial_error_do_unknown         ; 9                     
+03D0 EF00 F000 00723     goto        serial_error_do_unknown         ; 10                    
+03D4 EF00 F000 00724     goto        serial_error_do_unknown         ; 11                    
+03D8 EF00 F000 00725     goto        serial_error_do_unknown         ; 12                    
+03DC EF00 F000 00726     goto        serial_error_do_unknown         ; 13                    
+03E0 EF00 F000 00727     goto        serial_error_do_unknown         ; 14                    
+03E4 EF00 F000 00728     goto        serial_error_do_unknown         ; 15                    
+03E8 EF00 F000 00729     goto        serial_error_do_unknown         ; 16                    
+03EC EF00 F000 00730     goto        serial_error_do_unknown         ; 17                    
+03F0 EF00 F000 00731     goto        serial_error_do_unknown         ; 18                                                                                                                                
+03F4 EF00 F000 00732     goto        serial_error_do_unknown         ; 19                                                                                                                                
+03F8 EF00 F000 00733     goto        serial_error_do_unknown         ; 20                                                                                                                                
+03FC EF00 F000 00734     goto        serial_error_do_unknown         ; 21                                                                                                                                
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+0400 EF00 F000 00735     goto        serial_error_do_unknown         ; 22                                                                                                                                
+0404 EF00 F000 00736     goto        serial_error_do_unknown         ; 23                                                                                                                                
+0408 EF00 F000 00737     goto        serial_error_do_unknown         ; 24                                                                                                                                
+040C EF00 F000 00738     goto        serial_error_do_unknown         ; 25                                                                                                                                
+0410 EF00 F000 00739     goto        serial_error_do_unknown         ; 26                                                                                                                                
+0414 EF00 F000 00740     goto        serial_error_do_unknown         ; 27                                                                                                                                
+0418 EF00 F000 00741     goto        serial_error_do_unknown         ; 28                                                                                                                                
+041C EF00 F000 00742     goto        serial_error_do_unknown         ; 29                                                                                                                                
+0420 EF00 F000 00743     goto        serial_error_do_unknown         ; 30                                                                                                                                
+0424 EF00 F000 00744     goto        serial_error_do_unknown         ; 31                                                                                                                                
+0428 EF00 F000 00745     goto        serial_error_do_unknown         ; 32                                                                                                                                
+042C EF00 F000 00746     goto        serial_error_do_unknown         ; 33                                                                                                                                
+0430 EF00 F000 00747     goto        serial_error_do_unknown         ; 34                                                                                                                                
+0434 EF00 F000 00748     goto        serial_error_do_unknown         ; 35                                                                                                                                
+0438 EF00 F000 00749     goto        serial_error_do_unknown         ; 36                                                                                                                                
+043C EF00 F000 00750     goto        serial_error_do_unknown         ; 37                                                                                                                                
+0440 EF00 F000 00751     goto        serial_error_do_unknown         ; 38                                                                                                                                
+0444 EF00 F000 00752     goto        serial_error_do_unknown         ; 39                                                                                                                                
+0448 EF00 F000 00753     goto        serial_error_do_unknown         ; 40                                                                                                                                
+044C EF00 F000 00754     goto        serial_error_do_unknown         ; 41                                                                                                                                
+0450 EF00 F000 00755     goto        serial_error_do_unknown         ; 42                                                                                                                                
+0454 EF00 F000 00756     goto        serial_error_do_unknown         ; 43                                                                                                                                
+0458 EF00 F000 00757     goto        serial_error_do_unknown         ; 44                                                                                                                                
+045C EF00 F000 00758     goto        serial_error_do_unknown         ; 45                                                                                                                                
+0460 EF00 F000 00759     goto        serial_error_do_unknown         ; 46                                                                                                                                
+0464 EF00 F000 00760     goto        serial_error_do_unknown         ; 47                                                                                                                                
+0468 EF00 F000 00761     goto        serial_error_do_unknown         ; 48                                                                                                                                
+046C EF00 F000 00762     goto        serial_error_do_unknown         ; 49                                                                                                                                
+0470 EF00 F000 00763     goto        serial_error_do_unknown         ; 50                                                                                                                                
+0474 EF00 F000 00764     goto        serial_error_do_unknown         ; 51                                                                                                                                
+0478 EF00 F000 00765     goto        serial_error_do_unknown         ; 52                                                                                                                                
+047C EF00 F000 00766     goto        serial_error_do_unknown         ; 53                                                                                                                                
+0480 EF00 F000 00767     goto        serial_error_do_unknown         ; 54                                                                                                                                
+0484 EF00 F000 00768     goto        serial_error_do_unknown         ; 55                                                                                                                                
+0488 EF00 F000 00769     goto        serial_error_do_unknown         ; 56                                                                                                                                
+048C EF00 F000 00770     goto        serial_error_do_unknown         ; 57                                                                                                                                
+0490 EF00 F000 00771     goto        serial_error_do_unknown         ; 58                                                                                                                                
+0494 EF00 F000 00772     goto        serial_error_do_unknown         ; 59                                                                                                                                
+0498 EF00 F000 00773     goto        serial_error_do_unknown         ; 60                                                                                                                                
+049C EF00 F000 00774     goto        serial_error_do_unknown         ; 61                                                                                                                                
+04A0 EF00 F000 00775     goto        serial_error_do_unknown         ; 62                                                                                                                                
+04A4 EF00 F000 00776     goto        serial_error_do_unknown         ; 63                                                                                                                                
+04A8 EF00 F000 00777     goto        serial_error_do_unknown         ; 64                                                                                                                                
+04AC EF00 F000 00778     goto        serial_error_do_unknown         ; 65                                                                                                                                
+04B0 EF00 F000 00779     goto        serial_error_do_unknown         ; 66                                                                                                                                
+04B4 EF00 F000 00780     goto        serial_error_do_unknown         ; 67                                                                                                                                
+04B8 EF00 F000 00781     goto        serial_error_do_unknown         ; 68                                                                                                                                
+04BC EF00 F000 00782     goto        serial_error_do_unknown         ; 69                                                                                                                                
+04C0 EF00 F000 00783     goto        serial_error_do_unknown         ; 70                                                                                                                                
+04C4 EF00 F000 00784     goto        serial_error_do_unknown         ; 71                                                                                                                                
+04C8 EF00 F000 00785     goto        serial_error_do_unknown         ; 72                                                                                                                                
+04CC EF00 F000 00786     goto        serial_error_do_unknown         ; 73                                                                                                                                
+04D0 EF00 F000 00787     goto        serial_error_do_unknown         ; 74                                                                                                                                
+04D4 EF00 F000 00788     goto        serial_error_do_unknown         ; 75                                                                                                                                
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+04D8 EF00 F000 00789     goto        serial_error_do_unknown         ; 76                                                                                                                                
+04DC EF00 F000 00790     goto        serial_error_do_unknown         ; 77                                                                                                                                
+04E0 EF00 F000 00791     goto        serial_error_do_unknown         ; 78                                                                                                                                
+04E4 EF00 F000 00792     goto        serial_error_do_unknown         ; 79                                                                                                                                
+04E8 EF00 F000 00793     goto        serial_error_do_unknown         ; 80                                                                                                                                
+04EC EF00 F000 00794     goto        serial_error_do_unknown         ; 81                                                                                                                                
+04F0 EF00 F000 00795     goto        serial_error_do_unknown         ; 82                                                                                                                                
+04F4 EF00 F000 00796     goto        serial_error_do_unknown         ; 83                                                                                                                                
+04F8 EF00 F000 00797     goto        serial_error_do_unknown         ; 84                                                                                                                                
+04FC EF00 F000 00798     goto        serial_error_do_unknown         ; 85                                                                                                                                
+0500 EF00 F000 00799     goto        serial_error_do_unknown         ; 86                                                                                                                                
+0504 EF00 F000 00800     goto        serial_error_do_unknown         ; 87                                                                                                                                
+0508 EF00 F000 00801     goto        serial_error_do_unknown         ; 88                                                                                                                                
+050C EF00 F000 00802     goto        serial_error_do_unknown         ; 89                                                                                                                                
+0510 EF00 F000 00803     goto        serial_error_do_unknown         ; 90                                                                                                                                
+0514 EF00 F000 00804     goto        serial_error_do_unknown         ; 91                                                                                                                                
+0518 EF00 F000 00805     goto        serial_error_do_unknown         ; 92                                                                                                                                
+051C EF00 F000 00806     goto        serial_error_do_unknown         ; 93                                                                                                                                
+0520 EF00 F000 00807     goto        serial_error_do_unknown         ; 94                                                                                                                                
+0524 EF00 F000 00808     goto        serial_error_do_unknown         ; 95                                                                                                                                
+0528 EF00 F000 00809     goto        serial_error_do_unknown         ; 96                                                                                                                                
+052C EF00 F000 00810     goto        serial_error_do_unknown         ; 97                                                                                                                                
+0530 EF00 F000 00811     goto        serial_error_do_unknown         ; 98                                                                                                                                
+0534 EF00 F000 00812     goto        serial_error_do_unknown         ; 99                                                                                                                                
+0538 EF00 F000 00813     goto        serial_error_do_unknown         ; 100                                                                                                                               
+053C EF00 F000 00814     goto        serial_error_do_unknown         ; 101                                                                                                                               
+0540 EF00 F000 00815     goto        serial_error_do_unknown         ; 102                                                                                                                               
+0544 EF00 F000 00816     goto        serial_error_do_unknown         ; 103                                                                                                                               
+0548 EF00 F000 00817     goto        serial_error_do_unknown         ; 104                                                                                                                               
+054C EF00 F000 00818     goto        serial_error_do_unknown         ; 105                                                                                                                               
+0550 EF00 F000 00819     goto        serial_error_do_unknown         ; 106                                                                                                                               
+0554 EF00 F000 00820     goto        serial_error_do_unknown         ; 107                                                                                                                               
+0558 EF00 F000 00821     goto        serial_error_do_unknown         ; 108                                                                                                                               
+055C EF00 F000 00822     goto        serial_error_do_unknown         ; 109                                                                                                                               
+0560 EF00 F000 00823     goto        serial_error_do_unknown         ; 110                                                                                                                               
+0564 EF00 F000 00824     goto        serial_error_do_unknown         ; 111                                                                                                                               
+0568 EF00 F000 00825     goto        serial_error_do_unknown         ; 112                                                                                                                               
+056C EF00 F000 00826     goto        serial_error_do_unknown         ; 113                                                                                                                               
+0570 EF00 F000 00827     goto        serial_error_do_unknown         ; 114                                                                                                                               
+0574 EF00 F000 00828     goto        serial_error_do_unknown         ; 115                                                                                                                               
+0578 EF00 F000 00829     goto        serial_error_do_unknown         ; 116                                                                                                                               
+057C EF00 F000 00830     goto        serial_error_do_unknown         ; 117                                                                                                                               
+0580 EF00 F000 00831     goto        serial_error_do_unknown         ; 118                                                                                                                               
+0584 EF00 F000 00832     goto        serial_error_do_unknown         ; 119                                                                                                                               
+0588 EF00 F000 00833     goto        serial_error_do_unknown         ; 120                                                                                                                               
+058C EF00 F000 00834     goto        serial_error_do_unknown         ; 121                                                                                                                               
+0590 EF00 F000 00835     goto        serial_error_do_unknown         ; 122                                                                                                                               
+0594 EF00 F000 00836     goto        serial_error_do_unknown         ; 123                                                                                                                               
+0598 EF00 F000 00837     goto        serial_error_do_unknown         ; 124                                                                                                                               
+059C EF00 F000 00838     goto        serial_error_do_unknown         ; 125                                                                                                                               
+05A0 EF00 F000 00839     goto        serial_error_do_unknown         ; 126                                                                                                                               
+05A4 EF00 F000 00840     goto        serial_error_do_unknown         ; 127                                                                                                                               
+05A8 EF00 F000 00841     goto        serial_error_do_unknown         ; 128                                                                                                                               
+05AC EF00 F000 00842     goto        serial_error_do_unknown         ; 129                                                                                                                               
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 17
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+05B0 EF00 F000 00843     goto        serial_error_do_unknown         ; 130                                                                                                                               
+05B4 EF00 F000 00844     goto        serial_error_do_unknown         ; 131                                                                                                                               
+05B8 EF00 F000 00845     goto        serial_error_do_unknown         ; 132                                                                                                                               
+05BC EF00 F000 00846     goto        serial_error_do_unknown         ; 133                                                                                                                               
+05C0 EF00 F000 00847     goto        serial_error_do_unknown         ; 134                                                                                                                               
+05C4 EF00 F000 00848     goto        serial_error_do_unknown         ; 135                                                                                                                               
+05C8 EF00 F000 00849     goto        serial_error_do_unknown         ; 136                                                                                                                               
+05CC EF00 F000 00850     goto        serial_error_do_unknown         ; 137                                                                                                                               
+05D0 EF00 F000 00851     goto        serial_error_do_unknown         ; 138                                                                                                                               
+05D4 EF00 F000 00852     goto        serial_error_do_unknown         ; 139                                                                                                                               
+05D8 EF00 F000 00853     goto        serial_error_do_unknown         ; 140                                                                                                                               
+05DC EF00 F000 00854     goto        serial_error_do_unknown         ; 141                                                                                                                               
+05E0 EF00 F000 00855     goto        serial_error_do_unknown         ; 142                                                                                                                               
+05E4 EF00 F000 00856     goto        serial_error_do_unknown         ; 143                                                                                                                               
+05E8 EF00 F000 00857     goto        serial_error_do_unknown         ; 144                                                                                                                               
+05EC EF00 F000 00858     goto        serial_error_do_unknown         ; 145                                                                                                                               
+05F0 EF00 F000 00859     goto        serial_error_do_unknown         ; 146                                                                                                                               
+05F4 EF00 F000 00860     goto        serial_error_do_unknown         ; 147                                                                                                                               
+05F8 EF00 F000 00861     goto        serial_error_do_unknown         ; 148                                                                                                                               
+05FC EF00 F000 00862     goto        serial_error_do_unknown         ; 149                                                                                                                               
+0600 EF00 F000 00863     goto        serial_error_do_unknown         ; 150                                                                                                                               
+0604 EF00 F000 00864     goto        serial_error_do_unknown         ; 151                                                                                                                               
+0608 EF00 F000 00865     goto        serial_error_do_unknown         ; 152                                                                                                                               
+060C EF00 F000 00866     goto        serial_error_do_unknown         ; 153                                                                                                                               
+0610 EF00 F000 00867     goto        serial_error_do_unknown         ; 154                                                                                                                               
+0614 EF00 F000 00868     goto        serial_error_do_unknown         ; 155                                                                                                                               
+0618 EF00 F000 00869     goto        serial_error_do_unknown         ; 156                                                                                                                               
+061C EF00 F000 00870     goto        serial_error_do_unknown         ; 157                                                                                                                               
+0620 EF00 F000 00871     goto        serial_error_do_unknown         ; 158                                                                                                                               
+0624 EF00 F000 00872     goto        serial_error_do_unknown         ; 159                                                                                                                               
+0628 EF00 F000 00873     goto        serial_error_do_unknown         ; 160                                                                                                                               
+062C EF00 F000 00874     goto        serial_error_do_unknown         ; 161                                                                                                                               
+0630 EF00 F000 00875     goto        serial_error_do_unknown         ; 162                                                                                                                               
+0634 EF00 F000 00876     goto        serial_error_do_unknown         ; 163                                                                                                                               
+0638 EF00 F000 00877     goto        serial_error_do_unknown         ; 164                                                                                                                               
+063C EF00 F000 00878     goto        serial_error_do_unknown         ; 165                                                                                                                               
+0640 EF00 F000 00879     goto        serial_error_do_unknown         ; 166                                                                                                                               
+0644 EF00 F000 00880     goto        serial_error_do_unknown         ; 167                                                                                                                               
+0648 EF00 F000 00881     goto        serial_error_do_unknown         ; 168                                                                                                                               
+064C EF00 F000 00882     goto        serial_error_do_unknown         ; 169                                                                                                                               
+0650 EF00 F000 00883     goto        serial_error_do_unknown         ; 170                                                                                                                               
+0654 EF00 F000 00884     goto        serial_error_do_unknown         ; 171                                                                                                                               
+0658 EF00 F000 00885     goto        serial_error_do_unknown         ; 172                                                                                                                               
+065C EF00 F000 00886     goto        serial_error_do_unknown         ; 173                                                                                                                               
+0660 EF00 F000 00887     goto        serial_error_do_unknown         ; 174                                                                                                                               
+0664 EF00 F000 00888     goto        serial_error_do_unknown         ; 175                                                                                                                               
+0668 EF00 F000 00889     goto        serial_error_do_unknown         ; 176                                                                                                                               
+066C EF00 F000 00890     goto        serial_error_do_unknown         ; 177                                                                                                                               
+0670 EF00 F000 00891     goto        serial_error_do_unknown         ; 178                                                                                                                               
+0674 EF00 F000 00892     goto        serial_error_do_unknown         ; 179                                                                                                                               
+0678 EF00 F000 00893     goto        serial_error_do_unknown         ; 180                                                                                                                               
+067C EF00 F000 00894     goto        serial_error_do_unknown         ; 181                                                                                                                               
+0680 EF00 F000 00895     goto        serial_error_do_unknown         ; 182                                                                                                                               
+0684 EF00 F000 00896     goto        serial_error_do_unknown         ; 183                                                                                                                               
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 18
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+0688 EF00 F000 00897     goto        serial_error_do_unknown         ; 184                                                                                                                               
+068C EF00 F000 00898     goto        serial_error_do_unknown         ; 185                                                                                                                               
+0690 EF00 F000 00899     goto        serial_error_do_unknown         ; 186                                                                                                                               
+0694 EF00 F000 00900     goto        serial_error_do_unknown         ; 187                                                                                                                               
+0698 EF00 F000 00901     goto        serial_error_do_unknown         ; 188                                                                                                                               
+069C EF00 F000 00902     goto        serial_error_do_unknown         ; 189                                                                                                                               
+06A0 EF00 F000 00903     goto        serial_error_do_unknown         ; 190                                                                                                                               
+06A4 EF00 F000 00904     goto        serial_error_do_unknown         ; 191                                                                                                                               
+06A8 EF00 F000 00905     goto        serial_error_do_unknown         ; 192                                                                                                                               
+06AC EF00 F000 00906     goto        serial_error_do_unknown         ; 193                                                                                                                               
+06B0 EF00 F000 00907     goto        serial_error_do_unknown         ; 194                                                                                                                               
+06B4 EF00 F000 00908     goto        serial_error_do_unknown         ; 195                                                                                                                               
+06B8 EF00 F000 00909     goto        serial_error_do_unknown         ; 196
+06BC EF00 F000 00910     goto        serial_error_do_unknown         ; 197
+06C0 EF00 F000 00911     goto        serial_error_do_unknown         ; 198
+06C4 EF00 F000 00912     goto        serial_error_do_unknown         ; 199
+06C8 EF00 F000 00913     goto        serial_error_do_unknown         ; 200
+06CC EF00 F000 00914     goto        serial_error_do_unknown         ; 201
+06D0 EF00 F000 00915     goto        serial_error_do_unknown         ; 202
+06D4 EF00 F000 00916     goto        serial_error_do_unknown         ; 203
+06D8 EF00 F000 00917     goto        serial_error_do_unknown         ; 204
+06DC EF00 F000 00918     goto        serial_error_do_unknown         ; 205
+06E0 EF00 F000 00919     goto        serial_error_do_unknown         ; 206
+06E4 EF00 F000 00920     goto        serial_error_do_unknown         ; 207
+06E8 EF00 F000 00921     goto        serial_error_do_unknown         ; 208
+06EC EF00 F000 00922     goto        serial_error_do_unknown         ; 209
+06F0 EF00 F000 00923     goto        serial_error_do_unknown         ; 210
+06F4 EF00 F000 00924     goto        serial_error_do_unknown         ; 211
+06F8 EF00 F000 00925     goto        serial_error_do_unknown         ; 212
+06FC EF00 F000 00926     goto        serial_error_do_unknown         ; 213
+0700 EF00 F000 00927     goto        serial_error_do_unknown         ; 214
+0704 EF00 F000 00928     goto        serial_error_do_unknown         ; 215
+0708 EF00 F000 00929     goto        serial_error_do_unknown         ; 216
+070C EF00 F000 00930     goto        serial_error_do_unknown         ; 217
+0710 EF00 F000 00931     goto        serial_error_do_unknown         ; 218
+0714 EF00 F000 00932     goto        serial_error_do_unknown         ; 219
+0718 EF00 F000 00933     goto        serial_error_do_unknown         ; 220
+071C EF00 F000 00934     goto        serial_error_do_unknown         ; 221
+0720 EF00 F000 00935     goto        serial_error_do_unknown         ; 222
+0724 EF00 F000 00936     goto        serial_error_do_unknown         ; 223
+0728 EF00 F000 00937     goto        serial_error_do_unknown         ; 224
+072C EF00 F000 00938     goto        serial_error_do_unknown         ; 225
+0730 EF00 F000 00939     goto        serial_error_do_unknown         ; 226
+0734 EF00 F000 00940     goto        serial_error_do_unknown         ; 227
+0738 EF00 F000 00941     goto        serial_error_do_unknown         ; 228
+073C EF00 F000 00942     goto        serial_error_do_unknown         ; 229
+0740 EF00 F000 00943     goto        serial_error_do_unknown         ; 230
+0744 EF00 F000 00944     goto        serial_error_do_unknown         ; 231
+0748 EF00 F000 00945     goto        serial_error_do_unknown         ; 232
+074C EF00 F000 00946     goto        serial_error_do_unknown         ; 233
+0750 EF00 F000 00947     goto        serial_error_do_unknown         ; 234
+0754 EF00 F000 00948     goto        serial_error_do_unknown         ; 235
+0758 EF00 F000 00949     goto        serial_error_do_unknown         ; 236
+075C EF00 F000 00950     goto        serial_error_do_unknown         ; 237
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+0760 EF00 F000 00951     goto        serial_error_do_unknown         ; 238
+0764 EF00 F000 00952     goto        serial_error_do_unknown         ; 239
+0768 EF00 F000 00953     goto        serial_error_do_unknown         ; 240
+076C EF00 F000 00954     goto        serial_error_do_unknown         ; 241
+0770 EF00 F000 00955     goto        serial_error_do_unknown         ; 242
+0774 EF00 F000 00956     goto        serial_error_do_unknown         ; 243
+0778 EF00 F000 00957     goto        serial_error_do_unknown         ; 244
+077C EF00 F000 00958     goto        serial_error_do_unknown         ; 245
+0780 EF00 F000 00959     goto        serial_error_do_unknown         ; 246
+0784 EF00 F000 00960     goto        serial_error_do_unknown         ; 247
+0788 EF00 F000 00961     goto        serial_error_do_unknown         ; 248
+078C EF00 F000 00962     goto        serial_error_do_unknown         ; 249
+0790 EF00 F000 00963     goto        serial_error_do_unknown         ; 250
+0794 EF00 F000 00964     goto        serial_error_do_unknown         ; 251
+0798 EF00 F000 00965     goto        serial_error_do_unknown         ; 252
+079C EF00 F000 00966     goto        serial_error_do_unknown         ; 253
+07A0 EF00 F000 00967     goto        serial_error_do_unknown         ; 254
+07A4 EF00 F000 00968     goto        serial_error_do_unknown         ; 255
+               00969 
+07A8 00970 serial_do_get_reset
+               00971     ; run the get_reset subroutine and return success
+07A8 EC00 F000 00972     call        get_reset
+07AC EC00 F000 00973     call        serial_do_ack
+07B0 EF00 F000 00974     goto        serial_handler_exit
+               00975 
+07B4 00976 serial_do_get_dma
+07B4 EC00 F000 00977     call        get_dma
+07B8 EC00 F000 00978     call        serial_do_ack
+07BC EF00 F000 00979     goto        serial_handler_exit
+               00980 
+07C0 00981 serial_do_get_slave
+07C0 EC00 F000 00982     call        get_slave
+07C4 EC00 F000 00983     call        serial_do_ack
+07C8 EF00 F000 00984     goto        serial_handler_exit
+               00985 
+07CC 00986 serial_do_reset
+               00987     ; special case, send ack then perform a CPU reset
+07CC EC00 F000 00988     call        serial_do_ack
+               00989 
+07D0 00990 serial_do_reset_loop
+               00991     ; need to wait here until the UART has finished sending the two bytes
+               00992     ; that are in the shift register and transmit buffer
+07D0 A2AC      00993     btfss       TXSTA,TRMT
+07D2 D000      00994     bra         serial_do_reset_loop
+               00995     ; TSR is now empty, can safely do reset.
+               00996 
+07D4 00FF      00997     reset
+               00998 
+07D6 00999 serial_do_ack
+07D6 6AE1      01000     clrf        FSR1L
+07D8 0E09      01001     movlw       0x09
+07DA 6EE6      01002     movwf       POSTINC1
+07DC 6E00      01003     movwf       TX_CHECKSUM
+               01004 
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 20
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+07DE 0E01      01005     movlw       0x01
+07E0 6EE6      01006     movwf       POSTINC1
+07E2 1A00      01007     xorwf       TX_CHECKSUM,f
+               01008 
+07E4 0E02      01009     movlw       0x02
+07E6 6EE9      01010     movwf       FSR0L
+07E8 50EF      01011     movf        INDF0,w
+07EA 6EE6      01012     movwf       POSTINC1
+07EC 1A00      01013     xorwf       TX_CHECKSUM,f
+               01014 
+07EE 5000      01015     movf        TX_CHECKSUM,w
+07F0 6EE6      01016     movwf       POSTINC1
+               01017 
+07F2 EC00 F000 01018     call        serial_tx_send_packet
+               01019 
+07F6 0012      01020     return
+               01021 
+               01022 ; -- serial error functions ---------------------------------------------------
+               01023 
+07F8 01024 serial_error_checksum
+               01025     ; report a message received with a bad checksum
+               01026     ; special first character because we don't know if the command was corrupt
+               01027     ; or data following it so start with a "0"
+               01028     ; set the send pointer to the start of the buffer
+07F8 6AE1      01029     clrf        FSR1L
+07FA 0E80      01030     movlw       0x80
+07FC 6EE6      01031     movwf       POSTINC1
+07FE 6E00      01032     movwf       TX_CHECKSUM
+               01033     ; next is length byte.  checksum fail message is always 3 bytes
+0800 0E03      01034     movlw       0x03
+0802 6EE6      01035     movwf       POSTINC1
+0804 1A00      01036     xorwf       TX_CHECKSUM,f
+               01037     ; now is the error code.  checksum fail = 0x0001
+0806 0E00      01038     movlw       0x00
+0808 6EE6      01039     movwf       POSTINC1
+080A 1A00      01040     xorwf       TX_CHECKSUM,f
+080C 0E01      01041     movlw       0x01
+080E 6EE6      01042     movwf       POSTINC1
+0810 1A00      01043     xorwf       TX_CHECKSUM,f
+               01044     ; now send the calculated checksum for debugging
+0812 5000      01045     movf        RX_CHECKSUM,w
+0814 6EE6      01046     movwf       POSTINC1
+0816 1A00      01047     xorwf       TX_CHECKSUM,f
+               01048     ; now add the checksum
+0818 5000      01049     movf        TX_CHECKSUM,w
+081A 6EE6      01050     movwf       POSTINC1
+               01051     
+               01052     ; packet assembled, send the packet
+081C EC00 F000 01053     call        serial_tx_send_packet
+               01054 
+0820 EF00 F000 01055     goto        serial_handler_exit
+               01056 
+0824 01057 serial_error_bad_command
+               01058     ; report a bad command i.e. byte outside [A-Z]
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 21
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               01059     ; set the send pointer to the start of the buffer
+0824 6AE1      01060     clrf        FSR1L
+0826 0E81      01061     movlw       0x81     ; bad command so can't do the normal upper/lower conversion
+0828 6EE6      01062     movwf       POSTINC1
+082A 6E00      01063     movwf       TX_CHECKSUM
+               01064     ; next is length byte.  always 3 bytes for bad command
+082C 0E03      01065     movlw       0x03
+082E 6EE6      01066     movwf       POSTINC1
+0830 1A00      01067     xorwf       TX_CHECKSUM,f
+               01068     ; now is the error code.  bad command = 0x0002
+0832 0E00      01069     movlw       0x00
+0834 6EE6      01070     movwf       POSTINC1
+0836 1A00      01071     xorwf       TX_CHECKSUM,f
+0838 0E02      01072     movlw       0x02
+083A 6EE6      01073     movwf       POSTINC1
+083C 1A00      01074     xorwf       TX_CHECKSUM,f
+               01075     ; now send the bad command for debug
+083E 5000      01076     movf        RX_COMMAND,w
+0840 6EE6      01077     movwf       POSTINC1
+0842 1A00      01078     xorwf       TX_CHECKSUM,f
+               01079     ; finally add the checksum
+0844 5000      01080     movf        TX_CHECKSUM,w
+0846 6EE6      01081     movwf       POSTINC1
+               01082 
+               01083     ; packet assembled, send the packet
+0848 EC00 F000 01084     call        serial_tx_send_packet
+               01085 
+084C EF00 F000 01086     goto        serial_handler_exit
+               01087 
+0850 01088 serial_error_unused_command
+               01089     ; valid command letter but not used
+               01090     ; set the send pointer to the start of the buffer
+0850 6AE1      01091     clrf        FSR1L
+               01092     ; command code is same with bit 6 set
+0852 5000      01093     movf        RX_COMMAND,w
+0854 8CE8      01094     bsf         WREG,6          ; set bit 6, the error flag
+0856 6EE6      01095     movwf       POSTINC1
+0858 6E00      01096     movwf       TX_CHECKSUM
+               01097     ; now the length only the error code now
+085A 0E02      01098     movlw       0x02
+085C 6EE6      01099     movwf       POSTINC1
+085E 1A00      01100     xorwf       TX_CHECKSUM,f
+               01101     ; now the error code 0x0003 for unused command
+0860 0E00      01102     movlw       0x00
+0862 6EE6      01103     movwf       POSTINC1
+0864 1A00      01104     xorwf       TX_CHECKSUM,f
+0866 0E03      01105     movlw       0x03
+0868 6EE6      01106     movwf       POSTINC1
+086A 1A00      01107     xorwf       TX_CHECKSUM,f
+               01108     ; now the checksum
+086C 5000      01109     movf        TX_CHECKSUM,w
+086E 6EE6      01110     movwf       POSTINC1
+               01111 
+0870 EC00 F000 01112     call        serial_tx_send_packet
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 22
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               01113 
+0874 EF00 F000 01114     goto        serial_handler_exit
+               01115 
+0878 01116 serial_error_wrong_parameters
+               01117     ; valid command but got the wrong number of parameters
+0878 6AE1      01118     clrf        FSR1L
+               01119     ; command code with bit 6 set
+087A 5000      01120     movf        RX_COMMAND,w
+087C 8CE8      01121     bsf         WREG,6
+087E 6EE6      01122     movwf       POSTINC1
+0880 6E00      01123     movwf       TX_CHECKSUM
+               01124     ; now the length, error code plus the expected number of params
+0882 0E03      01125     movlw       0x03
+0884 6EE6      01126     movwf       POSTINC1
+0886 1A00      01127     xorwf       TX_CHECKSUM,f
+               01128     ; now the error code 0x0004
+0888 0E00      01129     movlw       0x00
+088A 6EE6      01130     movwf       POSTINC1
+088C 1A00      01131     xorwf       TX_CHECKSUM,f
+088E 0E04      01132     movlw       0x04
+0890 6EE6      01133     movwf       POSTINC1
+0892 1A00      01134     xorwf       TX_CHECKSUM,f
+               01135     ; now the correct number of argument bytes
+0894 5000      01136     movf        MAIN_TEMP,w
+0896 6EE6      01137     movwf       POSTINC1
+0898 1A00      01138     xorwf       TX_CHECKSUM,f
+               01139     ; now the checksum
+089A 5000      01140     movf        TX_CHECKSUM,w
+089C 6EE6      01141     movwf       POSTINC1
+               01142 
+089E EC00 F000 01143     call        serial_tx_send_packet
+               01144 
+08A2 EF00 F000 01145     goto        serial_handler_exit
+               01146 
+08A6 01147 serial_error_do_unknown
+08A6 6AE1      01148     clrf        FSR1L
+08A8 0E49      01149     movlw       0x49
+08AA 6EE6      01150     movwf       POSTINC1
+08AC 6E00      01151     movwf       TX_CHECKSUM
+               01152 
+08AE 0E03      01153     movlw       0x03
+08B0 6EE6      01154     movwf       POSTINC1
+08B2 1A00      01155     xorwf       TX_CHECKSUM,f
+               01156 
+08B4 0E00      01157     movlw       0x00
+08B6 6EE6      01158     movwf       POSTINC1
+08B8 1A00      01159     xorwf       TX_CHECKSUM,f
+               01160 
+08BA 0E09      01161     movlw       0x09
+08BC 6EE6      01162     movwf       POSTINC1
+08BE 1A00      01163     xorwf       TX_CHECKSUM,f
+               01164 
+08C0 0E02      01165     movlw       0x02
+08C2 6EE9      01166     movwf       FSR0L
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 23
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+08C4 50EF      01167     movf        INDF0,w
+08C6 6EE6      01168     movwf       POSTINC1
+08C8 1A00      01169     xorwf       TX_CHECKSUM,f
+               01170 
+08CA 5000      01171     movf        TX_CHECKSUM,w
+08CC 6EE6      01172     movwf       POSTINC1
+               01173 
+08CE EC00 F000 01174     call        serial_tx_send_packet
+               01175 
+08D2 EF00 F000 01176     goto        serial_handler_exit
+               01177 
+08D6 01178 serial_error_packet_length
+08D6 0E05      01179     movlw       0x05
+08D8 6E00      01180     movwf       MAIN_TEMP
+08DA EF00 F000 01181     goto        serial_error_generic
+               01182 
+08DE 01183 serial_error_bios_address_space
+08DE 0E06      01184     movlw       0x06
+08E0 6E00      01185     movwf       MAIN_TEMP
+08E2 EF00 F000 01186     goto        serial_error_generic
+               01187 
+08E6 01188 serial_error_bios_address_offset
+08E6 0E07      01189     movlw       0x07
+08E8 6E00      01190     movwf       MAIN_TEMP
+08EA EF00 F000 01191     goto        serial_error_generic
+               01192 
+08EE 01193 serial_error_generic
+08EE 6AE1      01194     clrf        FSR1L
+08F0 5000      01195     movf        RX_COMMAND,w
+08F2 8CE8      01196     bsf         WREG,6
+08F4 6EE6      01197     movwf       POSTINC1
+08F6 6E00      01198     movwf       TX_CHECKSUM
+               01199 
+08F8 0E02      01200     movlw       0x02
+08FA 6EE6      01201     movwf       POSTINC1
+08FC 1A00      01202     xorwf       TX_CHECKSUM,f
+               01203 
+08FE 0E00      01204     movlw       0x00
+0900 6EE6      01205     movwf       POSTINC1
+0902 1A00      01206     xorwf       TX_CHECKSUM,f
+               01207 
+0904 5000      01208     movf        MAIN_TEMP,w
+0906 6EE6      01209     movwf       POSTINC1
+0908 1800      01210     xorwf       TX_CHECKSUM,w
+               01211 
+090A 6EE6      01212     movwf       POSTINC1
+               01213 
+090C EC00 F000 01214     call        serial_tx_send_packet
+               01215 
+0910 EF00 F000 01216     goto        serial_handler_exit
+               01217 
+0914 01218 serial_handler_exit
+               01219     ; standard exit for all serial response functions
+0914 6AE9      01220     clrf        FSR0L           ; reset RX pointer
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 24
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+0916 6A00      01221     clrf        RX_FLAGS        ; get rid of any flags from this message
+0918 6A00      01222     clrf        RX_MODE         ; go back to waiting
+091A 0012      01223     return
+               01224 
+               01225 ; == Export Direct Access to ==================================================
+               01226 
+               01227     GLOBAL      serial_init
+               01228     GLOBAL      serial_rx_int
+               01229     GLOBAL      serial_command_dispatch
+               01230 
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 25
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+A                                 00000000
+ABDEN                             00000000
+ABDOVF                            00000007
+ACCESS                            00000000
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ACQT0                             00000003
+ACQT1                             00000004
+ACQT2                             00000005
+ADCON0                            00000FC2
+ADCON1                            00000FC1
+ADCON2                            00000FC0
+ADCS0                             00000000
+ADCS1                             00000001
+ADCS2                             00000002
+ADDEN                             00000003
+ADEN                              00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADIP                              00000006
+ADON                              00000000
+ADRES                             00000FC3
+ADRESH                            00000FC4
+ADRESL                            00000FC3
+AN0                               00000000
+AN1                               00000001
+AN10                              00000001
+AN11                              00000004
+AN12                              00000000
+AN2                               00000002
+AN3                               00000003
+AN4                               00000005
+AN5                               00000000
+AN6                               00000001
+AN7                               00000002
+AN8                               00000002
+AN9                               00000003
+BANKED                            00000001
+BAUDCON                           00000FB8
+BAUDCTL                           00000FB8
+BCLIE                             00000003
+BCLIF                             00000003
+BCLIP                             00000003
+BF                                00000000
+BGST                              00000005
+BOR                               00000000
+BRG16                             00000003
+BRGH                              00000002
+BSR                               00000FE0
+C                                 00000000
+C1INV                             00000004
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 26
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+C1OUT                             00000006
+C2INV                             00000005
+C2OUT                             00000007
+CCP1                              00000002
+CCP1CON                           00000FBD
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1IP                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCP2CON                           00000FBA
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2IP                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2X                             00000005
+CCP2Y                             00000004
+CCP2_PORTB                        00000003
+CCP2_PORTC                        00000001
+CCPR1                             00000FBE
+CCPR1H                            00000FBF
+CCPR1L                            00000FBE
+CCPR2                             00000FBB
+CCPR2H                            00000FBC
+CCPR2L                            00000FBB
+CFGS                              00000006
+CHECKSUM_FAIL                     00000001
+CHS0                              00000002
+CHS1                              00000003
+CHS2                              00000004
+CHS3                              00000005
+CIS                               00000003
+CK                                00000006
+CKE                               00000006
+CKP                               00000004
+CLKI                              00000007
+CLKO                              00000006
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             00000FB4
+CMIE                              00000006
+CMIF                              00000006
+CMIP                              00000006
+CREN                              00000004
+CS                                00000002
+CSRC                              00000007
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 27
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+CVR0                              00000000
+CVR1                              00000001
+CVR2                              00000002
+CVR3                              00000003
+CVRCON                            00000FB5
+CVREF                             00000002
+CVREN                             00000007
+CVROE                             00000006
+CVRR                              00000005
+CVRSS                             00000004
+D                                 00000005
+DC                                00000001
+DC1B0                             00000004
+DC1B1                             00000005
+DC2B0                             00000004
+DC2B1                             00000005
+DONE                              00000001
+DREG                              00000000
+D_A                               00000005
+ECCP1AS                           00000FB6
+ECCPAS0                           00000004
+ECCPAS1                           00000005
+ECCPAS2                           00000006
+ECCPASE                           00000007
+EEADR                             00000FA9
+EECON1                            00000FA6
+EECON2                            00000FA7
+EEDATA                            00000FA8
+EEIE                              00000004
+EEIF                              00000004
+EEIP                              00000004
+EEPGD                             00000007
+FAST                              00000001
+FERR                              00000002
+FLTS                              00000002
+FREE                              00000004
+FSR0                              00000000
+FSR0H                             00000FEA
+FSR0L                             00000FE9
+FSR1                              00000001
+FSR1H                             00000FE2
+FSR1L                             00000FE1
+FSR2                              00000002
+FSR2H                             00000FDA
+FSR2L                             00000FD9
+GCEN                              00000007
+GIE                               00000007
+GIEH                              00000007
+GIEL                              00000006
+GO                                00000001
+GO_DONE                           00000001
+HI_ADDR                           00000000
+HLVDCON                           00000FD2
+HLVDEN                            00000004
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 28
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+HLVDIE                            00000002
+HLVDIF                            00000002
+HLVDIP                            00000002
+HLVDL0                            00000000
+HLVDL1                            00000001
+HLVDL2                            00000002
+HLVDL3                            00000003
+IBF                               00000007
+IBOV                              00000005
+IDLEN                             00000007
+INDF0                             00000FEF
+INDF1                             00000FE7
+INDF2                             00000FDF
+INT0                              00000000
+INT0E                             00000004
+INT0F                             00000001
+INT0IE                            00000004
+INT0IF                            00000001
+INT1                              00000001
+INT1E                             00000003
+INT1F                             00000000
+INT1IE                            00000003
+INT1IF                            00000000
+INT1IP                            00000006
+INT1P                             00000006
+INT2                              00000002
+INT2E                             00000004
+INT2F                             00000001
+INT2IE                            00000004
+INT2IF                            00000001
+INT2IP                            00000007
+INT2P                             00000007
+INTCON                            00000FF2
+INTCON2                           00000FF1
+INTCON3                           00000FF0
+INTEDG0                           00000006
+INTEDG1                           00000005
+INTEDG2                           00000004
+INTSRC                            00000007
+IOFS                              00000002
+IPEN                              00000007
+IPR1                              00000F9F
+IPR2                              00000FA2
+IRCF0                             00000004
+IRCF1                             00000005
+IRCF2                             00000006
+IRVST                             00000005
+IVRST                             00000005
+JUMP_REG                          00000007
+KBI0                              00000004
+KBI1                              00000005
+KBI2                              00000006
+KBI3                              00000007
+LATA                              00000F89
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 29
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+LATA0                             00000000
+LATA1                             00000001
+LATA2                             00000002
+LATA3                             00000003
+LATA4                             00000004
+LATA5                             00000005
+LATA6                             00000006
+LATA7                             00000007
+LATB                              00000F8A
+LATB0                             00000000
+LATB1                             00000001
+LATB2                             00000002
+LATB3                             00000003
+LATB4                             00000004
+LATB5                             00000005
+LATB6                             00000006
+LATB7                             00000007
+LATC                              00000F8B
+LATC0                             00000000
+LATC1                             00000001
+LATC2                             00000002
+LATC3                             00000003
+LATC4                             00000004
+LATC5                             00000005
+LATC6                             00000006
+LATC7                             00000007
+LATD                              00000F8C
+LATD0                             00000000
+LATD1                             00000001
+LATD2                             00000002
+LATD3                             00000003
+LATD4                             00000004
+LATD5                             00000005
+LATD6                             00000006
+LATD7                             00000007
+LATE                              00000F8D
+LATE0                             00000000
+LATE1                             00000001
+LATE2                             00000002
+LO_ADDR                           00000000
+LVDCON                            00000FD2
+LVDEN                             00000004
+LVDIE                             00000002
+LVDIF                             00000002
+LVDIN                             00000005
+LVDIP                             00000002
+LVDL0                             00000000
+LVDL1                             00000001
+LVDL2                             00000002
+LVDL3                             00000003
+LVV0                              00000000
+LVV1                              00000001
+LVV2                              00000002
+LVV3                              00000003
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 30
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+MAIN_TEMP                         00000000
+MCLR                              00000003
+N                                 00000004
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BOR                           00000000
+NOT_CS                            00000002
+NOT_DONE                          00000001
+NOT_MCLR                          00000003
+NOT_PD                            00000002
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RD                            00000000
+NOT_RI                            00000004
+NOT_SS                            00000005
+NOT_T1SYNC                        00000002
+NOT_T3SYNC                        00000002
+NOT_TO                            00000003
+NOT_W                             00000002
+NOT_WR                            00000001
+NOT_WRITE                         00000002
+OBF                               00000006
+OERR                              00000001
+OSC1                              00000007
+OSC2                              00000006
+OSCCON                            00000FD3
+OSCFIE                            00000007
+OSCFIF                            00000007
+OSCFIP                            00000007
+OSCTUNE                           00000F9B
+OSTS                              00000003
+OV                                00000003
+P                                 00000004
+P1B                               00000005
+P1C                               00000006
+P1D                               00000007
+P1M0                              00000006
+P1M1                              00000007
+PC                                00000FF9
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000FF9
+PCLATH                            00000FFA
+PCLATU                            00000FFB
+PD                                00000002
+PDC0                              00000000
+PDC1                              00000001
+PDC2                              00000002
+PDC3                              00000003
+PDC4                              00000004
+PDC5                              00000005
+PDC6                              00000006
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 31
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+PEIE                              00000006
+PEN                               00000002
+PGC                               00000006
+PGD                               00000007
+PGM                               00000005
+PIE1                              00000F9D
+PIE2                              00000FA0
+PIR1                              00000F9E
+PIR2                              00000FA1
+PLLEN                             00000006
+PLUSW0                            00000FEB
+PLUSW1                            00000FE3
+PLUSW2                            00000FDB
+POR                               00000001
+PORTA                             00000F80
+PORTB                             00000F81
+PORTC                             00000F82
+PORTD                             00000F83
+PORTE                             00000F84
+POSTDEC0                          00000FED
+POSTDEC1                          00000FE5
+POSTDEC2                          00000FDD
+POSTINC0                          00000FEE
+POSTINC1                          00000FE6
+POSTINC2                          00000FDE
+PR2                               00000FCB
+PREINC0                           00000FEC
+PREINC1                           00000FE4
+PREINC2                           00000FDC
+PROD                              00000FF3
+PRODH                             00000FF4
+PRODL                             00000FF3
+PRSEN                             00000007
+PSA                               00000003
+PSP0                              00000000
+PSP1                              00000001
+PSP2                              00000002
+PSP3                              00000003
+PSP4                              00000004
+PSP5                              00000005
+PSP6                              00000006
+PSP7                              00000007
+PSPIE                             00000007
+PSPIF                             00000007
+PSPIP                             00000007
+PSPMODE                           00000004
+PSSAC0                            00000002
+PSSAC1                            00000003
+PSSBD0                            00000000
+PSSBD1                            00000001
+PWM1CON                           00000FB7
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 32
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RA6                               00000006
+RA7                               00000007
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RBIP                              00000000
+RBPU                              00000007
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RCEN                              00000003
+RCIDL                             00000006
+RCIE                              00000005
+RCIF                              00000005
+RCIP                              00000005
+RCMT                              00000006
+RCON                              00000FD0
+RCREG                             00000FAE
+RCSTA                             00000FAB
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD16                              00000007
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+RE3                               00000003
+RI                                00000004
+RSEN                              00000001
+RX                                00000007
+RX9                               00000006
+RX9D                              00000000
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 33
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+RXDTP                             00000005
+RX_BSY                            00000004
+RX_CHECKSUM                       00000003
+RX_CKS                            00000003
+RX_COM                            00000000
+RX_COMMAND                        00000001
+RX_COUNT                          00000002
+RX_DAT                            00000002
+RX_FLAGS                          00000004
+RX_LEN                            00000001
+RX_MODE                           00000000
+R_W                               00000002
+S                                 00000003
+SBOREN                            00000006
+SCK                               00000003
+SCKP                              00000004
+SCL                               00000003
+SCS0                              00000000
+SCS1                              00000001
+SDA                               00000004
+SDI                               00000004
+SDO                               00000005
+SEN                               00000000
+SENDB                             00000003
+SMP                               00000007
+SP0                               00000000
+SP1                               00000001
+SP2                               00000002
+SP3                               00000003
+SP4                               00000004
+SPBRG                             00000FAF
+SPBRGH                            00000FB0
+SPEN                              00000007
+SREN                              00000005
+SS                                00000005
+SSPADD                            00000FC8
+SSPBUF                            00000FC9
+SSPCON1                           00000FC6
+SSPCON2                           00000FC5
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPIP                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000FC7
+STATUS                            00000FD8
+STKFUL                            00000007
+STKOVF                            00000007
+STKPTR                            00000FFC
+STKUNF                            00000006
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 34
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+SWDTE                             00000000
+SWDTEN                            00000000
+SYNC                              00000004
+T08BIT                            00000006
+T0CKI                             00000004
+T0CON                             00000FD5
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0PS0                             00000000
+T0PS1                             00000001
+T0PS2                             00000002
+T0SE                              00000004
+T13CKI                            00000000
+T1CKI                             00000000
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000FCD
+T1OSCEN                           00000003
+T1OSI                             00000001
+T1OSO                             00000000
+T1RUN                             00000006
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000FCA
+T2OUTPS0                          00000003
+T2OUTPS1                          00000004
+T2OUTPS2                          00000005
+T2OUTPS3                          00000006
+T3CCP1                            00000003
+T3CCP2                            00000006
+T3CKPS0                           00000004
+T3CKPS1                           00000005
+T3CON                             00000FB1
+T3SYNC                            00000002
+TABLAT                            00000FF5
+TBLPTR                            00000FF6
+TBLPTRH                           00000FF7
+TBLPTRL                           00000FF6
+TBLPTRU                           00000FF8
+TMR0H                             00000FD7
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR0IP                            00000002
+TMR0L                             00000FD6
+TMR0ON                            00000007
+TMR1CS                            00000001
+TMR1H                             00000FCF
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1IP                            00000000
+TMR1L                             00000FCE
+TMR1ON                            00000000
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 35
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+TMR2                              00000FCC
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2IP                            00000001
+TMR2ON                            00000002
+TMR3CS                            00000001
+TMR3H                             00000FB3
+TMR3IE                            00000001
+TMR3IF                            00000001
+TMR3IP                            00000001
+TMR3L                             00000FB2
+TMR3ON                            00000000
+TO                                00000003
+TOS                               00000FFD
+TOSH                              00000FFE
+TOSL                              00000FFD
+TOSU                              00000FFF
+TRISA                             00000F92
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISA6                            00000006
+TRISA7                            00000007
+TRISB                             00000F93
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000F94
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000F95
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000F96
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 36
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TUN0                              00000000
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TX                                00000006
+TX9                               00000006
+TX9D                              00000000
+TXCKP                             00000004
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXIP                              00000004
+TXREG                             00000FAD
+TXSTA                             00000FAC
+TX_CHECKSUM                       00000005
+TX_COUNT                          00000006
+UA                                00000001
+VCFG0                             00000004
+VCFG1                             00000005
+VDIRMAG                           00000007
+VPP                               00000003
+VREFN                             00000002
+VREFP                             00000003
+W                                 00000000
+WCOL                              00000007
+WDTCON                            00000FD1
+WR                                00000001
+WREG                              00000FE8
+WREN                              00000002
+WRERR                             00000003
+WUE                               00000001
+Z                                 00000002
+_BOREN_NOSLP_2L                   000000FD
+_BOREN_OFF_2L                     000000F9
+_BOREN_ON_2L                      000000FB
+_BOREN_SBORDIS_2L                 000000FF
+_BORV_0_2L                        000000E7
+_BORV_1_2L                        000000EF
+_BORV_2_2L                        000000F7
+_BORV_3_2L                        000000FF
+_CCP2MX_PORTBE_3H                 000000FE
+_CCP2MX_PORTC_3H                  000000FF
+_CONFIG1H                         00300001
+_CONFIG2H                         00300003
+_CONFIG2L                         00300002
+_CONFIG3H                         00300005
+_CONFIG4L                         00300006
+_CONFIG5H                         00300009
+_CONFIG5L                         00300008
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 37
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+_CONFIG6H                         0030000B
+_CONFIG6L                         0030000A
+_CONFIG7H                         0030000D
+_CONFIG7L                         0030000C
+_CP0_OFF_5L                       000000FF
+_CP0_ON_5L                        000000FE
+_CP1_OFF_5L                       000000FF
+_CP1_ON_5L                        000000FD
+_CP2_OFF_5L                       000000FF
+_CP2_ON_5L                        000000FB
+_CP3_OFF_5L                       000000FF
+_CP3_ON_5L                        000000F7
+_CPB_OFF_5H                       000000FF
+_CPB_ON_5H                        000000BF
+_CPD_OFF_5H                       000000FF
+_CPD_ON_5H                        0000007F
+_DEBUG_OFF_4L                     000000FF
+_DEBUG_ON_4L                      0000007F
+_DEVID1                           003FFFFE
+_DEVID2                           003FFFFF
+_EBTR0_OFF_7L                     000000FF
+_EBTR0_ON_7L                      000000FE
+_EBTR1_OFF_7L                     000000FF
+_EBTR1_ON_7L                      000000FD
+_EBTR2_OFF_7L                     000000FF
+_EBTR2_ON_7L                      000000FB
+_EBTR3_OFF_7L                     000000FF
+_EBTR3_ON_7L                      000000F7
+_EBTRB_OFF_7H                     000000FF
+_EBTRB_ON_7H                      000000BF
+_FCMEN_OFF_1H                     000000BF
+_FCMEN_ON_1H                      000000FF
+_IDLOC0                           00200000
+_IDLOC1                           00200001
+_IDLOC2                           00200002
+_IDLOC3                           00200003
+_IDLOC4                           00200004
+_IDLOC5                           00200005
+_IDLOC6                           00200006
+_IDLOC7                           00200007
+_IESO_OFF_1H                      0000007F
+_IESO_ON_1H                       000000FF
+_LPT1OSC_OFF_3H                   000000FB
+_LPT1OSC_ON_3H                    000000FF
+_LVP_OFF_4L                       000000FB
+_LVP_ON_4L                        000000FF
+_MCLRE_OFF_3H                     0000007F
+_MCLRE_ON_3H                      000000FF
+_OSC_ECIO6_1H                     000000F5
+_OSC_EC_1H                        000000F4
+_OSC_HSPLL_1H                     000000F6
+_OSC_HS_1H                        000000F2
+_OSC_INTIO67_1H                   000000F8
+_OSC_INTIO7_1H                    000000F9
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 38
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+_OSC_LP_1H                        000000F0
+_OSC_RCIO6_1H                     000000F7
+_OSC_RC_1H                        000000F3
+_OSC_XT_1H                        000000F1
+_PBADEN_OFF_3H                    000000FD
+_PBADEN_ON_3H                     000000FF
+_PWRT_OFF_2L                      000000FF
+_PWRT_ON_2L                       000000FE
+_STVREN_OFF_4L                    000000FE
+_STVREN_ON_4L                     000000FF
+_WDTPS_1024_2H                    000000F5
+_WDTPS_128_2H                     000000EF
+_WDTPS_16384_2H                   000000FD
+_WDTPS_16_2H                      000000E9
+_WDTPS_1_2H                       000000E1
+_WDTPS_2048_2H                    000000F7
+_WDTPS_256_2H                     000000F1
+_WDTPS_2_2H                       000000E3
+_WDTPS_32768_2H                   000000FF
+_WDTPS_32_2H                      000000EB
+_WDTPS_4096_2H                    000000F9
+_WDTPS_4_2H                       000000E5
+_WDTPS_512_2H                     000000F3
+_WDTPS_64_2H                      000000ED
+_WDTPS_8192_2H                    000000FB
+_WDTPS_8_2H                       000000E7
+_WDT_OFF_2H                       000000FE
+_WDT_ON_2H                        000000FF
+_WRT0_OFF_6L                      000000FF
+_WRT0_ON_6L                       000000FE
+_WRT1_OFF_6L                      000000FF
+_WRT1_ON_6L                       000000FD
+_WRT2_OFF_6L                      000000FF
+_WRT2_ON_6L                       000000FB
+_WRT3_OFF_6L                      000000FF
+_WRT3_ON_6L                       000000F7
+_WRTB_OFF_6H                      000000FF
+_WRTB_ON_6H                       000000BF
+_WRTC_OFF_6H                      000000FF
+_WRTC_ON_6H                       000000DF
+_WRTD_OFF_6H                      000000FF
+_WRTD_ON_6H                       0000007F
+_XINST_OFF_4L                     000000BF
+_XINST_ON_4L                      000000FF
+__18F4520                         00000001
+boot_update                       00000000
+ensure_master                     00000000
+get_dma                           00000000
+get_reset                         00000000
+get_slave                         00000000
+io_read                           00000000
+io_write                          00000000
+mem_read                          00000000
+mem_write                         00000000
+gpasm-0.13.7 beta               serial.asm  2-25-2010  22:35:22          PAGE 39
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+revert_master                     00000000
+serial_bios_update                0000033C
+serial_block_mem_read             00000296
+serial_block_mem_read_loop        000002CA
+serial_block_mem_write            000002EC
+serial_block_mem_write_loop       0000030E
+serial_cmd_jumps                  000003A8
+serial_command_dispatch           000000EA
+serial_command_jump_table         00000110
+serial_do_ack                     000007D6
+serial_do_commands                00000372
+serial_do_get_dma                 000007B4
+serial_do_get_reset               000007A8
+serial_do_get_slave               000007C0
+serial_do_reset                   000007CC
+serial_do_reset_loop              000007D0
+serial_error_bad_command          00000824
+serial_error_bios_address_offset  000008E6
+serial_error_bios_address_space   000008DE
+serial_error_checksum             000007F8
+serial_error_do_unknown           000008A6
+serial_error_generic              000008EE
+serial_error_packet_length        000008D6
+serial_error_unused_command       00000850
+serial_error_wrong_parameters     00000878
+serial_handler_exit               00000914
+serial_init                       00000000
+serial_read_io                    00000192
+serial_read_mem                   00000214
+serial_rx_checksum                000000D2
+serial_rx_checksum_passed         000000E4
+serial_rx_command                 000000A4
+serial_rx_data                    000000C4
+serial_rx_int                     00000074
+serial_rx_int_error               00000066
+serial_rx_int_no_error            0000007A
+serial_rx_jump_table              00000092
+serial_rx_length                  000000B0
+serial_send                       00000036
+serial_tx_send_packet             0000003E
+serial_tx_send_packet_checksum    0000005C
+serial_tx_send_packet_data_loop   00000052
+serial_write_io                   000001D4
+serial_write_mem                  00000256
+DDRA                              TRISA
+DDRB                              TRISB
+DDRC                              TRISC
+DDRD                              TRISD
+DDRE                              TRISE
+
+
+Errors   :       0
+Warnings :       0 reported,       0 suppressed
+Messages :       0 reported,       0 suppressed
+

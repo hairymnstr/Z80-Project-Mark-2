@@ -1,0 +1,239 @@
+;------------------------------------------------------------------------------
+;
+; Simple Debug Kernel for CPU supervisor on Z80 Project Mark 2
+; File Version 1 - 20 - Sep - 2009
+; hairymnstr@gmail.com
+;
+; Copyright (C) 2009  Nathan Dumont
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;
+;
+;------------------------------------------------------------------------------
+
+list p=18f4520
+#include <p18f4520.inc>
+
+errorlevel -302
+errorlevel -205
+
+CONFIG OSC = HSPLL
+CONFIG FCMEN = ON, IESO = OFF, PWRT = ON, BOREN = OFF, BORV = 0
+CONFIG WDT = OFF, WDTPS = 1, MCLRE = ON, LPT1OSC = OFF
+CONFIG PBADEN = OFF, CCP2MX = PORTC, STVREN = ON, LVP = OFF
+CONFIG XINST = OFF, DEBUG = OFF, CP0 = OFF, CP1 = OFF, CP2 = OFF, CP3 = OFF
+CONFIG CPB = OFF, CPD = OFF, WRT0 = OFF, WRT1 = OFF, WRT2 = OFF, WRT3 = OFF
+CONFIG WRTB = OFF, WRTC = OFF, WRTD = OFF, EBTR0 = OFF, EBTR1 = OFF
+CONFIG EBTR2 = OFF, EBTR3 = OFF, EBTRB = OFF
+
+;== PORT Definitions ==========================================================
+
+;-- PORT A --------------------------------------------------------------------
+
+P_RESET         EQU     0
+P_BUSRQ         EQU     1
+P_MREQ          EQU     2
+P_IORQ          EQU     3
+P_WAIT          EQU     4
+P_HI_LAT        EQU     5
+
+;-- PORT C --------------------------------------------------------------------
+
+P_BUSACK        EQU     0
+P_SD_CS         EQU     1
+P_CLK           EQU     2
+P_SD_CK         EQU     3
+P_SD_DI         EQU     4
+P_SD_DO         EQU     5
+P_TX            EQU     6
+P_RX            EQU     7
+
+;-- PORT E --------------------------------------------------------------------
+
+P_RD            EQU     0
+P_WR            EQU     1
+P_CS            EQU     2
+
+;== Variables =================================================================
+
+UDATA
+
+count   RES     3
+LO_ADDR RES     1
+HI_ADDR RES     1
+DREG    RES     1
+
+org 0x00
+    goto init
+
+
+init
+    call        set_master      ; Z80 not fitted so PIC is always master atm.
+    movlw       0x00
+    movwf       HI_ADDR
+    movlw       0x01
+    movwf       LO_ADDR         ; Port address of "debug port"
+    bcf         TRISC,5         ; the extra LED on SD card port needs output
+    bsf         LATC,5          ; turn the extra LED on
+    movlw       0x01
+    movwf       DREG            ; initialise DREG with a 1 in the lsb
+
+main
+    ; "Cylon" demo, aka night-rider demo or any other follower light sequence
+    ; writes the next 2^n number to the debug port each time
+    ; shows any shorts on the data bus
+    call        io_write
+    call        delay
+    rlncf       DREG,f
+    bra         main
+
+
+
+
+
+
+
+;******************************************************************************
+;*                                                                            *
+;* set_master - configure pins so PIC is master device                        *
+;*                                                                            *
+;* Inputs:  NONE                                                              *
+;* Outputs: NONE                                                              *
+;* Called:                                                                    *
+;* Changes: TRISB, TRISE, TRISA                                               *
+;*                                                                            *
+;******************************************************************************
+
+set_master
+
+
+    ; set the address pins to output
+    clrf        TRISB
+    movlw       b'11101100'     ;RD and WR as output, disable PSP
+    andwf       TRISE,f
+    movlw       0xFF
+    movwf       LATE            ;set RD and WR High
+
+    movlw       b'11010000'
+    andwf       TRISA,f
+    movlw       b'00111100'
+    iorwf       LATA,f
+    return
+
+;******************************************************************************
+;*                                                                            *
+;* io_read - Read an address on the IO bus                                    *
+;*                                                                            *
+;* Inputs:  HI_ADDR, LO_ADDR                                                  *
+;* Outputs: DREG                                                              *
+;* Called:                                                                    *
+;* Changes:                                                                   *
+;*                                                                            *
+;* Asssumes the PIC is in master mode (WAIT in, RD,WR,IORQ,MREQ and ADDR out  *
+;*                                                                            *
+;******************************************************************************
+
+io_read
+    ; set address
+    movf    HI_ADDR,w
+    movwf   LATB
+    bcf     LATA,P_HI_LAT
+    movf    LO_ADDR,w
+    bsf     LATA,P_HI_LAT
+    movwf   LATB
+    ; 200ns delay before IORQ and RD
+    nop
+    bcf     LATA,P_IORQ
+    bcf     LATE,P_RD
+    nop
+    ; mandatory wait state
+io_read_wait_loop
+    btfss   PORTA,P_WAIT
+    bra     io_read_wait_loop
+    ; store the read data
+    movf    PORTD,w
+    ;release IORQ and RD
+    bsf     LATE,P_RD
+    bsf     LATA,P_IORQ
+    movwf   DREG
+    return
+
+;******************************************************************************
+;*                                                                            *
+;* io_write - Write an address on the IO bus                                  *
+;*                                                                            *
+;* Inputs:  HI_ADDR, LO_ADDR, DREG                                            *
+;* Outputs: NONE                                                              *
+;* Called:                                                                    *
+;* Changes:                                                                   *
+;*                                                                            *
+;* Asssumes the PIC is in master mode (WAIT in, RD,WR,IORQ,MREQ and ADDR out  *
+;*                                                                            *
+;******************************************************************************
+
+io_write
+    ; set address
+    movf        HI_ADDR,w
+    movwf       LATB
+    bcf         LATA,P_HI_LAT
+    movf        LO_ADDR,w
+    bsf         LATA,P_HI_LAT
+    movwf       LATB
+    ; 200ns delay before IORQ and RD
+    movf        DREG,w          ; write the data to the bus
+    movwf       LATD
+    clrf        TRISD           ; don't forget to drive the bus for a write!!
+    bcf         LATA,P_IORQ
+    bcf         LATE,P_WR
+    nop
+    ; mandatory wait state
+io_write_wait_loop
+    btfss       PORTA,P_WAIT
+    bra         io_write_wait_loop
+    ;release IORQ and RD
+    bsf         LATE,P_WR
+    bsf         LATA,P_IORQ
+    setf        TRISD           ; stop driving the bus again
+    return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+delay
+    clrf count
+    clrf count+1
+    movlw 0x08
+    movwf count+2
+delay_loop
+    decfsz count,f
+    goto delay_loop
+    decfsz count+1,f
+    goto delay_loop
+    decfsz count+2,f
+    goto delay_loop
+    return
+
+end

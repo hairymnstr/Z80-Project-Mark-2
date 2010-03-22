@@ -1,0 +1,95 @@
+DEBUG:          equ 1   ; Debug LEDs and UART reset line        w
+RCSTA:          equ 1   ; UART Status register                  r
+; RCSTA bits
+DR:     equ 0x01
+OE:     equ 0x02
+FE:     equ 0x04
+PE:     equ 0x08
+TBRE:   equ 0x10
+TRE:    equ 0x20
+
+TXREG:          equ 0   ; UART Transmit buffer                  w
+RCREG:          equ 0   ; UART Receive buffer                   r
+SD_DATA:        equ 2   ; SD card (DMA PIC) port                r/w
+KEY_DATA:       equ 3   ; Keyboard data port                    r/w
+GPU_COMMAND:    equ 4   ; GPU Command port                      r/w
+GPU_DATA:       equ 5   ; GPU Data port                         r/w
+PIF:            equ 6   ; Periferal Interupt Flag register      r
+PIE:            equ 6   ; Periferal Interupt Enable register    w
+; periferal interrupt priorities
+CKIE:           equ 0x01
+CKIF:           equ 0
+KBIE:           equ 0x02
+KBIF:           equ 1
+UARTIE:         equ 0x04
+UARTIF:         equ 2
+GPUIE:          equ 0x08
+GPUIF:          equ 3
+SDIE:           equ 0x10
+SDIF:           equ 4
+USBIE:          equ 0x20
+USBIF:          equ 5
+IE6:            equ 0x40
+IF6:            equ 6
+IE7:            equ 0x80
+IF7:            equ 7
+
+USB_DATA:       equ 7   ; USB host port interface               r/w
+STATUS:         equ 8   ; a general status port                 r
+; status bit flags
+USB_RXF:        equ 7
+USB_TXE:        equ 6
+GPU_RDY:        equ 5
+KEY_DETECT:     equ 4
+KEY_RDY:        equ 3
+SD_RDY:         equ 2
+SD_RXF:         equ 1
+SD_TXE:         equ 0
+
+
+SECREG:         equ 0x10
+SECALM:         equ 0x11
+MINREG:         equ 0x12
+MINALM:         equ 0x13
+HRSREG:         equ 0x14
+HRSALM:         equ 0x15
+DAYREG:         equ 0x16
+DAYALM:         equ 0x17
+DOWREG:         equ 0x18
+MONREG:         equ 0x19
+YRREG:          equ 0x1A
+PRGREG:         equ 0x1B
+INTCON:         equ 0x1C
+; INTCON bits
+RTC_AIE:        equ 3
+RTC_AIEM:       equ $8
+RTC_PIE:        equ 2
+RTC_PIEM:       equ $4
+RTC_PWRIE:      equ 1
+RTC_PWRIEM:     equ $2
+RTC_ABE:        equ 0
+RTC_ABEM:       equ $1
+
+FLGREG:         equ 0x1D
+; FLGREG bits
+RTC_AF:         equ 3
+RTC_AFM:        equ $8
+RTC_PF:         equ 2
+RTC_PFM:        equ $4
+RTC_PWRF:       equ 1
+RTC_PWRFM:      equ $2
+RTC_BVF:        equ 0
+RTC_BVFM:       equ $1
+
+CTRLREG:        equ 0x1E
+
+; CTRLREG bits
+RTC_UTI:        equ 3
+RTC_UTIM:       equ $8
+RTC_STOP:       equ 2
+RTC_STOPM:      equ $4
+RTC_24:         equ 1
+RTC_24M:        equ $2
+RTC_DSE:        equ 0
+RTC_DSEM:       equ $1
+

@@ -1,0 +1,675 @@
+;-------------------------------------------------------------------------------
+;|                                                                             |
+;| menu.z8a - bios menu for the Mark 2 Z80 project                             |
+;| File Version: 1.0                                                           |
+;| hairymnstr@gmail.com                                                        |
+;|                                                                             |
+;| Copyright (C) 2010  Nathan Dumont                                           |
+;|                                                                             |
+;| This program is free software: you can redistribute it and/or modify        |
+;| it under the terms of the GNU General Public License as published by        |
+;| the Free Software Foundation, either version 3 of the License, or           |
+;| (at your option) any later version.                                         |
+;|                                                                             |
+;| This program is distributed in the hope that it will be useful,             |
+;| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+;| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+;| GNU General Public License for more details.                                |
+;|                                                                             |
+;| You should have received a copy of the GNU General Public License           |
+;| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+;|                                                                             |
+;-------------------------------------------------------------------------------
+
+;-------------------------------------------------------------------------------
+; menu_start - entry point for bios menu code (after boot this is used for stack
+;-------------------------------------------------------------------------------
+
+menu_start:
+  ; all the basic setup tasks have been done.  Just need to do user interaction
+  ; now, should be fairly slow
+
+  ; first display the menu
+  ;; here would be where to set the colour pallette once that is possible
+  call          gpu_cls                 ; clear the screen
+  ld            hl, msg_menu_init
+  call          gpu_str
+
+  call          menu_clock_speed        ; initialise the speed setting
+  call          menu_boot               ; initialise the boot priority list
+
+
+  ; go into the main loop, updating the display periodically
+menu_main:
+
+  call          menu_poll_keyboard
+  ; deal with any key presses
+  ld            a, (last_key)
+  xor           CC_RIGHT
+  jr            z, menu_next_field
+  ld            a, (last_key)
+  xor           CC_LEFT
+  jr            z, menu_prev_field
+  ld            a, (last_key)
+  xor           CC_UP
+  jr            z, menu_inc_field
+  ld            a, (last_key)
+  xor           CC_DOWN
+  jr            z, menu_dec_field
+  ld            a, (last_key)
+  xor           CC_F11
+  jp            z, menu_load_defaults
+  ld            a, (last_key)
+  xor           CC_F10
+  jp            z, menu_save_exit
+  ld            a, (last_key)
+  xor           CC_ESC
+  jp            z, menu_exit
+
+
+  jr            menu_done_keys
+
+menu_next_field:
+  ; consuming the key so clear it
+  ld            a, 0
+  ld            (last_key),a
+  ld            a, (menu_active_field)
+  inc           a
+  ld            (menu_active_field),a
+  xor           MENU_NUM_FIELDS
+  jr            nz, menu_done_keys
+  ld            (menu_active_field),a
+  jr            menu_done_keys
+
+menu_prev_field:
+  ld            a, 0
+  ld            (last_key),a
+  ld            a, (menu_active_field)
+  xor           0
+  jr            z, menu_prev_field_wrap
+  dec           a
+  ld            (menu_active_field),a
+  jr            menu_done_keys
+
+menu_prev_field_wrap:
+  ld            a, MENU_NUM_FIELDS
+  dec           a
+  ld            (menu_active_field),a
+  jr            menu_done_keys
+
+menu_inc_field:
+  ld            a, 0
+  ld            (last_key),a
+  ; complicated operation, need to do bound checking on different types
+  ; a jump from here to the appropriate code
+  ld            hl, menu_inc_jump
+  jr            menu_decinc_jump
+
+menu_dec_field:
+  ld            a, 0
+  ld            (last_key),a
+  ; complicated operation, need to do bound checking on different types
+  ; a jump from here to the appropriate code
+  ld            hl, menu_dec_jump
+
+menu_decinc_jump:
+  ld            a, (menu_active_field)
+  sla           a               ; times 2
+  add           a, l
+  jr            nc, menu_dec_field_do_jump
+  inc           h
+menu_dec_field_do_jump:
+  ld            l, a
+  ld            e, (hl)
+  inc           hl
+  ld            d, (hl)
+
+  ex            de,hl
+  jp            (hl)
+
+menu_done_keys:
+  call          menu_datetime           ; update the clock
+
+  ; do the active field highlighting
+  ld            hl, menu_field_data
+  ld            c, 0
+menu_highlight_loop_outer:
+  ; now load the row
+  ld            a,(hl)
+  call          gpu_set_row
+
+  inc           hl
+  ; and the column
+  ld            a,(hl)
+  call          gpu_set_column
+
+  inc           hl
+  ; see how many characters
+  ld            b,(hl)
+  inc           hl
+
+  ld            a, (menu_active_field)
+  cp            c
+  jr            z, menu_highlight_colour
+  ; not active set to normal
+menu_no_highlight:
+  in            a, (GPU_DATA)
+  and           $7F
+  out           (GPU_DATA), a
+  djnz          menu_no_highlight
+
+  jr            menu_done_highlight
+
+menu_highlight_colour:
+  in            a, (GPU_DATA)
+  or            $80             ; set MSB to invert colours
+  out           (GPU_DATA), a
+  djnz          menu_highlight_colour
+
+menu_done_highlight:
+  inc           c
+  ld            a, MENU_NUM_FIELDS
+  xor           c
+  jr            nz, menu_highlight_loop_outer
+
+  ; loop indefinitely
+  jp            menu_main
+
+;-------------------------------------------------------------------------------
+;  menu_datetime - get the date and time from the RTC and print
+;-------------------------------------------------------------------------------
+menu_datetime:
+  ; now update all the digits
+  ld            a, $03
+  call          gpu_set_column  ; set cursor at start of date/time string
+  ld            a, $04
+  call          gpu_set_row
+
+  ld            a, 0
+  call          rtc_dow_short_str
+  call          gpu_str
+
+  ld            a, $08
+  call          gpu_set_column
+
+  ld            hl, rtc_year    ; point to local copy of year (high byte)
+
+  ld            a, (menu_active_field)
+  xor           0
+  jr            nz, menu_update_year_nohi
+
+  ld            a, 4
+  call          gpu_hex_high
+  jr            menu_update_done_year
+
+menu_update_year_nohi:
+  ld            a, 4            ; print millenium/century digits
+  call          gpu_hex
+
+menu_update_done_year:
+  ld            a, "-"
+  out           (GPU_DATA),a    ; quick way to increment cursor
+
+  dec           hl
+  ld            a, (menu_active_field)
+  xor           1
+  jr            nz, menu_update_mon_nohi
+  ld            a, 2
+  call          gpu_hex_high
+  jr            menu_update_mon_done
+menu_update_mon_nohi:
+  ld            a, 2
+  call          gpu_hex
+
+menu_update_mon_done:
+  ld            a, "-"
+  out           (GPU_DATA),a
+  
+  dec           hl
+  ld            a, (menu_active_field)
+  xor           2
+  jr            nz, menu_update_day_nohi
+  ld            a, 2
+  call          gpu_hex_high
+  jr            menu_update_day_done
+menu_update_day_nohi:
+  ld            a, 2
+  call          gpu_hex
+
+menu_update_day_done:
+
+  ld            a, $20          ; space
+  out           (GPU_DATA),a
+
+  dec           hl
+  ld            a, (menu_active_field)
+  xor           3
+  jr            nz, menu_update_hour_nohi
+  ld            a, 2
+  call          gpu_hex_high
+  jr            menu_update_hour_done
+
+menu_update_hour_nohi:
+  ld            a, 2
+  call          gpu_hex
+
+menu_update_hour_done:
+  ld            a, ":"
+  out           (GPU_DATA),a
+
+  dec           hl
+  ld            a, (menu_active_field)
+  xor           4
+  jr            nz, menu_update_min_nohi
+  ld            a, 2
+  call          gpu_hex_high
+  jr            menu_update_min_done
+menu_update_min_nohi:
+  ld            a, 2
+  call          gpu_hex
+
+menu_update_min_done:
+  ld            a, ":"
+  out           (GPU_DATA),a
+  
+  dec           hl
+  ld            a, (menu_active_field)
+  xor           5
+  jr            nz, menu_update_sec_nohi
+  ld            a, 2
+  call          gpu_hex_high
+  ret
+
+menu_update_sec_nohi:
+  ld            a, 2
+  call          gpu_hex
+  ret
+
+;-------------------------------------------------------------------------------
+;  menu_clock_speed - displays the current clock speed in MHz
+;-------------------------------------------------------------------------------
+menu_clock_speed:
+  ; set the cursor
+  ld            a, $F
+  call          gpu_set_column
+  ld            a, $6
+  call          gpu_set_row
+
+  ; now copy it to the working reg for BCD conversion
+  ; get the clock speed index
+  ld            a, (system_clock)
+
+  ; multiply by 4
+  rla           a
+  rla           a
+
+  ; now lookup speed in hz
+  ld            hl, system_clock_speeds
+  add           a, l
+  jr            nc, menu_clock_nocarry
+  inc           h
+menu_clock_nocarry:
+  ld            l, a
+
+;   ld            hl, system_clock
+  ld            a, 4                    ; do a 32 bit conversion
+
+  call          maths_bin_to_bcd
+
+  ; now print two characters of the integer part (support for future systems
+  ; with clock speeds exceeding 9.99MHz
+
+  ld            hl, maths_op_c+3
+
+  ld            a, 2
+  call          gpu_hex
+
+  ld            a, "."
+  out           (GPU_DATA),a
+
+  ld            hl, maths_op_c+2
+
+  ld            a, 2
+  call          gpu_hex
+
+  ret
+
+;-------------------------------------------------------------------------------
+; menu_boot - display the current boot order
+;-------------------------------------------------------------------------------
+
+menu_boot:
+  ; set the cursor
+  ld            a, 8
+  call          gpu_set_row
+  ld            a, $F
+  call          gpu_set_column
+
+  ld            a, (system_boot_order)
+  ld            hl, menu_boot_option_strings
+  sla           a               ; times 2 for 16bit lookup
+  add           a, l
+  jr            nc, menu_boot_no_carry
+  inc           h
+menu_boot_no_carry:
+  ld            l, a
+  ld            e, (hl)
+  inc           hl
+  ld            d, (hl)
+  ex            de, hl
+  call          gpu_str
+  ret
+
+; == Increment Functions =======================================================
+;-------------------------------------------------------------------------------
+;  menu_inc_year - increment the year in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_inc_year:
+  call          rtc_inc_year
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_inc_month - increment the month in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_inc_month:
+  call          rtc_inc_month
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_inc_day - increment the day in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_inc_day:
+  call          rtc_inc_day
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_inc_hour - increment the hour in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_inc_hour:
+  call          rtc_inc_hour
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_inc_min - increment the minute in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_inc_min:
+  call          rtc_inc_min
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_inc_sec - increment the second in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_inc_sec:
+  call          rtc_inc_sec
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_inc_clock - increment the clock speed setting
+;-------------------------------------------------------------------------------
+menu_inc_clock:
+  ld            a, (system_clock)
+  inc           a
+  xor           MENU_CLOCK_MAX
+  jr            nz, menu_inc_clock_no_overflow
+  ld            a, MENU_CLOCK_MAX
+menu_inc_clock_no_overflow:
+  xor           MENU_CLOCK_MAX
+  ld            (system_clock), a
+  call          menu_clock_speed
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_inc_boot - increment the boot options list
+;-------------------------------------------------------------------------------
+menu_inc_boot:
+  ld            a, (system_boot_order)
+  inc           a
+  xor           MENU_BOOT_OPTIONS
+  jr            nz, menu_inc_boot_nowrap
+  ; a is too big, wrap
+  ld            a, MENU_BOOT_OPTIONS    ; xors to 0!!
+menu_inc_boot_nowrap:
+  xor           MENU_BOOT_OPTIONS       ; makes A back to what it was
+  ld            (system_boot_order), a
+  call          menu_boot               ; update the display
+  jp            menu_done_keys
+
+; == Decrement functions =======================================================
+
+;-------------------------------------------------------------------------------
+;  menu_dec_year - decrement the year in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_dec_year:
+  call          rtc_dec_year
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_dec_month - decrement the month in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_dec_month:
+  call          rtc_dec_month
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_dec_day - decrement the day in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_dec_day:
+  call          rtc_dec_day
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_dec_hour - decrement the hour in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_dec_hour:
+  call          rtc_dec_hour
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_dec_min - decrement the minute in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_dec_min:
+  call          rtc_dec_min
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_dec_sec - decrement the second in the RTC and check value
+;-------------------------------------------------------------------------------
+menu_dec_sec:
+  call          rtc_dec_sec
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_dec_clock - decrement the clock speed setting
+;-------------------------------------------------------------------------------
+menu_dec_clock:
+  ld            a, (system_clock)
+  xor           0
+  jr            nz, menu_dec_clock_no_loop
+  ld            a, MENU_CLOCK_MAX
+menu_dec_clock_no_loop:
+  dec           a
+  ld            (system_clock), a
+  call          menu_clock_speed
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+;  menu_dec_boot - decrement the boot options list
+;-------------------------------------------------------------------------------
+menu_dec_boot:
+  ld            a, (system_boot_order)
+  xor           0
+  jr            nz, menu_dec_no_loop
+  ld            a, MENU_BOOT_OPTIONS
+menu_dec_no_loop:
+  dec           a
+  ld            (system_boot_order), a
+  call          menu_boot
+  jp            menu_done_keys
+
+; == Poll for a keypress =======================================================
+
+menu_poll_keyboard:
+  di            ; need to look at the interrupt flag without causing an int
+  ld            a, 0
+  out           (PIE), a
+  in            a, (PIF)
+  bit           KBIF, a
+  jr            nz, menu_poll_keyboard_null
+  ; there is a keypress
+  in            a, (KEY_DATA)
+  ld            (last_key), a
+  jr            menu_poll_keyboard_exit
+
+menu_poll_keyboard_null:
+  ld            a, 0
+  ld            (last_key), a
+
+menu_poll_keyboard_exit:
+  ld            a, (system_interrupts)
+  out           (PIE), a
+
+  ei
+  ret
+
+; == SAVE, EXIT and LOAD =======================================================
+
+;-------------------------------------------------------------------------------
+; menu_load_defaults - load the default values (doesn't affect time)
+;-------------------------------------------------------------------------------
+menu_load_defaults:
+  ld            a, 0
+  ld            (last_key), a
+  ld            a, MENU_DEFAULT_CLOCK_SPEED
+  ld            (system_clock), a
+  call          menu_clock_speed
+
+  ld            a, MENU_DEFAULT_BOOT_OPTION
+  ld            (system_boot_order), a
+  call          menu_boot
+
+  jp            menu_done_keys
+
+;-------------------------------------------------------------------------------
+; menu_save_exit - save the settings and exit
+;-------------------------------------------------------------------------------
+menu_save_exit:
+  ld            a, (system_clock)
+  ld            b, BIOS_CLOCK_ADDRESS
+  call          bios_save_var
+
+  ld            a, (system_boot_order)
+  ld            b, BIOS_BOOT_ADDRESS
+  call          bios_save_var
+
+  jp            menu_exit
+
+;-------------------------------------------------------------------------------
+; menu_exit - issues a reset command to the PIC
+;-------------------------------------------------------------------------------
+menu_exit:
+  jp            bios_reset
+
+; == Strings ===================================================================
+
+msg_menu_init:  ;0123456789ABCDEF0123456789ABCDE   F
+  defm          "\n"
+  defm          "  Z80 Project Mark 2: BIOS\n"
+  defm          "\n"
+  defm          "  Time:\n"
+  defm          "   Dow, yyyy-mm-dd HH:MM:SS\n"
+  defm          "\n"
+  defm          "  Clock Speed: 00.00 MHz\n"
+  defm          "\n"
+  defm          "  Boot Order:  SD, USB\n"
+  defm          "\n"
+  defm          "-------------------------------\n"
+  defm          " F10=Save & Quit   F11=Load Defaults   ESC=Cancel\n"
+  defm          " Left/Right Arrow keys = select field, Up/Down = change\n"
+  defb          $0
+
+menu_active_field:
+  db            $0
+
+menu_field_data:
+; field 0 - year
+  db            4       ; row
+  db            8       ; col
+  db            4       ; length
+; field 1 - month
+  db            4
+  db            $D
+  db            2
+; field 2 - day
+  db            4
+  db            $10
+  db            2
+; field 3 - hour
+  db            4
+  db            $13
+  db            2
+; field 4 - min
+  db            4
+  db            $16
+  db            2
+; field 5 - sec
+  db            4
+  db            $19
+  db            2
+; field 6 - clock speed
+  db            6
+  db            $0F
+  db            5
+; field 7 - boot order
+  db            8
+  db            $0F
+  db            7
+
+menu_inc_jump:
+  defw          menu_inc_year
+  defw          menu_inc_month
+  defw          menu_inc_day
+  defw          menu_inc_hour
+  defw          menu_inc_min
+  defw          menu_inc_sec
+  defw          menu_inc_clock
+  defw          menu_inc_boot
+
+menu_dec_jump:
+  defw          menu_dec_year
+  defw          menu_dec_month
+  defw          menu_dec_day
+  defw          menu_dec_hour
+  defw          menu_dec_min
+  defw          menu_dec_sec
+  defw          menu_dec_clock
+  defw          menu_dec_boot
+
+menu_boot_option_strings:
+  defw          menu_boot_option0_str
+  defw          menu_boot_option1_str
+  defw          menu_boot_option2_str
+  defw          menu_boot_option3_str
+
+menu_boot_option0_str:
+  defm          "SD     "
+  defb          0
+
+menu_boot_option1_str:
+  defm          "USB    "
+  defb          0
+
+menu_boot_option2_str:
+  defm          "SD, USB"
+  defb          0
+
+menu_boot_option3_str:
+  defm          "USB, SD"
+  defb          0
+
+MENU_COLOUR_NORMAL:     equ 0
+MENU_COLOUR_HIGHLIGHT:  equ 1
+MENU_NUM_FIELDS:        equ 8
+MENU_BOOT_OPTIONS:      equ 4
+MENU_CLOCK_MAX:         equ 4
+MENU_DEFAULT_CLOCK_SPEED:       equ     3       ; default = 5MHz
+MENU_DEFAULT_BOOT_OPTION:       equ     0       ; SD only

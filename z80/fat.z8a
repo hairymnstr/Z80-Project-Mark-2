@@ -1,0 +1,719 @@
+;-------------------------------------------------------------------------------
+;|                                                                             |
+;| fat.z8a - FAT16/32 subroutines for the Mark 2 Z80 project                   |
+;| File Version: 1.0                                                           |
+;| hairymnstr@gmail.com                                                        |
+;|                                                                             |
+;| Copyright (C) 2010  Nathan Dumont                                           |
+;|                                                                             |
+;| This program is free software: you can redistribute it and/or modify        |
+;| it under the terms of the GNU General Public License as published by        |
+;| the Free Software Foundation, either version 3 of the License, or           |
+;| (at your option) any later version.                                         |
+;|                                                                             |
+;| This program is distributed in the hope that it will be useful,             |
+;| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+;| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+;| GNU General Public License for more details.                                |
+;|                                                                             |
+;| You should have received a copy of the GNU General Public License           |
+;| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+;|                                                                             |
+;-------------------------------------------------------------------------------
+
+;===============================================================================
+; fat_init - read a FAT boot sector and setup the FAT driver
+;===============================================================================
+;; sd_block should be set pointing to the start of the FAT partition before 
+;; calling this function.  It should be called before any other FAT subroutines.
+
+fat_init:
+  push          hl
+  push          de
+  push          bc
+  push          af
+
+  ; read the FAT specification, already pointing at a FAT boot sector
+  ld            hl, disk_buf
+  call          sd_read_block
+  jp            c, fat_disk_error
+
+  ; cluster size (in blocks)
+  ld            a, (disk_buf+$D)
+  ld            (fat_cluster_size), a
+
+  ; number of reserved blocks
+  ld            hl, (disk_buf+$E)
+  ld            (fat_reserved_sec), hl
+
+  ; number of FATs
+  ld            a, (disk_buf+$10)
+  ld            (fat_fat_count), a
+
+  ; number of root entries (only applies for FAT16)
+  ld            hl, (disk_buf+$11)
+  ; only really interested in number of sectors used by root dir.
+  ; blocks = (root_entries * 32) / 512 ; 32 bytes per entry
+  ; so 16 entries per block, so shift right by 4
+  ld            a, h
+  rrca                          ; swap nibbles
+  rrca
+  rrca
+  rrca
+  ld            d, a            ; save in d for a moment
+  and           $f0             ; mask upper nibble (was lower of upper byte)
+  ld            e, a            ; save in lower byte
+  ld            a, d            ; get the upper back
+  and           $f              ; mask to bottom 4 bits (were top 4)
+  ld            d, a
+  ld            a, l            ; get low byte
+  and           $f0             ; mask of high nibble
+  rrca
+  rrca
+  rrca
+  rrca                          ; swap nibbles
+  or            e               ; or with top half of low byte
+  ld            e, a            ; save
+
+  ld            a, l            ; make sure there was no remainder
+  and           $f
+  jr            z, fat_init_no_spare_root
+  inc           de              ; round up if there was
+fat_init_no_spare_root:
+  ld            (fat_root_len), de
+  ld            de, $0000
+  ld            (fat_root_len+2), de    ; save as 32 bit
+
+  ; need to grab the number of sectors, we'll test in a bit whether this is
+  ; zero, and overwrite with big_number_of_sectors if so
+  ld            hl, (disk_buf+$13)
+  ld            (fat_block_count), hl
+  ld            hl, $0000
+  ld            (fat_block_count+2), hl
+
+  ; sectors per fat for FAT16, quickest to copy it anyway, we'll overwrite
+  ; with 32bit val later for FAT32
+  ld            hl, (disk_buf+$16)
+  ld            (fat_len), hl
+  ld            hl, $0000
+  ld            (fat_len+2), hl
+
+  ; now need to check big_number_of_sectors, only load if fat_block_count is
+  ; zero
+  ld            hl, fat_block_count
+  ld            a, 0
+  cpi
+  jr            nz, fat_init_skip_big_sectors
+  cpi
+  jr            nz, fat_init_skip_big_sectors
+  ; fat_block_count is zero, so need to load big_num... here
+  ld            hl, (disk_buf+$20)
+  ld            (fat_block_count), hl
+  ld            hl, (disk_buf+$22)
+  ld            (fat_block_count+2), hl
+
+fat_init_skip_big_sectors:  
+  ; Initialise the start cluster address to 1, for FAT16
+  ld            hl, $0001
+  ld            (fat_root_dir_cluster), hl
+  ld            hl, $0000
+  ld            (fat_root_dir_cluster+2), a
+
+  ; Initialise active fat to 0 for FAT16
+  ld            a, 0
+  ld            (fat_active_fat), a
+
+  ; skip over the next bit if it's a FAT16 filesystem
+  ld            a, (system_filesystem)
+  xor           $06
+  jp            z, fat_init_derived
+
+  ; -- FAT32 only info ---------------------------------------------------------
+
+  ; big sectors per fat - over-writes fat_len
+  ld            hl, (disk_buf+$24)
+  ld            (fat_len), hl
+  ld            hl, (disk_buf+$26)
+  ld            (fat_len+2), hl
+
+  ; find out which fat is active
+  ld            a, (disk_buf+$28)
+  and           $f
+  ld            (fat_active_fat), a
+
+  ; root directory start cluster
+  ld            hl, (disk_buf+$2C)
+  ld            (fat_root_dir_cluster), hl
+  ld            hl, (disk_buf+$2E)
+  ld            (fat_root_dir_cluster+2), hl
+
+  ; -- Derived Stats -----------------------------------------------------------
+fat_init_derived:
+  ; some of the stats are only used in combination, so working them out here
+  ; will save time when reading the file system.
+  
+  ; fat_start - first sector address of the active FAT
+  ld            hl, (fat_reserved_sec)
+  ld            (maths_op_a), hl
+  ld            hl, $0000               ; only 16 bit
+  ld            (maths_op_a+2), hl
+
+  ; need the block offset to the partition too
+  ld            hl, (sd_block)
+  ld            (maths_op_b), hl
+  ld            hl, (sd_block+2)
+  ld            (maths_op_b+2), hl
+
+  call          maths_add32
+
+  ; maths op_a now has the base of the first FAT
+  ld            hl, (fat_len)
+  ld            (maths_op_b), hl
+  ld            hl, (fat_len+2)
+  ld            (maths_op_b+2), hl
+
+  ld            a, (fat_active_fat)
+  cp            0
+  jr            z, fat_init_derived_no_mul
+
+  ld            b, a
+fat_init_derived_mul:
+  call          maths_add32
+  djnz          fat_init_derived_mul
+
+fat_init_derived_no_mul:
+  ; maths_op_a now contains the base sector address of the _active_ FAT
+  ld            hl, (maths_op_a)
+  ld            (fat_start), hl
+  ld            hl, (maths_op_a+2)
+  ld            (fat_start+2), hl
+
+  ; now keep adding for the number of fats to get the end of the fats
+  ld            a, (fat_active_fat)
+  ld            b, a
+  ld            a, (fat_fat_count)
+  sub           b
+  ld            b, a                    ; counts from zero
+
+fat_init_derived_mul2:
+  call          maths_add32
+  djnz          fat_init_derived_mul2
+
+  ; now pointing at the end of the FATs, if this is a FAT16 need to do root dir
+  ld            a, (system_filesystem)
+  cp            $06
+  jr            nz, fat_init_derived_skip_root
+
+
+  ; maths_op_a is fat_root_start right now, so save that
+  ld            hl, (maths_op_a)
+  ld            (fat_root_start), hl
+  ld            hl, (maths_op_a+2)
+  ld            (fat_root_start+2), hl
+
+  ; now add root_len (we calculated earlier to get the start of cluster #2
+  ld            hl, (fat_root_len)
+  ld            (maths_op_b), hl
+  ld            hl, (fat_root_len+2)
+  ld            (maths_op_b+2), hl
+
+  call          maths_add32
+
+  ; now maths_op_a is pointing at the start of data, carry on with both fat32/16
+fat_init_derived_skip_root:
+  ; need to subtract 2 times cluster len from maths_op_a to get start of sector0
+  ld            a, (fat_cluster_size)
+  ld            l, a
+  ld            h, 0
+  add           hl, hl                  ; quick add 8 bit to itself
+  ld            de, (maths_op_a)
+  ex            de, hl
+  scf
+  ccf
+  sbc           hl, de                  ; subtract 2*cluster len from op_a
+  ld            (fat_cluster0), hl
+  ld            de, $0000
+  ld            hl, (maths_op_a+2)
+  sbc           hl, de                  ; take care of carry if there was
+  ld            (fat_cluster0+2), hl
+
+  ; lastly - see how many clusters on the disk
+  ; (fat_block_count - (num_fats * fat_len) - res_blocks) / (blocks per cluster)
+  ; actually also want to add 2 to this so it is a cluster number rather than
+  ; a count.  So subtract the start of the partition from sector0
+  ld            hl, (fat_cluster0)
+  ld            (maths_op_a), hl
+  ld            hl, (fat_cluster0+2)
+  ld            (maths_op_a+2), hl
+
+  ld            hl, (sd_block)
+  ld            (maths_op_b), hl
+  ld            hl, (sd_block+2)
+  ld            (maths_op_b+2), hl
+
+  call          maths_sub32_b           ; save in b so we can subtract it from
+                                        ; something
+  ; now subtract the result from fat_block_count
+  ld            hl, (fat_block_count)
+  ld            (maths_op_a), hl
+  ld            hl, (fat_block_count+2)
+  ld            (maths_op_a+2), hl
+
+  call          maths_sub32
+
+  ; now divide by fat_cluster_size
+  ld            a, (fat_cluster_size)
+  ld            l, a
+  ld            h, 0
+  ld            (maths_op_b), hl
+  ld            hl, $0000
+  ld            (maths_op_b+2), hl
+
+  call          maths_div32
+
+  ld            hl, (maths_op_c)
+  ld            (fat_max_cluster), hl
+  ld            hl, (maths_op_c+2)
+  ld            (fat_max_cluster+2), hl
+
+  ; all done, should do pops here
+  pop           af
+  pop           bc
+  pop           de
+  pop           hl
+  scf
+  ccf
+  ret
+
+fat_disk_error:
+  pop           af
+  pop           bc
+  pop           de
+  pop           hl
+  scf
+  ret
+
+;===============================================================================
+; fat_select_cluster - (re)initialise the FAT firmware pointing at a specific
+;                      cluster.
+;===============================================================================
+;; Called after an update to fat_cluster.  Points fat_block to the start of the
+;; current cluster and calculates fat_last_block for this cluster.  Also
+;; performs error checking on the sector number, if the number is 0 it returns
+;; with carry set but no error in sd_error, the same behaviour is used for
+;; cluster numbers higher than the highest available.  This works for FAT entry
+;; checking.  On FAT16 requesting Sector #1 will return the first block of the
+;; root directory.  On FAT32 this will fail like requesting 0 or high numbers.
+
+fat_select_cluster:
+  push          hl
+  push          de
+  push          bc
+  push          af
+  ; fat_select_cluster_intern - entry point for other fat routines which have
+  ; already pushed registers, i.e. jp commands not call
+fat_select_cluster_intern:
+  ; error check the cluster requested.  This is very FS dependent so split here
+  ; based on FS type
+  ld            a, (system_filesystem)
+  xor           $06
+  jr            z, fat_select_cluster_fat16
+
+fat_select_cluster_fat32:
+  ; test the lower bound first
+  ; test top 3 bytes, if all are 0 then we'll check the bottom byte
+  ld            a, $00
+  ld            hl, fat_cluster+1
+  ld            bc, $03
+fat_select_cluster_fat32_low_bound:
+  cpi                                   ; note decrements BC
+  jr            nz, fat_select_cluster_fat32_high_bound
+  ; po (parity odd) when BC is zero i.e. we're done all 3
+  jp            pe, fat_select_cluster_fat32_low_bound  ; not done yet
+  
+  ; if exectution got here top 3 bytes of cluster are all zero
+  ; need to test for 1 or 0 and reject them
+  ld            a, (fat_cluster)
+  cp            0
+  jp            z, fat_select_cluster_fail      ; can't get cluster 0 don't try
+  cp            1
+  jp            z, fat_select_cluster_fail
+
+  ; it is possible that this is a really badly configured FAT that has less than
+  ; 256 clusters so best test high bound too.
+fat_select_cluster_fat32_high_bound:
+  ; copy max cluster to maths_op_a and current cluster to maths_op_b
+  ; if a > b maths_flags_C will be set
+  ld            hl, (fat_cluster)
+  ld            (maths_op_b), hl
+  ld            hl, (fat_cluster+2)
+  ld            (maths_op_b+2), hl
+
+  ld            hl, (fat_max_cluster)
+  ld            (maths_op_a), hl
+  ld            hl, (fat_max_cluster+2)
+  ld            (maths_op_a+2), hl
+  
+  call          maths_sub32
+
+  ld            a, (maths_flags)
+  bit           MATHS_C, a
+  jp            nz, fat_select_cluster_fail
+
+  jp            fat_select_cluster_join
+
+;-------------------------------------------------------------------------------
+; fat_select_cluster_fat16 - apply sensible bounds to the sector request
+;-------------------------------------------------------------------------------
+fat_select_cluster_fat16:
+  xor           a
+  ld            hl, fat_cluster+1
+  cpd                                                   ; compare high and dec
+  jr            nz, fat_select_cluster_fat16_high_bound ; jump if not zero
+  cp            (hl)                                    ; compare low to zero
+  jp            z, fat_select_cluster_fail              ; if both are zero fail
+  ld            a, 1
+  cp            (hl)
+  jr            z, fat_select_cluster_fat16_root        ; requested root dir
+
+fat_select_cluster_fat16_high_bound:
+  ld            de, (fat_cluster)               ; only a 16 bit number
+  ld            hl, (fat_max_cluster)
+  sbc           hl, de                          ; do subtraction to set flags
+
+  jr            c, fat_select_cluster_fail      ; too big
+
+  jp            fat_select_cluster_join
+  
+fat_select_cluster_fat16_root:
+  ; sector 1 was requested which we take to mean the root directory
+  ld            hl, (fat_root_start)
+  ld            (fat_block), hl
+  ld            de, (fat_root_len)
+  add           hl, de
+  ld            (fat_last_block), hl
+  ld            hl, (fat_root_start+2)
+  ld            (fat_block+2), hl
+  ld            de, (fat_root_len+2)
+  adc           hl, de
+  ld            (fat_last_block+2), hl
+
+  jp            fat_select_cluster_fat16_root_join
+  
+fat_select_cluster_join:
+  ; cluster is okay, need to get a block address from it
+  ld            hl, (fat_cluster)
+  ld            (maths_op_b), hl
+  ld            hl, (fat_cluster+2)
+  ld            (maths_op_b+2), hl
+
+  ; add to the cluster0 address
+  ld            hl, (fat_cluster0)
+  ld            (maths_op_a), hl
+  ld            hl, (fat_cluster0+2)
+  ld            (maths_op_a+2), hl
+
+  ld            a, (fat_cluster_size)
+  ld            b, a
+fat_select_cluster_mul:
+  call          maths_add32
+  djnz          fat_select_cluster_mul
+
+  ld            hl, (maths_op_a)
+  ld            (fat_block), hl
+  ld            a, (fat_cluster_size)
+  ld            e, a
+  ld            d, 0
+  dec           de                      ; need overflow not zero in test later
+  add           hl, de
+  ld            (fat_last_block), hl
+  ld            hl, (maths_op_a+2)
+  ld            (fat_block+2), hl
+  ld            e, 0
+  adc           hl, de
+  ld            (fat_last_block), hl
+
+fat_select_cluster_fat16_root_join:
+  ; fat16 rejoins here if the root directory was requested
+
+  ; need to load fat_block into sd_block
+  ld            hl, (fat_block)
+  ld            (sd_block), hl
+  ld            hl, (fat_block+2)
+  ld            (sd_block+2), hl
+
+  ; pop registers first so carry flag is preserved
+  pop           af
+  pop           bc
+  pop           de
+  pop           hl
+  call          sd_read_block
+  ; all done, return straight away to preserve flags from sd_read_block
+  ret
+
+fat_select_cluster_fail:
+  ; the requested cluster was not available, the last one was end of chain
+  ; or the request was out of range for the current disk
+  xor           a
+  ld            (sd_error), a           ; clear the last disk read error (if
+                                        ; any) so this doesn't look like a disk
+                                        ; error.
+  ; pop variables then set carry flag
+  pop           af
+  pop           bc
+  pop           de
+  pop           hl
+  scf
+  ret
+
+;===============================================================================
+; fat_next_block - fetch the next block in the current file/folder.
+;===============================================================================
+
+;; Fetches the next block of the current file or folder.  On return Carry is
+;; set if the fetch failed.  If the fat_error register is clear then it just
+;; means the end of the file was reached.
+fat_next_block:
+  push          hl
+  push          de
+  push          bc
+  push          af
+  ; calculate the address of the next block
+  ; 32 bit inc on fat_block
+  ld            de, $0000               ; clear de
+  scf                                   ; set carry flag to cause increment
+  ld            hl, (fat_block)         ; load low word
+  adc           hl, de                  ; 16bit add 0 plus carry
+  ld            (fat_block), hl         ; save low word
+  ld            hl, (fat_block+2)       ; load the high word
+  adc           hl, de                  ; add carry from last word
+  ld            (fat_block+2), hl       ; save
+
+  ; see if this block is within the current cluster
+  ; do this by subtracting fat_block from fat_last_block without write back
+  ; if carry flag is set at the end then there's overflow and we're in the
+  ; next cluster
+  scf
+  ccf                                   ; can't sub so need carry clear for sbc
+  ld            de, (fat_block)
+  ld            hl, (fat_last_block)
+  sbc           hl, de                  ; sets carry flag on borrow
+  ld            de, (fat_block+2)
+  ld            hl, (fat_last_block+2)
+  sbc           hl, de
+
+  ; carry is set if borrow, so need to look for next cluster
+  jp            c, fat_next_cluster_intern
+
+  ; otherwise we're safe to keep reading
+  ld            hl, (fat_block)
+  ld            (sd_block), hl
+  ld            hl, (fat_block+2)
+  ld            (sd_block+2), hl
+
+  ; pop registers and let read_block return fail/success in carry
+  pop           af
+  pop           bc
+  pop           de
+  pop           hl
+  call          sd_read_block
+  ret
+
+;===============================================================================
+; fat_next_cluster - fetch the next cluster of the active file/folder
+;===============================================================================
+
+;; This function finds the number of the next cluster in the active file/folder
+;; if there is one and calls fat_select_cluster to initialise that cluster.
+;; Returns directly with carry flag set and FAT_ERROR_NONE if there are no more
+;; clusters in the current file.  Otherwise the return is from
+;; fat_select_cluster.
+fat_next_cluster:
+  push          hl
+  push          de
+  push          bc
+  push          af
+fat_next_cluster_intern:                ; jp address rather than call
+  ; need to lookup this cluster in the FAT first.  This depends heavily on the
+  ; version of FAT being used so we branch here
+  ld            a, (system_filesystem)
+  xor           $06
+  jr            z, fat_next_cluster_fat16
+
+;-------------------------------------------------------------------------------
+; fat_next_cluster_fat32 - find the next cluster in a FAT32 filesystem
+;-------------------------------------------------------------------------------
+fat_next_cluster_fat32:
+  ; use sd block to get the address of this cluster's FAT entry
+  ld            hl, (fat_start)
+  ld            (maths_op_b), hl
+  ld            hl, (fat_start+2)
+  ld            (maths_op_b), hl
+
+  ; real data clusters start at cluster #2, but clusters #0 and #1 have entries
+  ld            hl, (fat_cluster)
+  ld            (maths_op_a), hl
+  ld            hl, (fat_cluster+2)
+  ld            (maths_op_a+2), hl
+
+  ld            a, 7
+  
+  call          maths_asrn32            ; 128 entries per 512 byte block
+
+  call          maths_add32             ; add to offset to start of active FAT
+
+  ld            hl, (maths_op_a)
+  ld            (sd_block), hl
+  ld            hl, (maths_op_a+2)
+  ld            (sd_block+2), hl
+
+  ld            hl, disk_buf
+  call          sd_read_block
+
+  ; appropriate block of the FAT is now in the disk_buf
+  ld            hl, disk_buf
+  ld            a, (fat_cluster)        ; get lsbs that are offset in block
+  and           $7F                     ; bottom 7 bits define the entry within
+  rlca                                  ; (clears carry flag) 16 bit aligned
+  rla                                   ; 32 bit aligned, puts high bit in carry
+  ld            e, a                    ; save in low half of de
+  ld            a, 0                    ; clear a
+  rla                                   ; shift in the msb from carry
+  ld            d, a
+
+  add           hl, de                  ; add the offset to the start of block
+
+  ; now pointing at entry for this cluster
+  ; copy it into fat_cluster and call fat_select_cluster, that does all the
+  ; error checking for out of range clusters.
+  ld            a, (hl)
+  ld            (fat_cluster), a
+  inc           hl
+  ld            a, (hl)
+  ld            (fat_cluster+1), a
+  inc           hl
+  ld            a, (hl)
+  ld            (fat_cluster+2), a
+  inc           hl
+  ld            a, (hl)
+  ld            (fat_cluster+3), a
+
+  jp            fat_select_cluster_intern
+
+;-------------------------------------------------------------------------------
+; fat_next_cluster_fat16 - find the next cluster on a FAT16 filesystem
+;-------------------------------------------------------------------------------
+fat_next_cluster_fat16:
+  ; always use FAT0 on FAT16 drives, but store it's address in active_fat_start
+  ld            hl, (fat_start)
+  ld            (maths_op_b), hl
+  ld            hl, (fat_start+2)
+  ld            (maths_op_b), hl
+
+  ; FAT 16 has 256 entries per 512byte block.  Need to copy bytes into maths
+  ; operator 1 byte shifted right
+  ld            hl, (fat_cluster+1)
+  ld            (maths_op_a), hl
+  ld            h, $00
+  ld            a, (fat_cluster+3)
+  ld            l, a
+  ld            (maths_op_a), hl
+
+  call          maths_add32
+
+  ld            hl, (maths_op_a)
+  ld            (sd_block), hl
+  ld            hl, (maths_op_a+2)
+  ld            (sd_block+2), hl
+
+  ld            hl, disk_buf
+  call          sd_read_block
+
+  ld            hl, disk_buf
+  ld            a, (fat_cluster)
+  scf
+  ccf
+  rla
+  ld            e, a
+  ld            a, $00
+  rla
+  ld            d, a
+  add           hl, de
+
+  xor           a
+  ld            (fat_cluster+3), a
+  ld            (fat_cluster+2), a              ; only 16 bit cluster address
+  ld            a, (hl)
+  ld            (fat_cluster+1), a
+  inc           hl
+  ld            a, (hl)
+  ld            (fat_cluster), a
+
+  jp            fat_select_cluster_intern
+
+; fat_debug_parms:
+;   ld            hl, fat_root_dir_cluster
+;   ld            a, 8
+;   call          gpu_hex
+;   ld            a, $20
+;   out           (GPU_DATA), a
+;   ld            hl, fat_cluster_size
+;   ld            a, 2
+;   call          gpu_hex
+;   ld            a, $20
+;   out           (GPU_DATA), a
+;   ld            hl, fat_cluster0
+;   ld            a, 8
+;   call          gpu_hex
+;   ld            a, $20
+;   out           (GPU_DATA), a
+;   ld            hl, fat_root_len
+;   ld            a, 8
+;   call          gpu_hex
+;   ld            a, $A
+;   out           (GPU_DATA), a
+;   ret
+fat_cluster:
+  defs          4
+
+fat_block:
+  defs          4
+
+fat_last_block:
+  defs          4
+
+fat_max_cluster:
+  defs          4
+
+fat_start:
+  defs          4
+
+fat_root_len:
+  defs          4
+
+fat_root_start:
+  defs          4
+
+fat_cluster0:
+  defs          4
+
+fat_cluster_size:
+  defs          1
+
+fat_root_dir_cluster:
+  defs          4
+
+fat_active_fat:
+  defs          1
+
+fat_fat_count:
+  defs          1
+
+fat_len:
+  defs          4
+
+fat_reserved_sec:
+  defs          2
+
+fat_block_count:
+  defs          4

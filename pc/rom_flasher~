@@ -1,0 +1,99 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+################################################################################
+#                                                                              #
+#  rom_flasher - A python utility to flash the ROM image stored on board the   #
+#                PIC via the debug RS232 link                                  #
+#                                                                              #
+################################################################################
+
+# uses the serial lib file which encapsulates protocol specific functions
+import seriallib
+
+import sys, os
+
+# goal: copy a binary image to the Flash in the PIC
+# steps:
+#   1. locate binary image on disk
+#   2. load binary image into memory
+#   3. do some validation to make sure it will fit
+#   4. make sure it's a multiple of 128 bytes
+#   5. loop through sending the image 128 bytes at a time, checking response
+#   6. keep the user up to data by printing something like a progress bar.
+
+# 1. locate binary image on disk
+# check if the user provided any information about it
+if len(sys.argv) < 2:
+  sys.stderr.write("Usage: %s imagename.bin\n" % sys.argv[0])
+  sys.exit(1)
+
+# maybe they did!! lets not trust them though
+if not os.path.isfile(sys.argv[1]):
+  sys.stderr.write("Specified image file does not exist!\n")
+  sys.exit(1)
+
+# looks like the user even gave a valid file name, wow!  Just one more test...
+if not os.path.splitext(sys.argv[1])[1] == ".bin":
+  sys.stderr.write("File is not a .bin file, may not be an image!\n")
+  # maybe the user actually knows what they're doing and we're being paranoid
+  # let's ask them to confirm, then it's not our fault!!
+  sys.stderr.write("Continue anyway? [y/N] ")
+  a = raw_input()
+  # if it's not the definite yes, assume no
+  if not a == "y":
+    sys.exit(0)
+
+# got a file name, looks like it might be valid.
+
+# 2. Load binary image into memory
+fb = file(sys.argv[1],"rb")
+d = fb.read()
+fb.close()
+
+# 3. Do some validation to make sure it will fit
+# now we have some size data chunk in memory
+# if it's longer than 8K it won't fit in the space avaialable, give up
+if len(d) > 8192:
+  sys.stderr.write("The file you selected is too large.  Max size 8K\n")
+  sys.exit(1)
+
+# 4. Make sure it's a multiple of 128 bytes
+# so the length is within range.  If it's not a multiple of 128 though we need
+# to zero pad it.
+if len(d) < 128:
+  # pad to 128, very short BIOS this one!
+  d = d + "\x00" * (128 - len(d))
+elif len(d) % 128 > 0:
+  # needs padding
+  d = d + "\x00" * (128 - (len(d) % 128))
+
+# 5. loop through the image 128 bytes at a time, checking response
+sys.stdout.write("[ " + " " * 76 + " ]")
+sys.stdout.flush()
+tp = seriallib.Packet()
+rp = seriallib.Packet()
+sp = seriallib.Port()
+for n in range(len(d)/128):
+  tp.set_command(seriallib.UPDBIOS)
+  tgth = (n & 0x1FE) >> 1
+  tgtl = (n & 0x1) << 7
+  tgt = "%c%c" % (tgth, tgtl)
+  tp.set_data(tgt + d[n*128:n*128+128])
+  sp.send(tp)
+  rp = sp.receive()
+  if not rp.get_error()[0] == 0:
+    sys.stderr.write("\n")
+    sys.stderr.write("Error encountered programming address 0x%04x:\n" % (n*128))
+    sys.stderr.write("  Code %d: %s\n" % rp.get_error())
+    sys.exit(1)
+  # got an okay packet, carry on
+  # first update progress
+  sys.stdout.write("\x08" * 80)
+  amountcomp = n/(len(d)/128)*76
+  progbar = "[ " + "=" * (amountcomp - 1) + ">"
+  progbar += " " * (78 - len(progbar)) + " ]"
+  sys.stdout.write(progbar)
+  sys.stdout.flush()
+
+sys.stdout.write("\x08" * 80 + "[ " + "=" * 76 + " ]\nDone!\n")

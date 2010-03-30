@@ -1,0 +1,46 @@
+\chapter{PIC BIOS Commands}
+After boot, the PIC becomes a slave device on the Z80 I/O bus.  It can then be
+interrupted by either a serial command on the debug port from a host PC (see
+Chapter \ref{chap:debug}) or by a command from the Z80.
+
+\section{Protocol}
+The PIC uses a similar protocol to the Vinculum USB host to throttle access,
+there are two flags in the Z80's STATUS register; SD\_TXE and SD\_RXF.  These
+two flags permit reading (SD\_RXF) when low and writing (SD\_TXE) when low.  The
+PIC will never talk without first being requested for data so SD\_RXF will only
+go low when a request has been completed and resulted in some data.  There is a
+third bit in the STATUS register called SD\_RDY, this is asserted (low) by the
+PIC when an SD card is attached and has been successfully initialised.  Failure
+to check the state of this pin before requesting data from the SD card will
+almost certainly result in a timeout and garbage data.
+
+\section{Commands}
+Commands take the form of single byte values.  There are only 64 commands higher
+values are masked so will execute whatever command is specified by the lower six
+bits.  If the value is not mentioned below, that command is not used and will
+perform no operation.
+
+Commands should be written command and then all bytes of argument in sequence.
+No acknowledgement is provded after individual bytes.  If the bytes cause any
+processing time to be required the SD\_TXE flag will be set high to prevent
+further writes until the PIC is ready for the next byte.  Responses are made as
+quickly as possible and are signified by a lowering of SD\_RXF (also SD\_INT).
+
+\subsection{BIOS\_RESET\_CMD \$3F}
+This command takes no arguments and returns no data.  On reception of this
+command the PIC will immediately do a full system reset (as if the front panel
+reset button had been pressed).
+
+\subsection{BIOS\_READ\_VAR\_CMD \$0A}
+Takes one byte argument; the address to be read, returns one byte of data; the
+contents of requested address in the PIC's internal EEPROM memory.  This is used
+to fetch BIOS parameters such as the boot order and system clock speed.
+
+Defined registers:\\
+\noindent BIOS_BOOT_ADDRESS, Address \$00, contains the BIOS boot order.
+\noindent BIOS_CLOCK_ADDRESS, Ad
+
+\subsection{BIOS\_WRITE\_VAR\_CMD \$0B}
+Takes two byte arguments; the address followed by the data.  Works in the same
+way as BIOS\_READ\_VAR\_CMD to write to the PIC's internal EEPROM memory.  No
+response is made on the completion of this command.

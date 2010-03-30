@@ -1,0 +1,73 @@
+\chapter{File Formats}
+The design of the OS for the Z80 project relies on a number of custom file
+formats.  These have been designed to be simple but flexible.
+
+\section{Assembly files *.z8a}
+All the Z80 assembly code for the project is in files named with a .z8a
+extension.  There is no special format to these files, however the use of the
+unique file extension is useful in highlighting the code correctly and
+distinguishing it from PIC assembly code, for example.
+
+\section{Bootable files *.z8b}
+Currently there is only one *.z8b file defined.  This is the BOOT.Z8B default
+kernel image.  The basic format for this file type is the same as other
+executables (see Section \ref{sec:exes} Executable Files, for details), however 
+to qualify as bootables, they must be compiled to run from address \$0000.  The
+code will be loaded from this file up to address \$7FFF or the end of the file,
+whichever comes first.  If a kernel grows beyond 32KB it is then responsible for
+loading the rest of the file into other pages of memory once it has been
+bootstrapped and is running itself.  A BIOS variable is left by the bootloader
+to indicate which of the mass-storage devices the boot image was found on.  This
+is sufficient currently to identify the BOOT.Z8B file to load any further data
+after boot.
+
+Other files with this extension are reserved for future implementations of more
+flexible bootloaders.
+
+\section{Program files *.z8p}
+Standing for Z80 Program, the Z8P file is a standard executable format (see
+Section \ref{sec:exes}.  These programs must be compiled to run from address
+\$8000.  They will be loaded into memory until they reach address \$FFFF, or the
+end of the file, whichever comes first.  If the program is larger than 32KB then
+it must request additional memory from the OS and add load these new pages with
+the rest of the code/data.
+
+There are several entry points into a Program executable.  These have yet to be
+defined but will include interrupt service routines etc.
+
+\section{Library files *.z8l}
+Library files are a special instance of executable files.  Similar in purpose to
+.dll or .so files on Windows or Linux, they contain routines that may be used in
+many different programs that can be called into at run-time.  They are loaded by
+the OS in response to library requests from programs.  Only one copy of each
+library will ever be loaded at a time so all functions must be stateless i.e.
+they have no internal memory so that they can be called from multiple concurrent
+threads in interrupts etc.
+
+Library file format details are not yet decided, other than the overall
+executable format.
+
+\section{Executable Files}
+\label{sec:exes}
+All of the executable files share the following basic format:
+
+\noindent
+\begin{tabular}{llp{11.5cm}}
+ \textbf{Offset}&\textbf{Bytes}&\textbf{Description}\\
+ 0&1&Version key, for the Mark 2 project this will always be \$02.  This ensures
+     that the system does not try and run files for incompatible hardware.\\
+ 1&2&Header length (HL), a 16 bit count from the start of the file to the first
+     byte of the program code.  This is always 3 or more to encompass the
+     Version key and the header length itself.  This flexible offset allows for
+     any data up to 64KB in size to be stored in the header even if the software
+     loading the program does not understand the header.  Uses envisioned
+     include author information, some sort of permissions structure or other
+     general meta-data.\\
+ HL&Any&The actual program code starts in the first byte after the header.\\
+\end{tabular}
+
+The intention of using this format is to keep the code simple (read three bytes
+then perform a single seek operation to find the data) allowing fast loading of
+software.  However there is room for version numbers or any other type of
+arbitrary meta data in the header even if the software loading this file doesn't
+understand what the header fields actually mean.

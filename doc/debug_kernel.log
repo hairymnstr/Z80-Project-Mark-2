@@ -1,15 +1,16 @@
-This is pdfTeXk, Version 3.141592-1.40.3 (Web2C 7.5.6) (format=pdflatex 2010.1.9)  22 MAR 2010 23:40
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2010.10.18)  7 DEC 2010 19:58
 entering extended mode
+ restricted \write18 enabled.
  %&-line parsing enabled.
 **debug_kernel.tex
 (./debug_kernel.tex
-LaTeX2e <2005/12/01>
-Babel <v3.8h> and hyphenation patterns for english, usenglishmax, dumylang, noh
+LaTeX2e <2009/09/24>
+Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
 yphenation, loaded.
 (/usr/share/texmf-texlive/tex/latex/base/book.cls
-Document Class: book 2005/09/16 v1.4f Standard LaTeX document class
+Document Class: book 2007/10/19 v1.4h Standard LaTeX document class
 (/usr/share/texmf-texlive/tex/latex/base/bk10.clo
-File: bk10.clo 2005/09/16 v1.4f Standard LaTeX file (size option)
+File: bk10.clo 2007/10/19 v1.4h Standard LaTeX file (size option)
 )
 \c@part=\count79
 \c@chapter=\count80
@@ -32,73 +33,137 @@ Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
 \KV@toks@=\toks14
 )
 (/usr/share/texmf-texlive/tex/latex/graphics/graphics.sty
-Package: graphics 2006/02/20 v1.0o Standard LaTeX Graphics (DPC,SPQR)
+Package: graphics 2009/02/05 v1.0o Standard LaTeX Graphics (DPC,SPQR)
 
 (/usr/share/texmf-texlive/tex/latex/graphics/trig.sty
 Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
 )
 (/etc/texmf/tex/latex/config/graphics.cfg
-File: graphics.cfg 2007/01/18 v1.5 graphics configuration of teTeX/TeXLive
+File: graphics.cfg 2009/08/28 v1.8 graphics configuration of TeX Live
 )
-Package graphics Info: Driver file: pdftex.def on input line 90.
+Package graphics Info: Driver file: pdftex.def on input line 91.
 
 (/usr/share/texmf-texlive/tex/latex/pdftex-def/pdftex.def
-File: pdftex.def 2007/01/08 v0.04d Graphics/color for pdfTeX
+File: pdftex.def 2010/03/12 v0.04p Graphics/color for pdfTeX
 \Gread@gobject=\count88
 ))
 \Gin@req@height=\dimen103
 \Gin@req@width=\dimen104
 )
 (/usr/share/texmf-texlive/tex/latex/hyperref/hyperref.sty
-Package: hyperref 2007/02/07 v6.75r Hypertext links for LaTeX
+Package: hyperref 2009/10/09 v6.79a Hypertext links for LaTeX
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifpdf.sty
+Package: ifpdf 2009/04/10 v2.0 Provides the ifpdf switch (HO)
+Package ifpdf Info: pdfTeX in pdf mode detected.
+)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifvtex.sty
+Package: ifvtex 2008/11/04 v1.4 Switches for detecting VTeX and its modes (HO)
+Package ifvtex Info: VTeX not detected.
+)
+(/usr/share/texmf-texlive/tex/generic/ifxetex/ifxetex.sty
+Package: ifxetex 2009/01/23 v0.5 Provides ifxetex conditional
+)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hycolor.sty
+Package: hycolor 2009/10/02 v1.5 Code for color options of hyperref/bookmark (H
+O)
+
+(/usr/share/texmf-texlive/tex/latex/oberdiek/xcolor-patch.sty
+Package: xcolor-patch 2009/10/02 xcolor patch
+))
 \@linkdim=\dimen105
 \Hy@linkcounter=\count89
 \Hy@pagecounter=\count90
 
 (/usr/share/texmf-texlive/tex/latex/hyperref/pd1enc.def
-File: pd1enc.def 2007/02/07 v6.75r Hyperref: PDFDocEncoding definition (HO)
+File: pd1enc.def 2009/10/09 v6.79a Hyperref: PDFDocEncoding definition (HO)
 )
-(/etc/texmf/tex/latex/config/hyperref.cfg
+(/usr/share/texmf-texlive/tex/generic/oberdiek/etexcmds.sty
+Package: etexcmds 2007/12/12 v1.2 Prefix for e-TeX command names (HO)
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/infwarerr.sty
+Package: infwarerr 2007/09/09 v1.2 Providing info/warning/message (HO)
+)
+Package etexcmds Info: Could not find \expanded.
+(etexcmds)             That can mean that you are not using pdfTeX 1.50 or
+(etexcmds)             that some package has redefined \expanded.
+(etexcmds)             In the latter case, load this package earlier.
+)
+(/usr/share/texmf-texlive/tex/latex/latexconfig/hyperref.cfg
 File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive
 )
 (/usr/share/texmf-texlive/tex/latex/oberdiek/kvoptions.sty
-Package: kvoptions 2006/08/22 v2.4 Connects package keyval with LaTeX options (
-HO)
-)
-Package hyperref Info: Option `bookmarks' set `true' on input line 2238.
-Package hyperref Info: Option `breaklinks' set `true' on input line 2238.
-Package hyperref Info: Option `colorlinks' set `true' on input line 2238.
-Package hyperref Info: Option `hypertexnames' set `false' on input line 2238.
-Package hyperref Info: Hyper figures OFF on input line 2288.
-Package hyperref Info: Link nesting OFF on input line 2293.
-Package hyperref Info: Hyper index ON on input line 2296.
-Package hyperref Info: Plain pages OFF on input line 2303.
-Package hyperref Info: Backreferencing OFF on input line 2308.
+Package: kvoptions 2009/08/13 v3.4 Keyval support for LaTeX options (HO)
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/kvsetkeys.sty
+Package: kvsetkeys 2009/07/30 v1.5 Key value parser with default handler suppor
+t (HO)
+))
+Package hyperref Info: Option `bookmarks' set `true' on input line 2864.
+Package hyperref Info: Option `breaklinks' set `true' on input line 2864.
+Package hyperref Info: Option `colorlinks' set `true' on input line 2864.
+Package hyperref Info: Option `hypertexnames' set `false' on input line 2864.
+Package hyperref Info: Hyper figures OFF on input line 2975.
+Package hyperref Info: Link nesting OFF on input line 2980.
+Package hyperref Info: Hyper index ON on input line 2983.
+Package hyperref Info: Plain pages OFF on input line 2990.
+Package hyperref Info: Backreferencing OFF on input line 2995.
 
 Implicit mode ON; LaTeX internals redefined
-Package hyperref Info: Bookmarks ON on input line 2444.
+Package hyperref Info: Bookmarks ON on input line 3191.
 (/usr/share/texmf-texlive/tex/latex/ltxmisc/url.sty
 \Urlmuskip=\muskip10
-Package: url 2005/06/27  ver 3.2  Verb mode for urls, etc.
+Package: url 2006/04/12  ver 3.3  Verb mode for urls, etc.
 )
-LaTeX Info: Redefining \url on input line 2599.
+LaTeX Info: Redefining \url on input line 3428.
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bitset.sty
+Package: bitset 2007/09/28 v1.0 Data type bit set (HO)
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/intcalc.sty
+Package: intcalc 2007/09/27 v1.1 Expandable integer calculations (HO)
+)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bigintcalc.sty
+Package: bigintcalc 2007/11/11 v1.1 Expandable big integer calculations (HO)
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/pdftexcmds.sty
+Package: pdftexcmds 2009/09/23 v0.6 LuaTeX support for pdfTeX utility functions
+ (HO)
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifluatex.sty
+Package: ifluatex 2009/04/17 v1.2 Provides the ifluatex switch (HO)
+Package ifluatex Info: LuaTeX not detected.
+)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ltxcmds.sty
+Package: ltxcmds 2009/08/05 v1.0 Some LaTeX kernel commands for general use (HO
+)
+)
+Package pdftexcmds Info: LuaTeX not detected.
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+)))
 \Fld@menulength=\count91
 \Field@Width=\dimen106
 \Fld@charsize=\dimen107
-\Choice@toks=\toks15
-\Field@toks=\toks16
-Package hyperref Info: Hyper figures OFF on input line 3102.
-Package hyperref Info: Link nesting OFF on input line 3107.
-Package hyperref Info: Hyper index ON on input line 3110.
-Package hyperref Info: backreferencing OFF on input line 3117.
-Package hyperref Info: Link coloring ON on input line 3120.
+\Field@toks=\toks15
+Package hyperref Info: Hyper figures OFF on input line 4377.
+Package hyperref Info: Link nesting OFF on input line 4382.
+Package hyperref Info: Hyper index ON on input line 4385.
+Package hyperref Info: backreferencing OFF on input line 4392.
+Package hyperref Info: Link coloring ON on input line 4395.
+Package hyperref Info: Link coloring with OCG OFF on input line 4402.
+Package hyperref Info: PDF/A mode OFF on input line 4407.
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/atbegshi.sty
+Package: atbegshi 2008/07/31 v1.9 At begin shipout hook (HO)
+)
 \Hy@abspage=\count92
 \c@Item=\count93
 \c@Hfootnote=\count94
 )
 *hyperref using driver hpdftex*
 (/usr/share/texmf-texlive/tex/latex/hyperref/hpdftex.def
-File: hpdftex.def 2007/02/07 v6.75r Hyperref driver for pdfTeX
+File: hpdftex.def 2009/10/09 v6.79a Hyperref driver for pdfTeX
 \Fld@listcount=\count95
 )
 (/usr/share/texmf-texlive/tex/latex/fancyhdr/fancyhdr.sty
@@ -116,10 +181,10 @@ File: hpdftex.def 2007/02/07 v6.75r Hyperref driver for pdfTeX
 Package: tabularx 1999/01/07 v2.07 `tabularx' package (DPC)
 
 (/usr/share/texmf-texlive/tex/latex/tools/array.sty
-Package: array 2005/08/23 v2.4b Tabular extension package (FMi)
+Package: array 2008/09/09 v2.4c Tabular extension package (FMi)
 \col@sep=\dimen108
 \extrarowheight=\dimen109
-\NC@list=\toks17
+\NC@list=\toks16
 \extratabsurround=\skip52
 \backup@length=\skip53
 )
@@ -129,7 +194,7 @@ Package: array 2005/08/23 v2.4b Tabular extension package (FMi)
 \TX@target=\dimen113
 \TX@delta=\dimen114
 \TX@cols=\count96
-\TX@ftn=\toks18
+\TX@ftn=\toks17
 ) (./debug_kernel.aux)
 \openout1 = `debug_kernel.aux'.
 
@@ -148,18 +213,18 @@ LaTeX Font Info:    ... okay on input line 38.
 LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 38.
 LaTeX Font Info:    ... okay on input line 38.
 
-(/usr/share/texmf/tex/context/base/supp-pdf.tex
+(/usr/share/texmf/tex/context/base/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count97
 \scratchdimen=\dimen115
 \scratchbox=\box26
 \nofMPsegments=\count98
 \nofMParguments=\count99
-\everyMPshowfont=\toks19
+\everyMPshowfont=\toks18
 \MPscratchCnt=\count100
 \MPscratchDim=\dimen116
 \MPnumerator=\count101
-\everyMPtoPDFconversion=\toks20
+\everyMPtoPDFconversion=\toks19
 ) (/usr/share/texmf-texlive/tex/latex/graphics/color.sty
 Package: color 2005/11/14 v1.0j Standard LaTeX Color (DPC)
 
@@ -171,10 +236,10 @@ Package color Info: Driver file: pdftex.def on input line 130.
 Package hyperref Info: Link coloring ON on input line 38.
 
 (/usr/share/texmf-texlive/tex/latex/hyperref/nameref.sty
-Package: nameref 2006/12/27 v2.28 Cross-referencing by name of section
+Package: nameref 2007/05/29 v2.31 Cross-referencing by name of section
 
 (/usr/share/texmf-texlive/tex/latex/oberdiek/refcount.sty
-Package: refcount 2006/02/20 v3.0 Data extraction from references (HO)
+Package: refcount 2008/08/11 v3.1 Data extraction from references (HO)
 )
 \c@section@level=\count102
 )
@@ -184,6 +249,7 @@ LaTeX Info: Redefining \pageref on input line 38.
 \@outlinefile=\write3
 \openout3 = `debug_kernel.out'.
 
+\AtBeginShipoutBox=\box27
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <12> on input line 41.
 LaTeX Font Info:    External font `cmex10' loaded for size
@@ -247,7 +313,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 85--86
 
 [7
 
-] <noteicon.pdf, id=684, 57.816pt x 57.816pt>
+] <noteicon.pdf, id=680, 57.816pt x 57.816pt>
 File: noteicon.pdf Graphic file (type pdf)
  <use noteicon.pdf>
 Underfull \vbox (badness 1038) has occurred while \output is active []
@@ -277,22 +343,18 @@ Overfull \hbox (7.00671pt too wide) in paragraph at lines 209--209
 []|\OT1/cmr/m/n/10 KEY[]RDY| 
  []
 
-[9 <./noteicon.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./noteicon.pdf): PDF inclusion: Page Gr
-oup detected which pdfTeX can't handle. Ignoring it.
->] [10]
+[9 <./noteicon.pdf>] [10]
 Chapter 2.
-<uart_jumpers.pdf, id=699, 337.26pt x 262.58101pt>
+<uart_jumpers.pdf, id=695, 337.26pt x 262.58101pt>
 File: uart_jumpers.pdf Graphic file (type pdf)
  <use uart_jumpers.pdf>
-<jpbr1.pdf, id=702, 74.679pt x 100.375pt>
+<jpbr1.pdf, id=699, 74.679pt x 100.375pt>
 File: jpbr1.pdf Graphic file (type pdf)
  <use jpbr1.pdf>
-<jpbr2.pdf, id=703, 74.679pt x 100.375pt>
+<jpbr2.pdf, id=701, 74.679pt x 100.375pt>
 File: jpbr2.pdf Graphic file (type pdf)
  <use jpbr2.pdf>
-<jpbr3.pdf, id=704, 74.679pt x 100.375pt>
+<jpbr3.pdf, id=703, 74.679pt x 100.375pt>
 File: jpbr3.pdf Graphic file (type pdf)
  <use jpbr3.pdf>
 <jpbr4.pdf, id=705, 74.679pt x 100.375pt>
@@ -303,93 +365,40 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 
 [11
 
- <./uart_jumpers.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./uart_jumpers.pdf): PDF inclusion: Pag
-e Group detected which pdfTeX can't handle. Ignoring it.
->] <jpst_np.pdf, id=723, 85.921pt x 142.93399pt>
+ <./uart_jumpers.pdf>] <jpst_np.pdf, id=723, 85.921pt x 142.93399pt>
 File: jpst_np.pdf Graphic file (type pdf)
- <use jpst_np.pdf>
-<jpst_ep.pdf, id=724, 85.921pt x 142.93399pt>
+
+<use jpst_np.pdf> <jpst_ep.pdf, id=725, 85.921pt x 142.93399pt>
 File: jpst_ep.pdf Graphic file (type pdf)
- <use jpst_ep.pdf>
-<jpst_op.pdf, id=725, 85.921pt x 142.93399pt>
+
+<use jpst_ep.pdf> <jpst_op.pdf, id=727, 85.921pt x 142.93399pt>
 File: jpst_op.pdf Graphic file (type pdf)
- <use jpst_op.pdf>
-<jpst_1sb.pdf, id=726, 85.921pt x 142.93399pt>
+
+<use jpst_op.pdf> <jpst_1sb.pdf, id=729, 85.921pt x 142.93399pt>
 File: jpst_1sb.pdf Graphic file (type pdf)
- <use jpst_1sb.pdf>
-<jpst_2sb.pdf, id=727, 85.921pt x 142.93399pt>
+
+<use jpst_1sb.pdf> <jpst_2sb.pdf, id=731, 85.921pt x 142.93399pt>
 File: jpst_2sb.pdf Graphic file (type pdf)
- <use jpst_2sb.pdf>
-<jpst_5b.pdf, id=728, 85.921pt x 142.93399pt>
+
+<use jpst_2sb.pdf> <jpst_5b.pdf, id=733, 85.921pt x 142.93399pt>
 File: jpst_5b.pdf Graphic file (type pdf)
- <use jpst_5b.pdf>
-<jpst_6b.pdf, id=729, 85.921pt x 142.93399pt>
+
+<use jpst_5b.pdf> <jpst_6b.pdf, id=735, 85.921pt x 142.93399pt>
 File: jpst_6b.pdf Graphic file (type pdf)
- <use jpst_6b.pdf>
-<jpst_7b.pdf, id=730, 85.921pt x 142.93399pt>
+
+<use jpst_6b.pdf> <jpst_7b.pdf, id=737, 85.921pt x 142.93399pt>
 File: jpst_7b.pdf Graphic file (type pdf)
- <use jpst_7b.pdf>
-<jpst_8b.pdf, id=731, 85.921pt x 142.93399pt>
+
+<use jpst_7b.pdf> <jpst_8b.pdf, id=739, 85.921pt x 142.93399pt>
 File: jpst_8b.pdf Graphic file (type pdf)
- <use jpst_8b.pdf>
+
+<use jpst_8b.pdf>
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[12 <./jpbr1.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpbr1.pdf): PDF inclusion: Page Group
- detected which pdfTeX can't handle. Ignoring it.
-> <./jpbr2.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpbr2.pdf): PDF inclusion: Page Group
- detected which pdfTeX can't handle. Ignoring it.
-> <./jpbr3.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpbr3.pdf): PDF inclusion: Page Group
- detected which pdfTeX can't handle. Ignoring it.
-> <./jpbr4.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpbr4.pdf): PDF inclusion: Page Group
- detected which pdfTeX can't handle. Ignoring it.
->] [13 <./jpst_np.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpst_np.pdf): PDF inclusion: Page Gro
-up detected which pdfTeX can't handle. Ignoring it.
-> <./jpst_ep.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpst_ep.pdf): PDF inclusion: Page Gro
-up detected which pdfTeX can't handle. Ignoring it.
-> <./jpst_op.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpst_op.pdf): PDF inclusion: Page Gro
-up detected which pdfTeX can't handle. Ignoring it.
-> <./jpst_1sb.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpst_1sb.pdf): PDF inclusion: Page Gr
-oup detected which pdfTeX can't handle. Ignoring it.
-> <./jpst_2sb.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpst_2sb.pdf): PDF inclusion: Page Gr
-oup detected which pdfTeX can't handle. Ignoring it.
-> <./jpst_5b.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpst_5b.pdf): PDF inclusion: Page Gro
-up detected which pdfTeX can't handle. Ignoring it.
-> <./jpst_6b.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpst_6b.pdf): PDF inclusion: Page Gro
-up detected which pdfTeX can't handle. Ignoring it.
-> <./jpst_7b.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpst_7b.pdf): PDF inclusion: Page Gro
-up detected which pdfTeX can't handle. Ignoring it.
-> <./jpst_8b.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./jpst_8b.pdf): PDF inclusion: Page Gro
-up detected which pdfTeX can't handle. Ignoring it.
->] [14
+[12 <./jpbr1.pdf> <./jpbr2.pdf> <./jpbr3.pdf> <./jpbr4.pdf>] [13 <./jpst_np.pdf
+> <./jpst_ep.pdf> <./jpst_op.pdf> <./jpst_1sb.pdf> <./jpst_2sb.pdf> <./jpst_5b.
+pdf> <./jpst_6b.pdf> <./jpst_7b.pdf> <./jpst_8b.pdf>] [14
 
 ]
 Chapter 3.
@@ -418,16 +427,12 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
  [21])
 [22]
 Chapter 5.
-<pic_pinout.pdf, id=904, 282.42737pt x 166.41672pt>
+<pic_pinout.pdf, id=900, 282.42737pt x 166.41672pt>
 File: pic_pinout.pdf Graphic file (type pdf)
  <use pic_pinout.pdf>
 [23
 
- <./pic_pinout.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./pic_pinout.pdf): PDF inclusion: Page 
-Group detected which pdfTeX can't handle. Ignoring it.
->] [24
+ <./pic_pinout.pdf>] [24
 
 ]
 Chapter 6.
@@ -615,24 +620,25 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 Chapter 10.
 [57]) [58] (./debug_kernel.aux) ) 
 Here is how much of TeX's memory you used:
- 3595 strings out of 95086
- 48717 string characters out of 1183256
- 108196 words of memory out of 1500000
- 6441 multiletter control sequences out of 10000+50000
- 9974 words of font info for 35 fonts, out of 1200000 for 2000
+ 4970 strings out of 495061
+ 70673 string characters out of 1182620
+ 156509 words of memory out of 3000000
+ 7775 multiletter control sequences out of 15000+50000
+ 9974 words of font info for 35 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
- 32i,16n,43p,1200b,367s stack positions out of 5000i,500n,6000p,200000b,5000s
-</usr/share/texmf-texlive/fonts/type1/bluesky/
-cm/cmbx10.pfb></usr/share/texmf-texlive/fonts/type1/bluesky/cm/cmbx12.pfb></usr
-/share/texmf-texlive/fonts/type1/bluesky/cm/cmmi10.pfb></usr/share/texmf-texliv
-e/fonts/type1/bluesky/cm/cmr10.pfb></usr/share/texmf-texlive/fonts/type1/bluesk
-y/cm/cmr12.pfb></usr/share/texmf-texlive/fonts/type1/bluesky/cm/cmr17.pfb></usr
-/share/texmf-texlive/fonts/type1/bluesky/cm/cmsl10.pfb></usr/share/texmf-texliv
-e/fonts/type1/bluesky/cm/cmsy10.pfb></usr/share/texmf-texlive/fonts/type1/blues
-ky/cm/cmti10.pfb></usr/share/texmf-texlive/fonts/type1/bluesky/cm/cmtt10.pfb>
-Output written on debug_kernel.pdf (58 pages, 404380 bytes).
+ 38i,16n,43p,1200b,325s stack positions out of 5000i,500n,10000p,200000b,50000s
+</usr/share/texmf-texlive/fonts/type1/public/a
+msfonts/cm/cmbx10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/
+cmbx12.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmmi10.pfb>
+</usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/
+texmf-texlive/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-texliv
+e/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texmf-texlive/fonts/type
+1/public/amsfonts/cm/cmsl10.pfb></usr/share/texmf-texlive/fonts/type1/public/am
+sfonts/cm/cmsy10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/c
+mti10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
+Output written on debug_kernel.pdf (58 pages, 469132 bytes).
 PDF statistics:
- 1257 PDF objects out of 1440 (max. 8388607)
- 291 named destinations out of 1000 (max. 131072)
- 1113 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1253 PDF objects out of 1440 (max. 8388607)
+ 291 named destinations out of 1000 (max. 500000)
+ 1097 words of extra memory for PDF output out of 10000 (max. 10000000)
 

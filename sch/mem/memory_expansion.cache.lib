@@ -1,4 +1,4 @@
-EESchema-LIBRARY Version  30/3/2010-21:54:15
+EESchema-LIBRARY Version  30/3/2010-22:11:46
 #
 #
 # +5V
@@ -7,8 +7,8 @@ DEF +5V #PWR 0 40 Y Y 1 F P
 F0 "#PWR" 0 90 20 H I C C
 F1 "+5V" 0 90 30 H V C C
 DRAW
-C 0 50 20 0 1 0 N
 P 4 0 1 0  0 0  0 30  0 30  0 30 N
+C 0 50 20 0 1 0 N
 X +5V 1 0 0 0 U 20 20 0 0 W N
 ENDDRAW
 ENDDEF

@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Fri 17 Dec 2010 20:03:04 GMT
+EESchema Schematic File Version 2  date Fri 18 Feb 2011 22:42:09 GMT
 LIBS:74xx
 LIBS:adc-dac
 LIBS:analog_switches
@@ -32,9 +32,9 @@ LIBS:z80_mark2-cache
 EELAYER 24  0
 EELAYER END
 $Descr A4 11700 8267
-Sheet 8 12
+Sheet 8 13
 Title ""
-Date "17 dec 2010"
+Date "18 feb 2011"
 Rev ""
 Comp ""
 Comment1 ""

@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Fri 17 Dec 2010 20:03:20 GMT
+EESchema Schematic File Version 2  date Sat 19 Feb 2011 16:33:30 GMT
 LIBS:74xx
 LIBS:adc-dac
 LIBS:analog_switches
@@ -32,9 +32,9 @@ LIBS:z80_mark2-cache
 EELAYER 24  0
 EELAYER END
 $Descr A4 11700 8267
-Sheet 1 12
+Sheet 1 13
 Title "noname.sch"
-Date "17 dec 2010"
+Date "19 feb 2011"
 Rev ""
 Comp ""
 Comment1 ""
@@ -42,6 +42,12 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+$Sheet
+S 6950 3850 1550 850 
+U 4D4F0F7A
+F0 "Memory2" 60
+F1 "Memory2.sch" 60
+$EndSheet
 $Sheet
 S 5200 3850 1550 850 
 U 4D0BB9C4

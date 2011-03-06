@@ -202,8 +202,7 @@ clock_3                         ; 5MHz
 ;===============================================================================
 
 ;; There is an 8K image in Flash onboard this PIC.  This is loaded sequentially
-;; into system memory but in two chunks; the first part loads up between 0 and
-;; $100, then the remainder is loaded above $8000.
+;; into system memory consecutively from $0000.
 
 boot_load
     ; make sure that the Z80 is a slave
@@ -232,11 +231,11 @@ boot_load_loop
     incfsz      LO_ADDR,f
     bra         boot_load_loop
     incf        HI_ADDR,f
+    ;movf        HI_ADDR,w
+    ;xorlw       0x01
+    ;bz          boot_jump_8000
     movf        HI_ADDR,w
-    xorlw       0x01
-    bz          boot_jump_8000
-    movf        HI_ADDR,w
-    xorlw       0x9F
+    xorlw       0x20
     bnz         boot_load_loop
     
     ; all done, release the bus if we claimed it and return
@@ -244,10 +243,10 @@ boot_load_loop
 
     return
 
-boot_jump_8000
-    movlw       0x80
-    movwf       HI_ADDR
-    bra         boot_load_loop
+;boot_jump_8000
+;    movlw       0x80
+;    movwf       HI_ADDR
+;    bra         boot_load_loop
 
 ;*******************************************************************************
 ;*  boot_update - copy a 128 byte packet from RX buffer to flash               *

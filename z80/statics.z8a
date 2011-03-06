@@ -93,3 +93,12 @@ RTC_24M:        equ $2
 RTC_DSE:        equ 0
 RTC_DSEM:       equ $1
 
+BSR0:           equ $20
+BSR1:           equ $21
+BSR2:           equ $22
+BSR3:           equ $23
+
+MCFGREG:        equ $24
+
+; MCFGREG bits
+MCFG_BSR_EN:    equ $01

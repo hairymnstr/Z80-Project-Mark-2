@@ -103,8 +103,8 @@ for n in range(len(d)/128):
   sys.stdout.write(progbar)
   sys.stdout.flush()
   aa += 128
-  if aa == 256:
-    aa = 32768    # skip to $8000
+#  if aa == 256:
+#    aa = 32768    # skip to $8000
 
 sys.stdout.write("\x08" * 80 + "[ " + "=" * 76 + " ]\nDone!\n")
 

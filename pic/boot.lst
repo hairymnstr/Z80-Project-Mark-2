@@ -1,4 +1,4 @@
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE  1
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -58,7 +58,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                00012 ;-- PORT C --------------------------------------------------------------------
                00013 
   00000000     00014 P_BUSACK        EQU     0
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE  2
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -118,7 +118,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0002 6E00      00061     movwf       eeprom_addr
                00062 
 0004 EC00 F000 00063     call        eeprom_read
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE  3
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -178,7 +178,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 0044 6ECA      00115     movwf       T2CON
                00116 
 0046 0012      00117     return
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE  4
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE  4
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -238,7 +238,7 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
 006C 6ECA      00169     movwf       T2CON
                00170 
 006E 0012      00171     return
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE  5
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE  5
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -277,237 +277,236 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
                00202 ;===============================================================================
                00203 
                00204 ;; There is an 8K image in Flash onboard this PIC.  This is loaded sequentially
-               00205 ;; into system memory but in two chunks; the first part loads up between 0 and
-               00206 ;; $100, then the remainder is loaded above $8000.
-               00207 
-0084 00208 boot_load
-               00209     ; make sure that the Z80 is a slave
-0084 EC00 F000 00210     call        ensure_master
-               00211 
-               00212     ; set up the table read pointers
-               00213 
-0088 6AF8      00214     clrf        TBLPTRU
-008A 0E60      00215     movlw       0x60
-008C 6EF7      00216     movwf       TBLPTRH
-008E 6AF6      00217     clrf        TBLPTRL
-               00218 
-               00219     ; set up EECON1 for Flash memory read
-               00220     
-0090 0E80      00221     movlw       b'10000000'
-0092 6EA6      00222     movwf       EECON1
-               00223 
-               00224     ; now loop over all 8KB of data
-0094 6A00      00225     clrf        HI_ADDR
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE  6
+               00205 ;; into system memory consecutively from $0000.
+               00206 
+0084 00207 boot_load
+               00208     ; make sure that the Z80 is a slave
+0084 EC00 F000 00209     call        ensure_master
+               00210 
+               00211     ; set up the table read pointers
+               00212 
+0088 6AF8      00213     clrf        TBLPTRU
+008A 0E60      00214     movlw       0x60
+008C 6EF7      00215     movwf       TBLPTRH
+008E 6AF6      00216     clrf        TBLPTRL
+               00217 
+               00218     ; set up EECON1 for Flash memory read
+               00219     
+0090 0E80      00220     movlw       b'10000000'
+0092 6EA6      00221     movwf       EECON1
+               00222 
+               00223     ; now loop over all 8KB of data
+0094 6A00      00224     clrf        HI_ADDR
+0096 6A00      00225     clrf        LO_ADDR
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE  6
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
  
-0096 6A00      00226     clrf        LO_ADDR
-               00227 
-0098 00228 boot_load_loop
-0098 0009      00229     tblrd*+             ; copy a byte into TABLAT
-009A CFF5 F000 00230     movff       TABLAT,DREG
-009E EC00 F000 00231     call        mem_write
-00A2 3E00      00232     incfsz      LO_ADDR,f
-00A4 D000      00233     bra         boot_load_loop
-00A6 2A00      00234     incf        HI_ADDR,f
-00A8 5000      00235     movf        HI_ADDR,w
-00AA 0A01      00236     xorlw       0x01
-00AC E000      00237     bz          boot_jump_8000
-00AE 5000      00238     movf        HI_ADDR,w
-00B0 0A9F      00239     xorlw       0x9F
-00B2 E100      00240     bnz         boot_load_loop
-               00241     
-               00242     ; all done, release the bus if we claimed it and return
-00B4 EC00 F000 00243     call        revert_master
-               00244 
-00B8 0012      00245     return
-               00246 
-00BA 00247 boot_jump_8000
-00BA 0E80      00248     movlw       0x80
-00BC 6E00      00249     movwf       HI_ADDR
-00BE D000      00250     bra         boot_load_loop
-               00251 
-               00252 ;*******************************************************************************
-               00253 ;*  boot_update - copy a 128 byte packet from RX buffer to flash               *
-               00254 ;*    This is called repeatedly from serial.asm after an update BIOS command   *
-               00255 ;*    is sent from a PC.                                                       *
-               00256 ;*******************************************************************************
-00C0 00257 boot_update
-               00258     ; first two bytes in the RX buffer are the start address in FLASH
-               00259     ; they've already been checked so just trust them
-               00260     ; FSR0L is already pointing at the high address
-               00261 
-00C0 6AF8      00262     clrf        TBLPTRU
-00C2 50EE      00263     movf        POSTINC0,w
-00C4 6EF7      00264     movwf       TBLPTRH
-00C6 50EE      00265     movf        POSTINC0,w
-00C8 6EF6      00266     movwf       TBLPTRL
-               00267 
-00CA 8000      00268     bsf         BOOTWR_FLAGS,0
-               00269     ; next code gets run twice because you can only erase data in 64 byte blocks
-00CC 00270 boot_update_erase
-               00271     ; erase a block
-00CC 8EA6      00272     bsf         EECON1, EEPGD
-00CE 9CA6      00273     bcf         EECON1, CFGS
-00D0 84A6      00274     bsf         EECON1, WREN
-00D2 88A6      00275     bsf         EECON1, FREE
-00D4 9EF2      00276     bcf         INTCON, GIE
-               00277 
-00D6 0E55      00278     movlw       0x55
-00D8 6EA7      00279     movwf       EECON2
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE  7
+               00226 
+0098 00227 boot_load_loop
+0098 0009      00228     tblrd*+             ; copy a byte into TABLAT
+009A CFF5 F000 00229     movff       TABLAT,DREG
+009E EC00 F000 00230     call        mem_write
+00A2 3E00      00231     incfsz      LO_ADDR,f
+00A4 D000      00232     bra         boot_load_loop
+00A6 2A00      00233     incf        HI_ADDR,f
+               00234     ;movf        HI_ADDR,w
+               00235     ;xorlw       0x01
+               00236     ;bz          boot_jump_8000
+00A8 5000      00237     movf        HI_ADDR,w
+00AA 0A20      00238     xorlw       0x20
+00AC E100      00239     bnz         boot_load_loop
+               00240     
+               00241     ; all done, release the bus if we claimed it and return
+00AE EC00 F000 00242     call        revert_master
+               00243 
+00B2 0012      00244     return
+               00245 
+               00246 ;boot_jump_8000
+               00247 ;    movlw       0x80
+               00248 ;    movwf       HI_ADDR
+               00249 ;    bra         boot_load_loop
+               00250 
+               00251 ;*******************************************************************************
+               00252 ;*  boot_update - copy a 128 byte packet from RX buffer to flash               *
+               00253 ;*    This is called repeatedly from serial.asm after an update BIOS command   *
+               00254 ;*    is sent from a PC.                                                       *
+               00255 ;*******************************************************************************
+00B4 00256 boot_update
+               00257     ; first two bytes in the RX buffer are the start address in FLASH
+               00258     ; they've already been checked so just trust them
+               00259     ; FSR0L is already pointing at the high address
+               00260 
+00B4 6AF8      00261     clrf        TBLPTRU
+00B6 50EE      00262     movf        POSTINC0,w
+00B8 6EF7      00263     movwf       TBLPTRH
+00BA 50EE      00264     movf        POSTINC0,w
+00BC 6EF6      00265     movwf       TBLPTRL
+               00266 
+00BE 8000      00267     bsf         BOOTWR_FLAGS,0
+               00268     ; next code gets run twice because you can only erase data in 64 byte blocks
+00C0 00269 boot_update_erase
+               00270     ; erase a block
+00C0 8EA6      00271     bsf         EECON1, EEPGD
+00C2 9CA6      00272     bcf         EECON1, CFGS
+00C4 84A6      00273     bsf         EECON1, WREN
+00C6 88A6      00274     bsf         EECON1, FREE
+00C8 9EF2      00275     bcf         INTCON, GIE
+               00276 
+00CA 0E55      00277     movlw       0x55
+00CC 6EA7      00278     movwf       EECON2
+00CE 0EAA      00279     movlw       0x0AA
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE  7
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
  
-00DA 0EAA      00280     movlw       0x0AA
-00DC 6EA7      00281     movwf       EECON2
-00DE 82A6      00282     bsf         EECON1, WR              ; actual erase command up to 2 ms
-               00283 
-00E0 8EF2      00284     bsf         INTCON, GIE     ; re-enable interrupts
-00E2 000A      00285     tblrd*-                     ; dummy decrement, we're going to use pre-inc
-               00286                                 ; to write so the pointer is still in the
-               00287                                 ; block when we call write
-               00288 
-00E4 8200      00289     bsf         BOOTWR_FLAGS,1  ; flag to see how many times we've done this
-               00290     ; write a 32 byte block, happens twice
-00E6 00291 boot_update_write
-00E6 0E20      00292     movlw       d'32'
-00E8 6E00      00293     movwf       WRCOUNT
-               00294 
-00EA 00295 boot_update_write_loop
-00EA 50EE      00296     movf        POSTINC0,w
-00EC 6EF5      00297     movwf       TABLAT
-00EE 000F      00298     tblwt+*
-00F0 2E00      00299     decfsz      WRCOUNT,f
-00F2 D000      00300     bra         boot_update_write_loop
-               00301 
-               00302     ; written 32 bytes to tablat, now need to initiate the write
-00F4 8EA6      00303     bsf         EECON1, EEPGD
-00F6 9CA6      00304     bcf         EECON1, CFGS
-00F8 84A6      00305     bsf         EECON1, WREN
-00FA 9EF2      00306     bcf         INTCON, GIE
-               00307 
-00FC 0E55      00308     movlw       0x55
-00FE 6EA7      00309     movwf       EECON2
-0100 0EAA      00310     movlw       0x0AA
-0102 6EA7      00311     movwf       EECON2
-0104 82A6      00312     bsf         EECON1, WR
-               00313 
-0106 8EF2      00314     bsf         INTCON, GIE
-0108 94A6      00315     bcf         EECON1, WREN
-               00316 
-010A A200      00317     btfss       BOOTWR_FLAGS,1
-010C D000      00318     bra         boot_update_second_erase
-               00319 
-010E 9200      00320     bcf         BOOTWR_FLAGS,1
-0110 D000      00321     bra         boot_update_write
-               00322 
-0112 00323 boot_update_second_erase
-0112 A000      00324     btfss       BOOTWR_FLAGS,0
-0114 EF00 F000 00325     goto        boot_verify
-0118 9000      00326     bcf         BOOTWR_FLAGS,0
-011A 0009      00327     tblrd*+                     ; dummy increment to make sure we erase the next block
-011C EF00 F000 00328     goto        boot_update_erase
-               00329 
-0120 00330 boot_verify
-               00331     ; check through all the bytes just written to flash and make sure they
-               00332     ; match.  Then build a report packet accordingly
-0120 8400      00333     bsf         BOOTWR_FLAGS,2  ; set a flag, this gets cleared if we find an
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE  8
+00D0 6EA7      00280     movwf       EECON2
+00D2 82A6      00281     bsf         EECON1, WR              ; actual erase command up to 2 ms
+               00282 
+00D4 8EF2      00283     bsf         INTCON, GIE     ; re-enable interrupts
+00D6 000A      00284     tblrd*-                     ; dummy decrement, we're going to use pre-inc
+               00285                                 ; to write so the pointer is still in the
+               00286                                 ; block when we call write
+               00287 
+00D8 8200      00288     bsf         BOOTWR_FLAGS,1  ; flag to see how many times we've done this
+               00289     ; write a 32 byte block, happens twice
+00DA 00290 boot_update_write
+00DA 0E20      00291     movlw       d'32'
+00DC 6E00      00292     movwf       WRCOUNT
+               00293 
+00DE 00294 boot_update_write_loop
+00DE 50EE      00295     movf        POSTINC0,w
+00E0 6EF5      00296     movwf       TABLAT
+00E2 000F      00297     tblwt+*
+00E4 2E00      00298     decfsz      WRCOUNT,f
+00E6 D000      00299     bra         boot_update_write_loop
+               00300 
+               00301     ; written 32 bytes to tablat, now need to initiate the write
+00E8 8EA6      00302     bsf         EECON1, EEPGD
+00EA 9CA6      00303     bcf         EECON1, CFGS
+00EC 84A6      00304     bsf         EECON1, WREN
+00EE 9EF2      00305     bcf         INTCON, GIE
+               00306 
+00F0 0E55      00307     movlw       0x55
+00F2 6EA7      00308     movwf       EECON2
+00F4 0EAA      00309     movlw       0x0AA
+00F6 6EA7      00310     movwf       EECON2
+00F8 82A6      00311     bsf         EECON1, WR
+               00312 
+00FA 8EF2      00313     bsf         INTCON, GIE
+00FC 94A6      00314     bcf         EECON1, WREN
+               00315 
+00FE A200      00316     btfss       BOOTWR_FLAGS,1
+0100 D000      00317     bra         boot_update_second_erase
+               00318 
+0102 9200      00319     bcf         BOOTWR_FLAGS,1
+0104 D000      00320     bra         boot_update_write
+               00321 
+0106 00322 boot_update_second_erase
+0106 A000      00323     btfss       BOOTWR_FLAGS,0
+0108 EF00 F000 00324     goto        boot_verify
+010C 9000      00325     bcf         BOOTWR_FLAGS,0
+010E 0009      00326     tblrd*+                     ; dummy increment to make sure we erase the next block
+0110 EF00 F000 00327     goto        boot_update_erase
+               00328 
+0114 00329 boot_verify
+               00330     ; check through all the bytes just written to flash and make sure they
+               00331     ; match.  Then build a report packet accordingly
+0114 8400      00332     bsf         BOOTWR_FLAGS,2  ; set a flag, this gets cleared if we find an
+               00333                                 ; error
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE  8
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
  
-               00334                                 ; error
-               00335 
-0122 0E01      00336     movlw       0x1
-0124 6EEA      00337     movwf       FSR0H
-0126 0E02      00338     movlw       0x02            ; need to skip the command and length bytes
-0128 6EE9      00339     movwf       FSR0L
-               00340 
-               00341     ; set the table pointer
-012A 6AF8      00342     clrf        TBLPTRU
-012C 50EE      00343     movf        POSTINC0,w
-012E 6EF7      00344     movwf       TBLPTRH
-0130 50EE      00345     movf        POSTINC0,w
-0132 6EF6      00346     movwf       TBLPTRL
-               00347 
-0134 0E80      00348     movlw       0x80
-0136 6E00      00349     movwf       WRCOUNT
-               00350 
-0138 00351 boot_verify_loop
-0138 50EE      00352     movf        POSTINC0,w
-013A 0009      00353     tblrd*+
-013C 18F5      00354     xorwf       TABLAT,w
-013E A4D8      00355     btfss       STATUS,Z
-0140 9400      00356     bcf         BOOTWR_FLAGS,2
-0142 2E00      00357     decfsz      WRCOUNT,f
-0144 D000      00358     bra         boot_verify_loop
-               00359 
-               00360     ; all verified, need to make a response packet based on the OK flag
-0146 A400      00361     btfss       BOOTWR_FLAGS,2
-0148 D000      00362     bra         boot_verify_nak
-               00363 
-               00364     ; got here so write went according to plan
-014A 0E02      00365     movlw       0x2
-014C 6EE2      00366     movwf       FSR1H
-014E 6AE1      00367     clrf        FSR1L
-               00368 
-0150 0E08      00369     movlw       0x08            ; successful command 8 executed
-0152 6EE6      00370     movwf       POSTINC1
-0154 0E00      00371     movlw       0x00            ; no data, just ack
-0156 6EE6      00372     movwf       POSTINC1
-0158 0E08      00373     movlw       0x08            ; hard coded checksum Oo
-015A 6EE6      00374     movwf       POSTINC1
-               00375 
-015C 0012      00376     return
-               00377 
-015E 00378 boot_verify_nak
-               00379     ; there must have been an error in the memory writing, send a NAK
-015E 0E02      00380     movlw       0x02
-0160 6EE2      00381     movwf       FSR1H
-0162 6AE1      00382     clrf        FSR1L
-               00383 
-               00384     ; going to cheat and use the WRCOUNT as a checksum holder
-0164 6A00      00385     clrf        WRCOUNT
-               00386 
-0166 0E48      00387     movlw       0x48            ; nak for command 8
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE  9
+               00334 
+0116 0E01      00335     movlw       0x1
+0118 6EEA      00336     movwf       FSR0H
+011A 0E02      00337     movlw       0x02            ; need to skip the command and length bytes
+011C 6EE9      00338     movwf       FSR0L
+               00339 
+               00340     ; set the table pointer
+011E 6AF8      00341     clrf        TBLPTRU
+0120 50EE      00342     movf        POSTINC0,w
+0122 6EF7      00343     movwf       TBLPTRH
+0124 50EE      00344     movf        POSTINC0,w
+0126 6EF6      00345     movwf       TBLPTRL
+               00346 
+0128 0E80      00347     movlw       0x80
+012A 6E00      00348     movwf       WRCOUNT
+               00349 
+012C 00350 boot_verify_loop
+012C 50EE      00351     movf        POSTINC0,w
+012E 0009      00352     tblrd*+
+0130 18F5      00353     xorwf       TABLAT,w
+0132 A4D8      00354     btfss       STATUS,Z
+0134 9400      00355     bcf         BOOTWR_FLAGS,2
+0136 2E00      00356     decfsz      WRCOUNT,f
+0138 D000      00357     bra         boot_verify_loop
+               00358 
+               00359     ; all verified, need to make a response packet based on the OK flag
+013A A400      00360     btfss       BOOTWR_FLAGS,2
+013C D000      00361     bra         boot_verify_nak
+               00362 
+               00363     ; got here so write went according to plan
+013E 0E02      00364     movlw       0x2
+0140 6EE2      00365     movwf       FSR1H
+0142 6AE1      00366     clrf        FSR1L
+               00367 
+0144 0E08      00368     movlw       0x08            ; successful command 8 executed
+0146 6EE6      00369     movwf       POSTINC1
+0148 0E00      00370     movlw       0x00            ; no data, just ack
+014A 6EE6      00371     movwf       POSTINC1
+014C 0E08      00372     movlw       0x08            ; hard coded checksum Oo
+014E 6EE6      00373     movwf       POSTINC1
+               00374 
+0150 0012      00375     return
+               00376 
+0152 00377 boot_verify_nak
+               00378     ; there must have been an error in the memory writing, send a NAK
+0152 0E02      00379     movlw       0x02
+0154 6EE2      00380     movwf       FSR1H
+0156 6AE1      00381     clrf        FSR1L
+               00382 
+               00383     ; going to cheat and use the WRCOUNT as a checksum holder
+0158 6A00      00384     clrf        WRCOUNT
+               00385 
+015A 0E48      00386     movlw       0x48            ; nak for command 8
+015C 6EE6      00387     movwf       POSTINC1
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE  9
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
  
-0168 6EE6      00388     movwf       POSTINC1
-016A 1A00      00389     xorwf       WRCOUNT,f
-016C 0E02      00390     movlw       0x02            ; only the error code to reply with
-016E 6EE6      00391     movwf       POSTINC1
-0170 1A00      00392     xorwf       WRCOUNT,f
-0172 0E00      00393     movlw       0x00
-0174 6EE6      00394     movwf       POSTINC1
-0176 1A00      00395     xorwf       WRCOUNT,f
-0178 0E08      00396     movlw       0x08            ; verification error number
-017A 6EE6      00397     movwf       POSTINC1
-017C 1A00      00398     xorwf       WRCOUNT,f
-017E 5000      00399     movf        WRCOUNT,w
-0180 6EE6      00400     movwf       POSTINC1        ; add the checksum
-               00401 
-0182 0012      00402     return
-               00403     
-               00404 
-               00405 ; == Export These ==============================================================
-               00406 
-               00407     GLOBAL      boot_init
-               00408     GLOBAL      boot_load
-               00409     GLOBAL      boot_update
-               00410 
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 10
+015E 1A00      00388     xorwf       WRCOUNT,f
+0160 0E02      00389     movlw       0x02            ; only the error code to reply with
+0162 6EE6      00390     movwf       POSTINC1
+0164 1A00      00391     xorwf       WRCOUNT,f
+0166 0E00      00392     movlw       0x00
+0168 6EE6      00393     movwf       POSTINC1
+016A 1A00      00394     xorwf       WRCOUNT,f
+016C 0E08      00395     movlw       0x08            ; verification error number
+016E 6EE6      00396     movwf       POSTINC1
+0170 1A00      00397     xorwf       WRCOUNT,f
+0172 5000      00398     movf        WRCOUNT,w
+0174 6EE6      00399     movwf       POSTINC1        ; add the checksum
+               00400 
+0176 0012      00401     return
+               00402     
+               00403 
+               00404 ; == Export These ==============================================================
+               00405 
+               00406     GLOBAL      boot_init
+               00407     GLOBAL      boot_load
+               00408     GLOBAL      boot_update
+               00409 
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 10
 
 
 SYMBOL TABLE
@@ -566,7 +565,7 @@ BRG16                             00000003
 BRGH                              00000002
 BSR                               00000FE0
 C                                 00000000
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 11
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 11
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -626,7 +625,7 @@ CMIP                              00000006
 CREN                              00000004
 CS                                00000002
 CSRC                              00000007
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 12
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 12
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -686,7 +685,7 @@ GO_DONE                           00000001
 HI_ADDR                           00000000
 HLVDCON                           00000FD2
 HLVDEN                            00000004
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 13
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 13
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -746,7 +745,7 @@ KBI2                              00000006
 KBI3                              00000007
 LATA                              00000F89
 LATA0                             00000000
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 14
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 14
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -806,7 +805,7 @@ LVV1                              00000001
 LVV2                              00000002
 LVV3                              00000003
 MCLR                              00000003
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 15
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 15
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -866,7 +865,7 @@ PDC5                              00000005
 PDC6                              00000006
 PEIE                              00000006
 PEN                               00000002
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 16
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 16
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -926,7 +925,7 @@ P_BUSRQ                           00000001
 P_CLK                             00000002
 P_CS                              00000002
 P_HI_LAT                          00000005
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 17
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 17
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -986,7 +985,7 @@ RCMT                              00000006
 RCON                              00000FD0
 RCREG                             00000FAE
 RCSTA                             00000FAB
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 18
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 18
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1046,7 +1045,7 @@ SSPEN                             00000005
 SSPIE                             00000003
 SSPIF                             00000003
 SSPIP                             00000003
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 19
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 19
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1106,7 +1105,7 @@ TBLPTRL                           00000FF6
 TBLPTRU                           00000FF8
 TMR0H                             00000FD7
 TMR0IE                            00000005
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 20
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 20
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1166,7 +1165,7 @@ TRISC3                            00000003
 TRISC4                            00000004
 TRISC5                            00000005
 TRISC6                            00000006
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 21
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 21
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1226,7 +1225,7 @@ _BOREN_SBORDIS_2L                 000000FF
 _BORV_0_2L                        000000E7
 _BORV_1_2L                        000000EF
 _BORV_2_2L                        000000F7
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 22
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 22
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1286,7 +1285,7 @@ _IESO_OFF_1H                      0000007F
 _IESO_ON_1H                       000000FF
 _LPT1OSC_OFF_3H                   000000FB
 _LPT1OSC_ON_3H                    000000FF
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 23
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 23
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1346,7 +1345,7 @@ _WRTD_OFF_6H                      000000FF
 _WRTD_ON_6H                       0000007F
 _XINST_OFF_4L                     000000BF
 _XINST_ON_4L                      000000FF
-gpasm-0.13.7 beta               boot.asm    3-18-2010  22:51:14          PAGE 24
+gpasm-0.13.7 beta               boot.asm    3-2-2011  20:35:18           PAGE 24
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -1354,17 +1353,16 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
  
 __18F4520                         00000001
 boot_init                         00000000
-boot_jump_8000                    000000BA
 boot_load                         00000084
 boot_load_loop                    00000098
-boot_update                       000000C0
-boot_update_erase                 000000CC
-boot_update_second_erase          00000112
-boot_update_write                 000000E6
-boot_update_write_loop            000000EA
-boot_verify                       00000120
-boot_verify_loop                  00000138
-boot_verify_nak                   0000015E
+boot_update                       000000B4
+boot_update_erase                 000000C0
+boot_update_second_erase          00000106
+boot_update_write                 000000DA
+boot_update_write_loop            000000DE
+boot_verify                       00000114
+boot_verify_loop                  0000012C
+boot_verify_nak                   00000152
 clock_0                           00000034
 clock_1                           00000048
 clock_2                           0000005C

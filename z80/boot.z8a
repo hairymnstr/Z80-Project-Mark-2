@@ -40,49 +40,75 @@ boot_start:
 ; -- Check RAM Size ------------------------------------------------------------
   ; this is fairly rudimentary.  Writes a byte to each 8K descending from 64K.
   ; if the byte read back is the same then assume there is RAM there.
-  ld            bc, $2000       ; going to use this as the step size
-  ld            hl, $ffff       ; start at top of RAM
 
-  ; step one - label the highest byte of each 8K with its high address byte
+  ld            bc, $0000
+  djnz          $
+  djnz          $
+  ;; version 2: now uses MMU and banked RAM
+  ld            a, $00          ; get the first RAM page address
+  out           (BSR0), a       ; make sure that we stay in page 0
+  ld            a, MCFG_BSR_EN  ; load the banking enable bit
+  out           (MCFGREG), a    ; put it in the MCFG register
+
+  ; now write a signature to each 16k bank, using page 1
+  ld            a, $ff          ; page 255 of 255
 boot_ram_loop:
-  ld            a, h            ; use high byte as a check value
-  ld            (hl), a         
-  ; read byte wasn't what we wrote, so assume there's no RAM, move down 8K and
-  ; try again
-  scf                           ; set the carry flag
-  ccf                           ; invert it so now is 0
-  sbc           hl, bc          ; subtract with carry, moves hl 8k down
-  ld            a, $1F
-  xor           h               ; check if we're down to the BIOS top
-  jp            Z, boot_check_ram    ; the BIOS is 8K so if we're here all done
+  out           (BSR2), a       ; select the page
+  ld            ($8000), a      ; first byte in page 1
+  inc           a
+  ld            ($8001), a
+  inc           a
+  ld            ($8002), a
+  dec           a
+  dec           a
+  dec           a
+  jr            nz, boot_ram_loop       ; never write to bank 0, that's this one!
 
-  jp            boot_ram_loop
-
-  ; step two, see if the top byte of each 8K is properly filled.  If smaller
-  ; RAM chips are fitted then the high byte won't match until we're in valid
-  ; RAM.
+  ; step two, check $4000 with each bank in page 1 to see if the address
+  ; matches the one we wrote
 boot_check_ram:
-  ld            hl, $ffff
+  ld            b, $ff
 boot_check_ram_loop:
-  ld            a, (hl)                 ; read a byte
-  xor           h                       ; compare with high address byte
-  jp            Z, boot_found_ramtop    ; if the byte equals h then we found ram
-
-  scf                                   ; set carry
-  ccf                                   ; invert carry
-  sbc           hl, bc                  ; subtract 8K
-  ld            a, $1F                  ; see if we're at BIOS yet
-  xor           h
-  jp            Z, boot_found_ramtop    ; if we are then only 8K of RAM
-
-  jp            boot_check_ram_loop     ; otherwise keep looking
+  ld            hl, $8000
+  ld            a, b
+  out           (BSR2), a
+  xor           (hl)
+  jr            nz, boot_check_ram_next
+  ld            a, b
+  inc           a
+  inc           hl
+  xor           (hl)
+  jr            nz, boot_check_ram_next
+  ld            a, b
+  inc           a
+  inc           a
+  inc           hl
+  xor           (hl)
+  jr            z, boot_found_ramtop
+boot_check_ram_next:
+  dec           b
+  jr            z, boot_found_ramtop
+  jp            boot_check_ram_loop
 
 boot_found_ramtop:
-  ; hl now contains the top of RAM - save that in register $17FE
+  ; b now contains the highest available bank save in ram_top register
+  ; plus $3fff for the lower 14 bits of the last address
+  ld            hl, $3fff
+  bit           0, b
+  jr            z, boot_found_no_a14
+  set           6, h
+boot_found_no_a14:
+  bit           1, b
+  jr            z, boot_found_no_a15
+  set           7, h
+boot_found_no_a15:
   ld            (ram_top), hl
-  ld            hl, $00
-  ld            (ram_top+2), hl         ; clear the upper two bytes, reserved
-                                        ; for memory paged systems
+  srl           b
+  srl           b
+  ld            a, b
+  ld            (ram_top+2), a
+  xor           a
+  ld            (ram_top+3), a
   
 ; -- Set stack pointer ---------------------------------------------------------
   ; point the stack pointer at $1FFF for now (2K stack space)
@@ -120,11 +146,16 @@ boot_gpu_wait:
 
   ; need to send the RAM size
   ld            hl, (ram_top)
-  inc           hl                      ; because of addressing from 0...
+  ld            de, $0001
+  add           hl, de
   ld            (gpu_variable), hl
+  ld            hl, (ram_top + 2)
+  ld            de, $0000
+  adc           hl, de
+  ld            (gpu_variable+2),hl
   ld            hl, gpu_variable
-  ld            a, 2                    ; 16 bit
-  ld            b, 5                    ; print 5 digits
+  ld            a, 3                    ; 16 bit
+  ld            b, 7                    ; print 5 digits
   call          gpu_dec
 
   ; now send the second half of the screen

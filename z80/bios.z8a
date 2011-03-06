@@ -90,7 +90,7 @@ eoi:
 ; == end of interrupt code =====================================================
 
 seek    $100
-org     $8000
+org     $100
 
 ; ==============================================================================
 ;
@@ -234,8 +234,8 @@ system_interrupts:      defs    1
 ;; operating system, execution moves above the stack and it can extend down to
 ;; the top of the variables area at $1000 (now giving it a full 4K of room).
 
-stack:          equ     $9FFF
-disk_buf:       equ     $7E00
+stack:          equ     $3FFF
+disk_buf:       equ     $2E00
 
 ;===============================================================================
 ;  bios_error_exit - called on a fatal error after GPU is ready

@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sat 19 Feb 2011 16:33:30 GMT
+EESchema Schematic File Version 2  date Sun 06 Mar 2011 19:20:09 GMT
 LIBS:74xx
 LIBS:adc-dac
 LIBS:analog_switches
@@ -34,7 +34,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 9 13
 Title ""
-Date "19 feb 2011"
+Date "6 mar 2011"
 Rev ""
 Comp ""
 Comment1 ""

@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sat 19 Feb 2011 16:33:30 GMT
+EESchema Schematic File Version 2  date Sun 06 Mar 2011 19:20:09 GMT
 LIBS:74xx
 LIBS:adc-dac
 LIBS:analog_switches
@@ -32,9 +32,9 @@ LIBS:z80_mark2-cache
 EELAYER 24  0
 EELAYER END
 $Descr A4 11700 8267
-Sheet 3 13
+Sheet 7 13
 Title ""
-Date "19 feb 2011"
+Date "6 mar 2011"
 Rev ""
 Comp ""
 Comment1 ""
@@ -42,10 +42,14 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+Text GLabel 6650 5350 2    60   Input ~ 0
+Z80_RST
+Wire Wire Line
+	6200 5350 6650 5350
 Connection ~ 4100 1800
 Connection ~ 4000 4250
 Wire Wire Line
-	4000 1800 4000 4250
+	4000 4250 4000 1800
 Wire Wire Line
 	4000 1800 4300 1800
 Wire Wire Line
@@ -225,6 +229,20 @@ Wire Wire Line
 	3900 2600 4400 2600
 Wire Wire Line
 	4300 1800 4300 1900
+Wire Wire Line
+	5600 5150 5600 5350
+Wire Wire Line
+	5600 5350 5800 5350
+Connection ~ 5600 5150
+$Comp
+L JUMPER JP?
+U 1 1 4D73DBE5
+P 6000 5350
+F 0 "JP?" H 6000 5500 60  0000 C CNN
+F 1 "JUMPER" H 6000 5270 40  0000 C CNN
+	1    6000 5350
+	1    0    0    -1  
+$EndComp
 $Comp
 L GND #PWR?
 U 1 1 4D0A9603

@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sat 19 Feb 2011 16:33:30 GMT
+EESchema Schematic File Version 2  date Sun 06 Mar 2011 19:20:09 GMT
 LIBS:74xx
 LIBS:adc-dac
 LIBS:analog_switches
@@ -34,7 +34,7 @@ EELAYER END
 $Descr A4 11700 8267
 Sheet 13 13
 Title ""
-Date "19 feb 2011"
+Date "6 mar 2011"
 Rev ""
 Comp ""
 Comment1 ""
@@ -42,11 +42,11 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text Label 7400 4850 0    60   ~ 0
-RD
+Wire Wire Line
+	4950 5750 5050 5750
 Connection ~ 2350 2750
 Wire Wire Line
-	2350 4850 7850 4850
+	7850 4850 2350 4850
 Wire Wire Line
 	2350 4850 2350 1200
 Wire Wire Line
@@ -306,6 +306,24 @@ Wire Wire Line
 Wire Wire Line
 	7550 4950 7850 4950
 Connection ~ 7650 4950
+Wire Wire Line
+	5950 5750 6050 5750
+Text GLabel 4950 5750 0    60   Input ~ 0
+Z80_RST
+Text GLabel 6050 5750 2    60   Output ~ 0
+Z80_RST#
+$Comp
+L 74HC04 IC?
+U 1 1 4D73DDF5
+P 5500 5750
+F 0 "IC?" H 5650 5850 40  0000 C CNN
+F 1 "74HC04" H 5700 5650 40  0000 C CNN
+F 2 "108-5299" H 5500 5750 50  0001 C CNN
+	1    5500 5750
+	1    0    0    -1  
+$EndComp
+Text Label 7400 4850 0    60   ~ 0
+RD
 Text GLabel 7550 4950 0    60   Input ~ 0
 Z80_OEN
 Text GLabel 3450 3350 0    60   Input ~ 0

@@ -1,12 +1,12 @@
 gplink-0.13.7 beta
-Map File - Created 3-18-2010  22:51:14
+Map File - Created 3-2-2011  20:35:18
  
                                  Section Info
                   Section       Type    Address   Location Size(Bytes)
                 ---------  ---------  ---------  ---------  ---------
                    .org_0       code   00000000    program   0x000004
                    .org_4       code   0x000008    program   0x00003a
-                    .code       code   0x000042    program   0x0011ae
+                    .code       code   0x000042    program   0x0011a2
                 .org_3000       code   0x006000    program   0x002000
                   .config       code   0x300000    program   0x00000e
                    .udata      udata   0x000080       data   0x000023
@@ -14,13 +14,13 @@ Map File - Created 3-18-2010  22:51:14
                               Program Memory Usage
                                Start         End
                            ---------   ---------
-                            0x000042    0x0011ef
+                            0x000042    0x0011e3
                             0x300000    0x30000d
                             00000000    0x000003
                             0x000008    0x000041
                             0x006000    0x007fff
  
-                            6397 program addresses used
+                            6391 program addresses used
  
                               Symbols
                      Name    Address   Location    Storage File
@@ -181,13 +181,12 @@ slave_command_read_sector   0x000f44    program     static host_bus.asm
                   clock_3   0x0010dc    program     static boot.asm
                 boot_load   0x0010f0    program     extern boot.asm
            boot_load_loop   0x001104    program     static boot.asm
-           boot_jump_8000   0x001126    program     static boot.asm
-              boot_update   0x00112c    program     extern boot.asm
-        boot_update_erase   0x001138    program     static boot.asm
-        boot_update_write   0x001152    program     static boot.asm
-   boot_update_write_loop   0x001156    program     static boot.asm
- boot_update_second_erase   0x00117e    program     static boot.asm
-              boot_verify   0x00118c    program     static boot.asm
-         boot_verify_loop   0x0011a4    program     static boot.asm
-          boot_verify_nak   0x0011ca    program     static boot.asm
+              boot_update   0x001120    program     extern boot.asm
+        boot_update_erase   0x00112c    program     static boot.asm
+        boot_update_write   0x001146    program     static boot.asm
+   boot_update_write_loop   0x00114a    program     static boot.asm
+ boot_update_second_erase   0x001172    program     static boot.asm
+              boot_verify   0x001180    program     static boot.asm
+         boot_verify_loop   0x001198    program     static boot.asm
+          boot_verify_nak   0x0011be    program     static boot.asm
  

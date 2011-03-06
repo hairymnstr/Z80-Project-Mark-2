@@ -385,6 +385,11 @@ if_nz   or              txdat, #$1
         ' enable the buffer
         andn            outa, buffer_enable_pin
 
+        nop
+        nop
+        nop
+        nop             ' give the bus some time to settle
+
         ' now release the wait pin and wait for the Z80 to finish
         andn            outa, wait_pin
         waitpeq         rd_data_pin, rd_data_pin

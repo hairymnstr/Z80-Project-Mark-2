@@ -1,8 +1,0 @@
-EESchema-DOCLIB  Version 2.0  30/3/2010-22:11:46
-#
-$CMP 74LS574
-D 8 bits Register, 3 state Out
-K TTL REG DFF DFF8 3State
-$ENDCMP
-#
-#End Doc Library

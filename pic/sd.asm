@@ -27,6 +27,8 @@ sd_data         res     4
 ; MAIN_TEMP       res     1
 temp2           res     1
 ; low_jump        res     1
+sd_bus_block_size       res     1       ; used to store the block size for
+                                        ; transfer to the Z80
     CODE
 
 sd_init
@@ -56,13 +58,6 @@ sd_card_init_loop
     decfsz      count, f
     bra         sd_card_init_loop
 
-;     movlw       low debugmsg1
-;     movwf       TBLPTRL
-;     movlw       high debugmsg1
-;     movwf       TBLPTRH
-;     clrf        TBLPTRU
-;     call        msg
-
 ; version 2 SD driver, supports HCSD
 ; send CMD0 with correct checksum
 
@@ -76,19 +71,6 @@ sd_card_init_loop
     clrf        sd_data+3
 
     call        write_sd
-
-;     movlw       0x40
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x95
-;     call        write_spi
     
     call        start_timeout           ; start the timer
 nloop
@@ -98,22 +80,9 @@ nloop
     
     bcf         T0CON, TMR0ON           ; stop the timer
 
-;     movwf       temp2
-;     movlw       low debugmsg2
-;     movwf       TBLPTRL
-;     movlw       high debugmsg2
-;     movwf       TBLPTRH
-;     clrf        TBLPTRU
-;     call        msg
-;     movf        temp2, w
-;     call        debug
-;     movf        temp2, w
     xorlw       0x01
     btfss       STATUS, Z
-    ;goto        error_exit              ; should be 0x01 - busy
     bra         nloop
-;     movlw       0x55
-;     call        debug
 
     movlw       0x48
     movwf       sd_command
@@ -134,9 +103,6 @@ nloop
     btfsc       WREG, 2
     bra         not_hcsd                ; if bit 2 is set then it's a type 1
                                         ; card hence doesn't support CMD8
-;     movlw       0x66
-;     call        debug
-
     call        read_spi
     call        read_spi
     call        read_spi
@@ -166,177 +132,13 @@ sd_acmd41
 
     call        read_sd
 
-;     movwf       temp2
-;     movlw       low debugmsg3
-;     movwf       TBLPTRL
-;     movlw       high debugmsg3
-;     movwf       TBLPTRH
-;     clrf        TBLPTRU
-;     call        msg
-;     movf        temp2, w
-;     call        debug
-;     movf        temp2, w
-    
-;     clrf        count
-;     clrf        count+1
-; hold
-;     decfsz      count, f
-;     bra         hold
-;     decfsz      count+1, f
-;     bra         hold
-
     xorlw       0x01
     bz          sd_acmd41
-
-;     movlw       low debugmsg4
-;     movwf       TBLPTRL
-;     movlw       high debugmsg4
-;     movwf       TBLPTRH
-;     clrf        TBLPTRU
-;     call        msg
 
     bsf         sdflags, cardinit
     bcf         T0CON, TMR0ON
     bsf         LATC, P_SD_CS
     return                              ; all done
-
-;     movlw       0x40
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x95
-;     call        write_spi
-; 
-;     clrf        TMR0H
-;     clrf        TMR0L
-;     bsf         T0CON, TMR0ON           ; start timeout
-;     bcf         INTCON, TMR0IF
-; sd_card_init2
-;     btfsc       INTCON, TMR0IF
-;     goto        sd_timeout
-;     call        read_spi
-;     xorlw       0x01
-;     bnz         sd_card_init2
-;     ; stop timer
-;     bcf         T0CON, TMR0ON
-; 
-; ; send CMD8 to see if it is HCSD
-; 
-; sd_card_cmd8
-;     call        read_spi
-;     movlw       0x48
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x01
-;     call        write_spi
-;     movlw       0xAA
-;     call        write_spi
-;     movlw       0x87
-;     call        write_spi
-; 
-;     clrf        TMR0H
-;     clrf        TMR0L
-;     bsf         T0CON, TMR0ON           ; start timeout
-;     bcf         INTCON, TMR0IF
-; sd_card_check_cmd8
-;     btfsc       INTCON, TMR0IF
-;     goto        sd_timeout
-;     call        read_spi
-;     xorlw       0xff
-;     bz          sd_card_check_cmd8
-;     xorlw       0xff
-; 
-;     bcf         T0CON, TMR0ON           ; stop timer
-; 
-;     xorlw       0x01                    ; see if the first byte is 01
-;     bnz         sdnc                    ; if not probably an old SD
-;     call        read_spi                ; should be 00
-;     call        read_spi                ; should be 00
-;     call        read_spi                ; has to be 01
-;     xorlw       0x01
-;     bnz         error_exit
-;     call        read_spi                ; has to be aa
-;     xorlw       0xaa
-;     bnz         error_exit
-;     bsf         sdflags, v2             ; if it's a valid response this is a
-;     bra         sd_card_enter_acmd41          ; mark2 card
-; 
-; sdnc
-;     xorlw       0x04                    ; see if it responded "unknown command"
-;     bnz         error_exit              ; if not something went wrong
-; 
-; 
-; sd_card_enter_acmd41
-;     clrf        TMR0H
-;     clrf        TMR0L
-;     bsf         T0CON, TMR0ON           ; start timeout
-;     bcf         INTCON, TMR0IF
-; sd_card_acmd41                          ; now initialise with acmd41
-;     call        read_spi
-;     movlw       0x77                    ; means send cmd55, then cmd41
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x01
-;     call        write_spi
-; 
-; sd_card_ack_cmd55                       ; check cmd 55 was acknowledged
-;     btfsc       INTCON, TMR0IF
-;     goto        sd_timeout
-;     call        read_spi
-;     xorlw       0xff
-;     bz          sd_card_ack_cmd55
-;     xorlw       0xfe
-;     bnz         error_exit              ; for mmc support ought to try cmd1 here
-;                                         ; not really important in this day...
-; 
-;     call        read_spi
-;     movlw       0x69                    ; cmd41
-;     call        write_spi
-;     movlw       0x00
-;     btfsc       sdflags, v2             ; signal that we are HC capable if the
-;     movlw       0x40                    ; card is a version 2, otherwise no need
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x01
-;     call        write_spi
-; 
-; sd_card_init6
-;     btfsc       INTCON, TMR0IF
-;     goto        sd_timeout
-;     call        read_spi
-;     xorlw       0xff                    ; if response was ff, try again it was
-;     bz          sd_card_init6           ; just a bit slow
-;     xorlw       0xfe                    ; 0xff ^ 0xfe = 0x01 > see if still idle
-;     bz          sd_card_acmd41          ; if so, poll again
-;     xorlw       0x01                    ; 0xff ^ 0xfe ^ 0x01 = 0x00
-;     btfss       STATUS, Z               ; if zero card is ready
-;     bra         error_exit              ; if it's none of these something went
-;                                         ; wrong, exit
-;     bcf         T0CON, TMR0ON           ; turn off timeout
-;     bsf         LATC, P_SD_CS           ; release chip select
-;     bsf         sdflags, cardinit
-;     return
 
 sd_timeout
     btfsc       sdflags, init_started   ; if this is in the init Z80 doesn't
@@ -417,47 +219,6 @@ sd_card_csd_loop
     bsf         LATC, P_SD_CS
     return
 
-;     call        read_spi
-;     movlw       0x49
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x01
-;     call        write_spi
-; 
-; sd_card_csd_loop
-;     call        read_spi
-;     xorlw       0x00
-;     btfss       STATUS, Z
-;     bra         sd_card_csd_loop
-; 
-; sd_card_csd_loop2
-;     call        read_spi
-;     xorlw       0xfe
-;     bnz         sd_card_csd_loop2
-;     
-;     movlw       0x10
-;     movwf       count
-; 
-; sd_card_csd_loop3
-;     call        read_spi
-;     movwf       POSTINC2
-;     decfsz      count,f
-;     bra         sd_card_csd_loop3
-; 
-;     movlw       0x01
-;     movwf       slave_count+1
-;     movlw       0x10
-;     movwf       slave_count
-;     bsf         LATC, P_SD_CS
-;     return
-
 sd_card_cid
     bcf         LATC, P_SD_CS
 
@@ -484,31 +245,6 @@ sd_card_cid
 
     xorlw       0xFE
     bnz         error_exit
-
-    
-;     call        read_spi
-;     movlw       0x4A
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x00
-;     call        write_spi
-;     movlw       0x01
-;     call        write_spi
-; 
-; sd_card_cid_loop
-;     call        read_spi
-;     xorlw       0x00
-;     bnz         sd_card_cid_loop
-; 
-; sd_card_cid_loop2
-;     call        read_spi
-;     xorlw       0xfe
-;     bnz         sd_card_cid_loop2
 
     movlw       0x10
     movwf       count
@@ -571,90 +307,6 @@ sd_card_read_block_loop
 
     bsf         LATC, P_SD_CS
     return
-
-; push_z80
-;     movwf       PORTD
-;     bcf         LATB, P_RXF
-; z80_push_loop
-;     btfsc       TRISE, OBF
-;     bra         z80_push_loop
-; 
-;     bsf         LATB, P_RXF
-;     return
-
-; debug
-;     movwf       MAIN_TEMP
-;     swapf       WREG, w
-;     call        hex
-;     movwf       DREG
-;     movlw       0x05
-;     movwf       LO_ADDR
-;     clrf        HI_ADDR
-;     call        ensure_master
-;     call        io_write
-;     movf        MAIN_TEMP, w
-;     call        hex
-;     movwf       DREG
-;     call        io_write
-;     call        revert_master
-;     return
-; 
-; hex
-;     clrf        PCLATH
-;     andlw       0xf
-;     rlncf       WREG, w
-;     addlw       low hex_lut
-;     btfsc       STATUS, C
-;     incf        PCLATH, f
-;     movwf       low_jump
-;     movlw       high hex_lut
-;     addwf       PCLATH, f
-;     movf        low_jump, w
-;     movwf       PCL
-; 
-; hex_lut
-;     retlw       '0'
-;     retlw       '1'
-;     retlw       '2'
-;     retlw       '3'
-;     retlw       '4'
-;     retlw       '5'
-;     retlw       '6'
-;     retlw       '7'
-;     retlw       '8'
-;     retlw       '9'
-;     retlw       'A'
-;     retlw       'B'
-;     retlw       'C'
-;     retlw       'D'
-;     retlw       'E'
-;     retlw       'F'
-; 
-; msg
-;     movlw       0x05
-;     movwf       LO_ADDR
-;     clrf        HI_ADDR
-;     tblrd*+
-;     movff       TABLAT, DREG
-;     movlw       0x00
-;     xorwf       DREG, w
-;     btfsc       STATUS, Z
-;     return
-;     call        ensure_master
-;     call        io_write
-;     call        revert_master
-;     bra         msg
-; 
-; newline
-;     movlw       0xA
-;     movwf       DREG
-;     movlw       0x05
-;     movwf       LO_ADDR
-;     clrf        HI_ADDR
-;     call        ensure_master
-;     call        io_write
-;     call        revert_master
-;     return
 
 ;===============================================================================
 ; sd_card_poll - called in the main loop, checks the card detect pin
@@ -801,47 +453,15 @@ write_spi_loop
     movf        SSPBUF, w
     return
 
-
-; debugmsg1
-;     db          '\n', 'C'
-;     db          'M', 'D'
-;     db          '0', 0x00
-; 
-; debugmsg2
-;     db          'G', 'o'
-;     db          't', 0x00
-; 
-; debugmsg3
-;     db          'A', 'C'
-;     db          'M', 'D'
-;     db          '4', '1'
-;     db          ' ', 0x00
-; 
-; debugmsg4
-;     db          '\n', '['
-;     db          ' ', 'O'
-;     db          'k', ' '
-;     db          ']', '\n'
-;     db          0x00, 0x00
-; 
-; em
-;     db          'E', 'r'
-;     db          'r', 'o'
-;     db          'r', '!'
-;     db          ' ', 0x00
-; 
-; tom
-;     db          'T', '.'
-;     db          'O', 0x00
 ; -- Export these --------------------------------------------------------------
 
     GLOBAL      sd_init
-    ;GLOBAL      sd_card_init    ; shouldn't be global
     GLOBAL      sd_card_csd
     GLOBAL      sd_card_cid
     GLOBAL      sd_card_poll
     GLOBAL      sd_card_read_block
     
     GLOBAL      sd_data
+    GLOBAL      sd_bus_block_size
 
 end

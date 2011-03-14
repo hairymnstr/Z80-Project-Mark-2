@@ -21,6 +21,8 @@ include <portpins.inc>
 
     EXTERN      sd_data
 
+    EXTERN      sd_bus_block_size
+
     UDATA
 carderr           equ   1
 
@@ -702,6 +704,54 @@ slave_command_card_csd
     movf        POSTINC2, w
     movwf       PORTD
     decf        slave_count, f
+
+    bcf         slaveflags, busy
+    bcf         slaveflags, rxbytes
+    bsf         slaveflags, txbytes
+
+    bcf         LATB, P_RXF
+    bsf         LATB, P_TXE
+
+    return
+
+;-------------------------------------------------------------------------------
+; slave_command_card_set_block_size - set the block size to the requested amount
+;-------------------------------------------------------------------------------
+slave_command_card_set_block_size
+    incf        FSR2L,f         ; ignore the command byte
+    movf        INDF2, w        ; going to need to test this a few times so
+                                ; don't move the pointer
+    xorlw       0x01            ; test to see if it's a valid size
+    bz          slave_command_card_set_block_size_okay
+
+    movf        INDF2, w        ; test against the next valid size
+    xorlw       0x02
+    bz          slave_command_card_set_block_size_okay
+
+    movf        INDF2, w
+    xorlw       0x04
+    bz          slave_command_card_set_block_size_okay
+
+    ; if the execution has got here then there was a size we can't deal with
+    clrf        FSR2L
+    movlw       'E'
+    movwf       PORTD
+    goto        slave_command_card_set_block_size_done
+
+slave_command_card_set_block_size_okay
+    ; the value we've been given is valid.  From now on all block request
+    ; addresses and byte counts will be based on this value
+    movf        INDF2, w
+    movwf       sd_bus_block_size
+
+    ; return a single 'O' to indicate that the operation succeeded
+    clrf        FSR2L
+    movlw       'O'
+    movwf       PORTD
+
+slave_command_card_set_block_size_done
+    clrf        slave_count
+    clrf        slave_count+1
 
     bcf         slaveflags, busy
     bcf         slaveflags, rxbytes

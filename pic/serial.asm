@@ -1,9 +1,30 @@
-;==============================================================================
-;    serial.asm
-;==============================================================================
+;-------------------------------------------------------------------------------
+;|                                                                             |
+;| serial.asm - Dedicated host debug/programming comms for the PIC monitor     |
+;| File Version: 2.0                                                           |
+;| hairymnstr@gmail.com                                                        |
+;|                                                                             |
+;| Copyright (C) 2011  Nathan Dumont                                           |
+;|                                                                             |
+;| This file is part of Z80 Project Mark 2                                     |
+;|                                                                             |
+;| Z80 Project Mark 2 is free software: you can redistribute it and/or modify  |
+;| it under the terms of the GNU General Public License as published by        |
+;| the Free Software Foundation, either version 3 of the License, or           |
+;| (at your option) any later version.                                         |
+;|                                                                             |
+;| This program is distributed in the hope that it will be useful,             |
+;| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+;| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+;| GNU General Public License for more details.                                |
+;|                                                                             |
+;| You should have received a copy of the GNU General Public License           |
+;| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+;|                                                                             |
+;-------------------------------------------------------------------------------
 
 list p=18f4520
-#include <p18f4520.inc>
+include <p18f4520.inc>
 
 ; -- Externals From main.asm --------------------------------------------------
     extern      MAIN_TEMP
@@ -28,13 +49,14 @@ list p=18f4520
 
   UDATA
 
-RX_MODE RES     1
-; -- RX MODE CONSTANTS --------------------------------------------------------
-RX_COM  EQU     0
-RX_LEN  EQU     1
-RX_DAT  EQU     2
-RX_CKS  EQU     3
-RX_BSY  EQU     4
+; rx_mode - Variable for the state machine used when receiving packets
+rx_mode         res     1
+; -- rx mode constants --------------------------------------------------------
+RX_COM          equ     0
+RX_LEN          equ     1
+RX_DAT          equ     2
+RX_CKS          equ     3
+RX_BSY          equ     4
 
 RX_COMMAND      RES     1
 RX_COUNT        RES     1
@@ -66,11 +88,13 @@ serial_init
     movlw       0x01
     movwf       FSR0H           ; set FSR0 to BANK1, RX Buffer
     clrf        FSR0L
-    movlw       0x02
-    movwf       FSR1H           ; set FSR1 to BANK2, TX Buffer
-    clrf        FSR1L
+    ; since code only talks when spoken to using two pointers and 512 bytes of
+    ; RAM is greedy! now only use FSR0 and in BANK1
+    ;movlw       0x02
+    ;movwf       FSR1H           ; set FSR1 to BANK2, TX Buffer
+    ;clrf        FSR1L
     movlw       RX_COM
-    movwf       RX_MODE         ; set RX_MODE to look for a command
+    movwf       rx_mode         ; set rx_mode to look for a command
     ; first make sure that the RX and TX are both set input, hardware changes
     ; this once the UART is enabled
     movlw       b'11000000'
@@ -118,12 +142,12 @@ serial_send
 serial_tx_send_packet
     ; send a whole message packet from the TX Buffer
     ; first set the TX pointer to the start of the buffer
-    clrf        FSR1L
+    clrf        FSR0L
     ; send the first byte (the command code)
-    movf        POSTINC1,w
+    movf        POSTINC0,w
     call        serial_send
     ; now send the length byte, and initialise the counter
-    movf        POSTINC1,w
+    movf        POSTINC0,w
     call        serial_send
     movwf       TX_COUNT
 
@@ -131,7 +155,7 @@ serial_tx_send_packet
     bz          serial_tx_send_packet_checksum  ; if length is zero skip data loop
     ; now we loop over send and decrement the counter
 serial_tx_send_packet_data_loop
-    movf        POSTINC1,w
+    movf        POSTINC0,w
     call        serial_send
     decfsz      TX_COUNT,f
     bra         serial_tx_send_packet_data_loop
@@ -139,7 +163,7 @@ serial_tx_send_packet_data_loop
 serial_tx_send_packet_checksum
     bcf         LATC,5
     ; lastly send the checksum
-    movf        POSTINC1,w
+    movf        POSTINC0,w
     call        serial_send
 
     ; done, return
@@ -156,13 +180,6 @@ serial_tx_send_packet_checksum
 ;*                                                                            *
 ;******************************************************************************
 
-; called later but must be on before the page to avoid relative branch errors
-; !! deprecated !!
-; serial_nak_exit
-;     movlw       0x15
-;     call        serial_send
-;     return
-
 serial_rx_int_error
     bcf         RCSTA,CREN              ;clear the CREN bit to clear errors
     movlw       0x15                    ;prepare a NAK symbol
@@ -177,16 +194,16 @@ serial_rx_int
     bnz         serial_rx_int_error     ;if result is not zero an error occurred
 serial_rx_int_no_error                  ;if no error occurred, just echo input
 
-    ; if RX_MODE & FC != 0 -> error message, busy
+    ; if rx_mode & FC != 0 -> error message, busy
     movlw       0xFC                    ; three non-busy modes
-    andwf       RX_MODE,w               ; don't change the RX_MODE
+    andwf       rx_mode,w               ; don't change the rx_mode
     bnz         serial_rx_int_error     ; busy mode so reply NAK, we don't want data at the moment
 
     movlw       UPPER serial_rx_jump_table
     movwf       PCLATU
     movlw       HIGH serial_rx_jump_table
     movwf       PCLATH
-    movf        RX_MODE,w
+    movf        rx_mode,w
     rlncf       WREG,f
     rlncf       WREG,f
     goto        serial_rx_jump_table
@@ -210,7 +227,7 @@ serial_rx_command
     ; also store it to start the checksum
     movwf       RX_CHECKSUM
     ; change to length mode
-    incf        RX_MODE,f
+    incf        rx_mode,f
     ; return
     return
 
@@ -224,12 +241,12 @@ serial_rx_length
     ; xor the length for checksum
     xorwf       RX_CHECKSUM,f
     ; change to data mode
-    incf        RX_MODE,f
+    incf        rx_mode,f
     ; if the byte count is 0 skip data mode
     movlw       0x00
     cpfseq      RX_COUNT
     return
-    incf        RX_MODE,f       ; inc to checksum mode
+    incf        rx_mode,f       ; inc to checksum mode
     return
 
 serial_rx_data
@@ -242,7 +259,7 @@ serial_rx_data
     decfsz      RX_COUNT,f
     return
     ; if execution got here the full count of bytes is done
-    incf        RX_MODE,f       ; inc to checksum mode
+    incf        rx_mode,f       ; inc to checksum mode
     return
 
 serial_rx_checksum
@@ -255,13 +272,13 @@ serial_rx_checksum
     ; if execution got here the checksum failed
     xorwf       RX_CHECKSUM,f           ; return to the calculated checksum for debug
     bsf         RX_FLAGS,CHECKSUM_FAIL  ; set a flag
-    incf        RX_MODE,f               ; switch to busy mode
+    incf        rx_mode,f               ; switch to busy mode
     clrf        FSR0L                   ; reset the RX pointer
     return
 
 serial_rx_checksum_passed
     ; checksum okay, set busy mode and exit
-    incf        RX_MODE,f
+    incf        rx_mode,f
     clrf        FSR0L
     return
 
@@ -278,7 +295,7 @@ serial_rx_checksum_passed
 
 serial_command_dispatch
     ; first check if there is a command
-    btfss       RX_MODE,2       ; if bit 2 is set (mode 4 == RX_BUSY) there is a command ready
+    btfss       rx_mode,2       ; if bit 2 is set (mode 4 == RX_BUSY) there is a command ready
     return                      ; otherwise nothing to do here
     ; next see if there was an error in the checksum
     btfsc       RX_FLAGS,CHECKSUM_FAIL
@@ -364,22 +381,22 @@ serial_read_io
     call        revert_master
 
     ; now build a serial packet and return it to the host
-    clrf        FSR1L
+    clrf        FSR0L
     ; reply with the command
     movf        RX_COMMAND,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
     ; now the length (1 byte)
     movlw       0x01
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now the actual data
     movf        DREG,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; finally add the checksum to the packet
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     call        serial_tx_send_packet
 
@@ -415,18 +432,18 @@ serial_write_io
     call        revert_master
 
     ; now build a serial packet and return it to the host (just an ack)
-    clrf        FSR1L
+    clrf        FSR0L
     ; reply with the command
     movf        RX_COMMAND,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
     ; now the length (0 bytes)
     movlw       0x00
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; finally add the checksum to the packet
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     call        serial_tx_send_packet
 
@@ -456,10 +473,10 @@ serial_read_mem
     call        revert_master
 
     ; reset the send buffer pointer
-    clrf        FSR1L
+    clrf        FSR0L
     ; reply with the command
     movf        RX_COMMAND,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
     ; now the packet length (1 byte of data)
     movlw       0x01
@@ -467,11 +484,11 @@ serial_read_mem
     xorwf       TX_CHECKSUM,f
     ; now the data byte
     movf        DREG,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; finally the checksum
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     
     call        serial_tx_send_packet
 
@@ -503,10 +520,10 @@ serial_write_mem
 
     call        revert_master
 
-    clrf        FSR1L
+    clrf        FSR0L
 
     movf        RX_COMMAND,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
     ; now the packet length (0 bytes, this is just an ACK)
     movlw       0x00
@@ -514,7 +531,7 @@ serial_write_mem
     xorwf       TX_CHECKSUM,f
     ; finally add the checksum
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     call        serial_tx_send_packet
 
@@ -547,20 +564,20 @@ serial_block_mem_read
     cpfslt      TX_COUNT
     goto        serial_error_packet_length
 
-    clrf        FSR1L
+    clrf        FSR0L
 
     movf        RX_COMMAND,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
     movf        TX_COUNT,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
 
     ; loop call mem_read and store in TX buffer
 serial_block_mem_read_loop
     call        mem_read
     movf        DREG,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
 
     infsnz      LO_ADDR,f
@@ -574,7 +591,7 @@ serial_block_mem_read_loop
 
     ; add the checksum
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     call        serial_tx_send_packet
 
@@ -619,17 +636,17 @@ serial_block_mem_write_loop
 
     call        revert_master
 
-    clrf        FSR1L
+    clrf        FSR0L
     movf        RX_COMMAND,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
 
     movlw       0x00
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
 
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     call        serial_tx_send_packet
 
@@ -997,23 +1014,26 @@ serial_do_reset_loop
     reset
 
 serial_do_ack
-    clrf        FSR1L
+    clrf        FSR0L
     movlw       0x09
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
 
     movlw       0x01
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
 
-    movlw       0x02
-    movwf       FSR0L
-    movf        INDF0,w
-    movwf       POSTINC1
+; no need to copy this from one pointer to the other because it's now the
+; same byte :D
+;    movlw       0x02
+;    movwf       FSR0L
+;    movf        INDF0,w
+;    movwf       POSTINC1
+    movf        POSTINC0, w     
     xorwf       TX_CHECKSUM,f
 
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     call        serial_tx_send_packet
 
@@ -1026,28 +1046,28 @@ serial_error_checksum
     ; special first character because we don't know if the command was corrupt
     ; or data following it so start with a "0"
     ; set the send pointer to the start of the buffer
-    clrf        FSR1L
+    clrf        FSR0L
     movlw       0x80
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
     ; next is length byte.  checksum fail message is always 3 bytes
     movlw       0x03
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now is the error code.  checksum fail = 0x0001
     movlw       0x00
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     movlw       0x01
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now send the calculated checksum for debugging
     movf        RX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now add the checksum
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     
     ; packet assembled, send the packet
     call        serial_tx_send_packet
@@ -1057,28 +1077,28 @@ serial_error_checksum
 serial_error_bad_command
     ; report a bad command i.e. byte outside [A-Z]
     ; set the send pointer to the start of the buffer
-    clrf        FSR1L
+    clrf        FSR0L
     movlw       0x81     ; bad command so can't do the normal upper/lower conversion
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
     ; next is length byte.  always 3 bytes for bad command
     movlw       0x03
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now is the error code.  bad command = 0x0002
     movlw       0x00
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     movlw       0x02
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now send the bad command for debug
     movf        RX_COMMAND,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; finally add the checksum
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     ; packet assembled, send the packet
     call        serial_tx_send_packet
@@ -1088,26 +1108,26 @@ serial_error_bad_command
 serial_error_unused_command
     ; valid command letter but not used
     ; set the send pointer to the start of the buffer
-    clrf        FSR1L
+    clrf        FSR0L
     ; command code is same with bit 6 set
     movf        RX_COMMAND,w
     bsf         WREG,6          ; set bit 6, the error flag
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
     ; now the length only the error code now
     movlw       0x02
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now the error code 0x0003 for unused command
     movlw       0x00
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     movlw       0x03
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now the checksum
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     call        serial_tx_send_packet
 
@@ -1115,61 +1135,64 @@ serial_error_unused_command
 
 serial_error_wrong_parameters
     ; valid command but got the wrong number of parameters
-    clrf        FSR1L
+    clrf        FSR0L
     ; command code with bit 6 set
     movf        RX_COMMAND,w
     bsf         WREG,6
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
     ; now the length, error code plus the expected number of params
     movlw       0x03
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now the error code 0x0004
     movlw       0x00
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     movlw       0x04
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now the correct number of argument bytes
     movf        MAIN_TEMP,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
     ; now the checksum
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     call        serial_tx_send_packet
 
     goto        serial_handler_exit
 
 serial_error_do_unknown
-    clrf        FSR1L
+    movlw       0x02
+    movwf       FSR0L
+    movf        INDF0, w
+    movwf       MAIN_TEMP
+    
+    clrf        FSR0L
     movlw       0x49
-    movwf       POSTINC1
+    movwf       POSTINC0
     movwf       TX_CHECKSUM
 
     movlw       0x03
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
 
     movlw       0x00
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
 
     movlw       0x09
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
 
-    movlw       0x02
-    movwf       FSR0L
-    movf        INDF0,w
-    movwf       POSTINC1
+    movf        MAIN_TEMP,w
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
 
     movf        TX_CHECKSUM,w
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     call        serial_tx_send_packet
 
@@ -1191,25 +1214,25 @@ serial_error_bios_address_offset
     goto        serial_error_generic
 
 serial_error_generic
-    clrf        FSR1L
+    clrf        FSR0L
     movf        RX_COMMAND,w
     bsf         WREG,6
     movwf       POSTINC1
     movwf       TX_CHECKSUM
 
     movlw       0x02
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
 
     movlw       0x00
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,f
 
     movf        MAIN_TEMP,w
-    movwf       POSTINC1
+    movwf       POSTINC0
     xorwf       TX_CHECKSUM,w
 
-    movwf       POSTINC1
+    movwf       POSTINC0
 
     call        serial_tx_send_packet
 
@@ -1219,7 +1242,7 @@ serial_handler_exit
     ; standard exit for all serial response functions
     clrf        FSR0L           ; reset RX pointer
     clrf        RX_FLAGS        ; get rid of any flags from this message
-    clrf        RX_MODE         ; go back to waiting
+    clrf        rx_mode         ; go back to waiting
     return
 
 ; == Export Direct Access to ==================================================

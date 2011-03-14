@@ -265,25 +265,34 @@ start_timeout
     bcf         INTCON, TMR0IF
     return
 
+;===============================================================================
+; sd_card_read_block - Reads a 512 byte block from the SD card into memory.
+;===============================================================================
+
+;; Issues the read a single block command to the SD card.  Assuming this returns
+;; a valid response, 512 bytes of data are then read and stored as well as two
+;; checksum bytes from the SD.  Data is stored in indirect register 2.  This
+;; must be set-up preceding the call to this function.
+
 sd_card_read_block
     bcf         LATC, P_SD_CS
 
-    movlw       0x51                    ; CMD17
+    movlw       0x51                    ; CMD17 - read a single block
     movwf       sd_command
 
     ; assume address already set
 
     call        write_sd
 
-    call        start_timeout
+    call        start_timeout           ; wait for the busy signal to end
     call        read_sd
     bcf         T0CON, TMR0ON
 
-    xorlw       0x00
+    xorlw       0x00                    ; make sure it was a no-error response
     bnz         error_exit
 
-    call        start_timeout
-sd_card_read_block_wait
+    call        start_timeout           ; make sure we don't hang waiting for
+sd_card_read_block_wait                 ; data
     call        read_sd
     bcf         T0CON, TMR0ON
 
@@ -296,16 +305,18 @@ sd_card_read_block_wait
     movwf       count+1
 
 sd_card_read_block_loop
-    call        read_spi
-    movwf       POSTINC2
+    call        read_spi                ; get a byte
+    movwf       POSTINC2                ; store it in pointer block 2
     decf        count, f
     btfsc       STATUS, C               ; skips if count overflowed
     bra         sd_card_read_block_loop
-    decf        count+1, f
+    decf        count+1, f              ; skips if high count overflowed too
     btfsc       STATUS, C
     bra         sd_card_read_block_loop
 
-    bsf         LATC, P_SD_CS
+    bsf         LATC, P_SD_CS           ; de-select SD card, more for effect
+                                        ; with the activity light as it won't
+                                        ; release SPI unless clocked a few times
     return
 
 ;===============================================================================

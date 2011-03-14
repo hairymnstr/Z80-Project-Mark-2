@@ -34,4 +34,6 @@ install:
 	pk2cmd -PPIC18F4520 -M -Fdebug_kernel.hex
 
 clean:
-	rm *.o
+	rm -rf *.o
+	rm -rf *.lst
+	rm -rf *.map

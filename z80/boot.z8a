@@ -284,6 +284,8 @@ boot_no_boot:
 ; boot_sd - look for any bootable files on the SD card
 ;-------------------------------------------------------------------------------
 boot_sd:
+  ld            hl, boot_sd_msg
+  call          gpu_str
 
   ; first see if there is an SD card attached
   in            a, (STATUS)
@@ -525,6 +527,9 @@ boot_usb:
   
   ; flush all bytes from the USB host controller
   ; can be a delay so keep trying for a couple of seconds
+  ld            hl, boot_usb_msg
+  call          gpu_str
+
   ld            a, (system_counter)
   add           a, $3
   ld            b, a
@@ -811,4 +816,12 @@ boot_version_error:
 
 booting_msg:
   defm          "Booting...\n"
+  defb          0
+
+boot_sd_msg:
+  defm          "Trying to boot from SD card\n"
+  defb          0
+
+boot_usb_msg:
+  defm          "Trying to boot from USB device\n"
   defb          0

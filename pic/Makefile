@@ -33,6 +33,12 @@ bios.bin: ../z80/bios.z8a
 install:
 	pk2cmd -PPIC18F4520 -M -Fdebug_kernel.hex
 
+run:
+	pk2cmd -PPIC18F4520 -R
+
+stop:
+	pk2cmd -PPIC18F4520
+
 clean:
 	rm -rf *.o
 	rm -rf *.lst

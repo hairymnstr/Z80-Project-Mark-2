@@ -25,6 +25,7 @@
 
 list p=18f4520
 include <p18f4520.inc>
+include "portpins.inc"
 
 ; -- Externals From main.asm --------------------------------------------------
     extern      MAIN_TEMP
@@ -69,6 +70,10 @@ TX_CHECKSUM     RES     1
 TX_COUNT        RES     1
 JUMP_REG        RES     1
   
+
+FSR0L_DEF       EQU     0x00
+FSR0H_DEF       EQU     0x03
+
   CODE
 ;== Serial Console Functions ==================================================
 
@@ -85,9 +90,10 @@ JUMP_REG        RES     1
 
 serial_init
     clrf        RX_FLAGS
-    movlw       0x01
+    movlw       FSR0H_DEF
     movwf       FSR0H           ; set FSR0 to BANK1, RX Buffer
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     ; since code only talks when spoken to using two pointers and 512 bytes of
     ; RAM is greedy! now only use FSR0 and in BANK1
     ;movlw       0x02
@@ -142,7 +148,8 @@ serial_send
 serial_tx_send_packet
     ; send a whole message packet from the TX Buffer
     ; first set the TX pointer to the start of the buffer
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     ; send the first byte (the command code)
     movf        POSTINC0,w
     call        serial_send
@@ -182,9 +189,10 @@ serial_tx_send_packet_checksum
 
 serial_rx_int_error
     bcf         RCSTA,CREN              ;clear the CREN bit to clear errors
+    nop
+    bsf         RCSTA,CREN              ;re-enable receiving
     movlw       0x15                    ;prepare a NAK symbol
     call        serial_send             ;and send it
-    bsf         RCSTA,CREN              ;re-enable receiving
     movf        RCREG,w                 ;have to read the RCREG to clear the interrupt
     return
 
@@ -192,7 +200,6 @@ serial_rx_int
     movlw       b'00000110'
     andwf       RCSTA,w                 ;test if either of the error bits are set
     bnz         serial_rx_int_error     ;if result is not zero an error occurred
-serial_rx_int_no_error                  ;if no error occurred, just echo input
 
     ; if rx_mode & FC != 0 -> error message, busy
     movlw       0xFC                    ; three non-busy modes
@@ -273,13 +280,15 @@ serial_rx_checksum
     xorwf       RX_CHECKSUM,f           ; return to the calculated checksum for debug
     bsf         RX_FLAGS,CHECKSUM_FAIL  ; set a flag
     incf        rx_mode,f               ; switch to busy mode
-    clrf        FSR0L                   ; reset the RX pointer
+    movlw       FSR0L_DEF
+    movwf       FSR0L                   ; reset the RX pointer
     return
 
 serial_rx_checksum_passed
     ; checksum okay, set busy mode and exit
     incf        rx_mode,f
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     return
 
 ; -- End of interrupt routines ------------------------------------------------
@@ -381,7 +390,8 @@ serial_read_io
     call        revert_master
 
     ; now build a serial packet and return it to the host
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     ; reply with the command
     movf        RX_COMMAND,w
     movwf       POSTINC0
@@ -432,7 +442,8 @@ serial_write_io
     call        revert_master
 
     ; now build a serial packet and return it to the host (just an ack)
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     ; reply with the command
     movf        RX_COMMAND,w
     movwf       POSTINC0
@@ -473,7 +484,8 @@ serial_read_mem
     call        revert_master
 
     ; reset the send buffer pointer
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     ; reply with the command
     movf        RX_COMMAND,w
     movwf       POSTINC0
@@ -520,7 +532,8 @@ serial_write_mem
 
     call        revert_master
 
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
 
     movf        RX_COMMAND,w
     movwf       POSTINC0
@@ -564,7 +577,8 @@ serial_block_mem_read
     cpfslt      TX_COUNT
     goto        serial_error_packet_length
 
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
 
     movf        RX_COMMAND,w
     movwf       POSTINC0
@@ -636,7 +650,8 @@ serial_block_mem_write_loop
 
     call        revert_master
 
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     movf        RX_COMMAND,w
     movwf       POSTINC0
     movwf       TX_CHECKSUM
@@ -679,7 +694,7 @@ serial_bios_update
     ; looks like there's enough data and the parameters are valid.
     ; apply the 24K offset to point the address to the top of ROM
 
-    movlw       0x02
+    movlw       FSR0L_DEF + 0x02
     movwf       FSR0L
     movlw       0x60
     addwf       INDF0,f         ; add the offset but leave the pointer there
@@ -1014,7 +1029,8 @@ serial_do_reset_loop
     reset
 
 serial_do_ack
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     movlw       0x09
     movwf       POSTINC0
     movwf       TX_CHECKSUM
@@ -1046,7 +1062,8 @@ serial_error_checksum
     ; special first character because we don't know if the command was corrupt
     ; or data following it so start with a "0"
     ; set the send pointer to the start of the buffer
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     movlw       0x80
     movwf       POSTINC0
     movwf       TX_CHECKSUM
@@ -1077,7 +1094,8 @@ serial_error_checksum
 serial_error_bad_command
     ; report a bad command i.e. byte outside [A-Z]
     ; set the send pointer to the start of the buffer
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     movlw       0x81     ; bad command so can't do the normal upper/lower conversion
     movwf       POSTINC0
     movwf       TX_CHECKSUM
@@ -1108,7 +1126,8 @@ serial_error_bad_command
 serial_error_unused_command
     ; valid command letter but not used
     ; set the send pointer to the start of the buffer
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     ; command code is same with bit 6 set
     movf        RX_COMMAND,w
     bsf         WREG,6          ; set bit 6, the error flag
@@ -1135,7 +1154,8 @@ serial_error_unused_command
 
 serial_error_wrong_parameters
     ; valid command but got the wrong number of parameters
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     ; command code with bit 6 set
     movf        RX_COMMAND,w
     bsf         WREG,6
@@ -1165,12 +1185,13 @@ serial_error_wrong_parameters
     goto        serial_handler_exit
 
 serial_error_do_unknown
-    movlw       0x02
+    movlw       FSR0L_DEF + 0x02
     movwf       FSR0L
     movf        INDF0, w
     movwf       MAIN_TEMP
     
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     movlw       0x49
     movwf       POSTINC0
     movwf       TX_CHECKSUM
@@ -1214,7 +1235,8 @@ serial_error_bios_address_offset
     goto        serial_error_generic
 
 serial_error_generic
-    clrf        FSR0L
+    movlw       FSR0L_DEF
+    movwf       FSR0L
     movf        RX_COMMAND,w
     bsf         WREG,6
     movwf       POSTINC1
@@ -1240,7 +1262,8 @@ serial_error_generic
 
 serial_handler_exit
     ; standard exit for all serial response functions
-    clrf        FSR0L           ; reset RX pointer
+    movlw       FSR0L_DEF
+    movwf       FSR0L           ; reset RX pointer
     clrf        RX_FLAGS        ; get rid of any flags from this message
     clrf        rx_mode         ; go back to waiting
     return
@@ -1250,5 +1273,4 @@ serial_handler_exit
     GLOBAL      serial_init
     GLOBAL      serial_rx_int
     GLOBAL      serial_command_dispatch
-
 end

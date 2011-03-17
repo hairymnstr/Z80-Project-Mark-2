@@ -45,6 +45,7 @@ busy                    equ     0
 rxbytes                 equ     1
 txbytes                 equ     2
 
+FSR2L_DEF       equ 0xC0
     CODE
 
 ;== Z80 Bus interfacing functions =============================================
@@ -394,9 +395,9 @@ slave_rx
 
     ; if not do setup work
     ; setup the rx register
-    movlw       0x03
-    movwf       FSR2H
-    clrf        FSR2L
+    clrf        FSR2H
+    movlw       FSR2L_DEF
+    movwf       FSR2L
     movf        PORTD, w
     movwf       POSTINC2
 
@@ -463,9 +464,9 @@ slave_command_dispatch
     btfss       slaveflags, busy
     return                              ; no commands to deal with
     ; there's a new command to deal with.  First reset the pointer
-    movlw       0x03
-    movwf       FSR2H
-    clrf        FSR2L
+    clrf        FSR2H
+    movlw       FSR2L_DEF
+    movwf       FSR2L
 
     ; now get the command byte and do a jump
     movlw       high slave_cmd_table
@@ -615,9 +616,9 @@ slave_command_read_sector
     movff       POSTINC2, sd_data+2
     movff       POSTINC2, sd_data+3     ; select the block
 
-    movlw       0x03
-    movwf       FSR2H
-    clrf        FSR2L
+    clrf        FSR2H
+    movlw       FSR2L_DEF
+    movwf       FSR2L
 
     ; set first byte to okay, changed on error
     movlw       'O'
@@ -631,9 +632,9 @@ slave_command_read_sector
     movlw       0x03
     movwf       slave_count
 
-    clrf        FSR2L
-    movlw       0x03
-    movwf       FSR2H
+    movlw       FSR2L_DEF
+    movwf       FSR2L
+    clrf        FSR2H
     movf        POSTINC2, w
     movwf       PORTD
     decf        slave_count, f
@@ -651,9 +652,9 @@ slave_command_read_sector
 ; slave_command_card_cid - get the CID data from the attached SD card
 ;-------------------------------------------------------------------------------
 slave_command_card_cid
-    movlw       0x03
-    movwf       FSR2H
-    clrf        FSR2L
+    clrf        FSR2H
+    movlw       FSR2L_DEF
+    movwf       FSR2L
 
     ; set first byte of response to O for okay, overwritten by error routines
     movlw       'O'
@@ -667,7 +668,8 @@ slave_command_card_cid
     movlw       0x01
     movwf       slave_count+1
 
-    clrf        FSR2L
+    movlw       FSR2L_DEF
+    movwf       FSR2L
     movf        POSTINC2, w
     movwf       PORTD
     decf        slave_count, f
@@ -685,9 +687,9 @@ slave_command_card_cid
 ; slave_command_card_csd - get the CSD data from the attached SD card
 ;-------------------------------------------------------------------------------
 slave_command_card_csd
-    movlw       0x03
-    movwf       FSR2H
-    clrf        FSR2L
+    clrf        FSR2H
+    movlw       FSR2L_DEF
+    movwf       FSR2L
 
     ; put O at the start of the response.  This gets overwritten by errors
     movlw       'O'
@@ -700,7 +702,8 @@ slave_command_card_csd
     movlw       0x01
     movwf       slave_count+1
 
-    clrf        FSR2L
+    movlw       FSR2L_DEF
+    movwf       FSR2L
     movf        POSTINC2, w
     movwf       PORTD
     decf        slave_count, f
@@ -733,7 +736,8 @@ slave_command_card_set_block_size
     bz          slave_command_card_set_block_size_okay
 
     ; if the execution has got here then there was a size we can't deal with
-    clrf        FSR2L
+    movlw       FSR2L_DEF
+    movwf       FSR2L
     movlw       'E'
     movwf       PORTD
     goto        slave_command_card_set_block_size_done
@@ -745,7 +749,8 @@ slave_command_card_set_block_size_okay
     movwf       sd_bus_block_size
 
     ; return a single 'O' to indicate that the operation succeeded
-    clrf        FSR2L
+    movlw       FSR2L_DEF
+    movwf       FSR2L
     movlw       'O'
     movwf       PORTD
 
